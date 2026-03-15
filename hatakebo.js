@@ -1341,7 +1341,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     const res = {};
     Object.keys(all).forEach(function(rid){
       var r = all[rid];
-      if (!r.deletedFrom || r.deletedFrom > year) res[rid] = r;
+      var fromOk = !r.addedFrom || r.addedFrom <= year;
+      var delOk  = !r.deletedFrom || r.deletedFrom > year;
+      if (fromOk && delOk) res[rid] = r;
     });
     return res;
   })();
@@ -1379,7 +1381,11 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       .filter(function(h){ return h.veggieId; });
   }
 
+  function clampPt(pt){
+    return { x: Math.max(0, Math.min(farm.cols, pt.x)), y: Math.max(0, Math.min(farm.rows, pt.y)) };
+  }
   function handleFieldTap(pt){
+    pt = clampPt(pt);
     if (!s1) { setS1(pt); return; }
     const dx=Math.abs(pt.x-s1.x), dy=Math.abs(pt.y-s1.y);
     const dist=Math.sqrt(dx*dx+dy*dy);
@@ -1389,7 +1395,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     const gl=Math.max(orientation==="H"?dx:dy, 0.5);
     const id="ridge_"+Date.now();
     const n=Object.keys(farmRidges).length+1;
-    const nr={id:id,gx:gx,gy:gy,gl:gl,orientation:orientation,name:n+"番畝"};
+    const nr={id:id,gx:gx,gy:gy,gl:gl,orientation:orientation,name:n+"番畝",addedFrom:year};
     setRidges(function(prev){
       const fd=prev[fid]||{};
       return Object.assign({},prev,{[fid]:Object.assign({},fd,{[id]:nr})});
@@ -1626,9 +1632,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 farm={farm} farmRidges={farmRidges} farmPlant={farmPlant}
                 s1={s1} hov={hov} zoom={zoom}
                 soil={soil} fid={fid} year={year}
-                onLongPressStart={function(pt){ setS1(pt); closeSheet(); }}
+                onLongPressStart={function(pt){ setS1(clampPt(pt)); closeSheet(); }}
                 onTap={handleFieldTap}
-                onMove={function(pt){ if(s1) setHov(pt); }}
+                onMove={function(pt){ if(s1) setHov(clampPt(pt)); }}
                 onZoomChange={setZoom}
                 onRidgeTap={function(rid){ if(!s1){setSelRid(rid);setTab("plant");} }}
                 selRid={selRid}
