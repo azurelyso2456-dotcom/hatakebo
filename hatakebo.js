@@ -1062,6 +1062,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
   var lpTimer = useRef(null);
   var lpActive = useRef(false);
   var lpStart = useRef(null);
+  var [isPressing, setIsPressing] = useState(false);
   var lm = farm.landmarks || {};
   var hasLm = Object.keys(lm).length > 0;
 
@@ -1091,6 +1092,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     return Math.max(0.52, 1-Math.max(0, 1-Math.min(ex,ey))*0.44);
   }
   function onPD(e) {
+    setIsPressing(true);
     lpStart.current={x:e.clientX, y:e.clientY};
     lpActive.current=false;
     clearTimeout(lpTimer.current);
@@ -1112,6 +1114,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     clearTimeout(lpTimer.current);
     if (lpActive.current && s1) { var pt=getSvgPt(e.clientX,e.clientY); if(pt) onTap(pt); }
     lpActive.current=false; lpStart.current=null;
+    setIsPressing(false);
     onZoomChange(1);
   }
 
@@ -1136,8 +1139,8 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         onPointerDown={onPD}
         onPointerMove={onPM}
         onPointerUp={onPU}
-        onPointerCancel={function(){cancelLP();onZoomChange(1);}}
-        style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:"none",userSelect:"none"}}>
+        onPointerCancel={function(){cancelLP();setIsPressing(false);onZoomChange(1);}}
+        style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:(s1||isPressing)?"none":"auto",userSelect:"none"}}>
 
       {/* 背景（目印エリア含む） */}
       <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
