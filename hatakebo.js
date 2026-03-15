@@ -294,6 +294,7 @@ function extractVid(rec) {
 /* ridgeIdをキーとして連作チェック（新方式：ridges[farmId][ridgeId]） */
 function ridgeBBox(r){var RW=RWIDTH;return r.orientation==="H"?{xa:r.gx-r.gl/2,xb:r.gx+r.gl/2,ya:r.gy-RW/2,yb:r.gy+RW/2}:{xa:r.gx-RW/2,xb:r.gx+RW/2,ya:r.gy-r.gl/2,yb:r.gy+r.gl/2};}
 function ridgesOverlap(a,b){var A=ridgeBBox(a),B=ridgeBBox(b);return A.xa<B.xb&&A.xb>B.xa&&A.ya<B.yb&&A.yb>B.ya;}
+function ridgeIntersect(a,b){var A=ridgeBBox(a),B=ridgeBBox(b);var xa=Math.max(A.xa,B.xa),xb=Math.min(A.xb,B.xb),ya=Math.max(A.ya,B.ya),yb=Math.min(A.yb,B.yb);return(xa<xb&&ya<yb)?{xa,xb,ya,yb}:null;}
 function getSoilVid(fid,ridgeId,year,pls,soil,fRidges){
   var direct=extractVid(pls[fid]&&pls[fid][year]&&pls[fid][year][ridgeId]);
   if(direct) return direct;
@@ -1058,7 +1059,7 @@ function getRect(ridge) {
   return { x:(ridge.gx-RWIDTH/2)*CS, y:(ridge.gy-ridge.gl/2)*CS, w:RWIDTH*CS, h:ridge.gl*CS };
 }
 
-function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom }) {
+function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year }) {
   var W = farm.cols * CS;
   var H = farm.rows * CS;
   var svgRef = useRef(null);
@@ -1145,6 +1146,13 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
       {/* 背景（目印エリア含む） */}
       <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
 
+      {/* 土壌ハッチパターン定義 */}
+      <defs>
+        <pattern id="soilHatch" patternUnits="userSpaceOnUse" width={8} height={8} patternTransform="rotate(45)">
+          <line x1={0} y1={0} x2={0} y2={8} stroke={C.orange} strokeWidth={2.5} opacity={0.55}/>
+        </pattern>
+      </defs>
+
       {/* 畑フィールドの土 */}
       <rect x={padL} y={padT} width={W} height={H} fill="#d4c89c"/>
 
@@ -1208,6 +1216,11 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
             <rect x={rx} y={ry} width={rr.w} height={rr.h}
               fill={isSel?"#b8ccec":"#e0d4a8"} stroke={isSel?C.indigo:C.inkBorder}
               strokeWidth={isSel?2.5:1.5} rx={3}/>
+            {/* 土壌重なり（連作由来）ハッチ表示 */}
+            {(soil&&soil[fid]||[]).filter(function(s){return s.year<year&&ridgesOverlap(ridge,s);}).map(function(s,i){
+              var ix=ridgeIntersect(ridge,s); if(!ix) return null;
+              return <rect key={"soil"+i} x={padL+ix.xa*CS} y={padT+ix.ya*CS} width={(ix.xb-ix.xa)*CS} height={(ix.yb-ix.ya)*CS} fill="url(#soilHatch)" rx={2} style={{pointerEvents:"none"}}/>;
+            })}
             {vg && sz > 20 && (
               <text x={cx} y={cy-3} textAnchor="middle"
                 fontSize={Math.min(sz*1.2,18)} fill={C.ink} style={{pointerEvents:"none"}}>
@@ -1612,6 +1625,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               <FarmField
                 farm={farm} farmRidges={farmRidges} farmPlant={farmPlant}
                 s1={s1} hov={hov} zoom={zoom}
+                soil={soil} fid={fid} year={year}
                 onLongPressStart={function(pt){ setS1(pt); closeSheet(); }}
                 onTap={handleFieldTap}
                 onMove={function(pt){ if(s1) setHov(pt); }}
