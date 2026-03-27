@@ -2063,6 +2063,10 @@ function FAQScreen({ onClose }) {
         <div style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>
           ハタケボ — 畑の帳簿
         </div>
+        <a href="./disclaimer.html" target="_blank" rel="noopener noreferrer"
+          style={{display:"inline-block",marginTop:10,fontSize:11,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,textDecoration:"underline"}}>
+          免責事項
+        </a>
       </div>
     </div>
   );
