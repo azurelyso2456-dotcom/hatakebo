@@ -1055,7 +1055,7 @@ function getRect(ridge) {
   return { x:(ridge.gx-RWIDTH/2)*CS, y:(ridge.gy-ridge.gl/2)*CS, w:RWIDTH*CS, h:ridge.gl*CS };
 }
 
-function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year }) {
+function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange }) {
   var W = farm.cols * CS;
   var H = farm.rows * CS;
   var svgRef = useRef(null);
@@ -1063,6 +1063,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
   var lpActive = useRef(false);
   var lpStart = useRef(null);
   var [isPressing, setIsPressing] = useState(false);
+  function setPress(v){ setIsPressing(v); if(onPressChange) onPressChange(v); }
   var lm = farm.landmarks || {};
   var hasLm = Object.keys(lm).length > 0;
 
@@ -1092,7 +1093,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     return Math.max(0.52, 1-Math.max(0, 1-Math.min(ex,ey))*0.44);
   }
   function onPD(e) {
-    setIsPressing(true);
+    setPress(true);
     lpStart.current={x:e.clientX, y:e.clientY};
     lpActive.current=false;
     clearTimeout(lpTimer.current);
@@ -1114,7 +1115,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     clearTimeout(lpTimer.current);
     if (lpActive.current && s1) { var pt=getSvgPt(e.clientX,e.clientY); if(pt) onTap(pt); }
     lpActive.current=false; lpStart.current=null;
-    setIsPressing(false);
+    setPress(false);
     onZoomChange(1);
   }
 
@@ -1139,7 +1140,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         onPointerDown={onPD}
         onPointerMove={onPM}
         onPointerUp={onPU}
-        onPointerCancel={function(){cancelLP();setIsPressing(false);onZoomChange(1);}}
+        onPointerCancel={function(){cancelLP();setPress(false);onZoomChange(1);}}
         style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:(s1||isPressing)?"none":"auto",userSelect:"none"}}>
 
       {/* 背景（目印エリア含む） */}
@@ -1326,6 +1327,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [s1, setS1]         = useState(null);
   const [hov, setHov]       = useState(null);
   const [zoom, setZoom]     = useState(1);
+  const [isPressing, setIsPressing] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [printSnap, setPrintSnap] = useState(null); /* null=通常印刷, snap=変遷印刷 */
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1510,6 +1512,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const selRidgeObj = selRid ? farmRidges[selRid] : null;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renamingFarm, setRenamingFarm] = useState(false);
+  const [renameVal, setRenameVal] = useState("");
 
   const pageLines = {
     backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,"+C.inkLine+"30 27px,"+C.inkLine+"30 28px)",
@@ -1584,6 +1588,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>❓</span> よくある質問
                 </button>
+                <button onClick={function(e){e.stopPropagation();setRenameVal(farm.name);setRenamingFarm(true);setMenuOpen(false);}}
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
+                  <span>✎</span> 畑名を変更
+                </button>
                 <button onClick={function(e){e.stopPropagation();setShowPrint(true);setPrintSnap(null);setMenuOpen(false);}}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>🖨</span> 印刷する
@@ -1614,10 +1622,22 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               style={{padding:"6px 14px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>削除する</button>
           </div>
         )}
+
+        {/* 畑名変更バー */}
+        {renamingFarm && farm && (
+          <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",background:C.indigoPale,borderTop:"1px solid "+C.indigo}}>
+            <input value={renameVal} onChange={function(e){setRenameVal(e.target.value);}} autoFocus
+              style={{flex:1,padding:"6px 10px",border:"1px solid "+C.indigo,background:C.paper,fontSize:13,fontFamily:SERIF,letterSpacing:1,outline:"none"}}/>
+            <button onClick={function(e){e.stopPropagation();setRenamingFarm(false);}}
+              style={{padding:"6px 12px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
+            <button onClick={function(e){e.stopPropagation();if(!renameVal.trim())return;setFarms(function(prev){return prev.map(function(f){return f.id===fid?Object.assign({},f,{name:renameVal.trim()}):f;});});setRenamingFarm(false);}}
+              style={{padding:"6px 12px",border:"1px solid "+C.indigo,background:C.indigo,color:C.paper,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>変更</button>
+          </div>
+        )}
       </div>
 
       {/* ══ コンテンツエリア ══ */}
-      <div style={{padding:"20px 16px",paddingBottom:(bottomBarH+24)+"px",overflowX:"auto"}} onClick={function(e){e.stopPropagation();}}>
+      <div style={{padding:"20px 16px",paddingBottom:(bottomBarH+24)+"px",overflowX:"auto",touchAction:(s1||isPressing)?"none":"auto"}} onClick={function(e){e.stopPropagation();}}>
 
         {/* ── マップビュー ── */}
         {farm && mainTab === "map" && (
@@ -1649,6 +1669,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 onTap={handleFieldTap}
                 onMove={function(pt){ if(s1) setHov(clampPt(pt)); }}
                 onZoomChange={setZoom}
+                onPressChange={setIsPressing}
                 onRidgeTap={function(rid){ if(!s1){setSelRid(rid);setTab("plant");} }}
                 selRid={selRid}
               />
