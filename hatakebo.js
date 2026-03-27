@@ -540,6 +540,7 @@ function HatakeApp() {
     <React.Fragment>
       <FarmMap farms={farms} plantings={plantings} setPlantings={setPlantings} ridges={ridges} setRidges={setRidges}
         snapshots={snapshots} setSnapshots={setSnapshots} soil={soil} setSoil={setSoil}
+        onRenameFarm={function(fid, name){ setFarms(function(prev){ return prev.map(function(f){ return f.id===fid ? Object.assign({},f,{name:name}) : f; }); }); }}
         onAddFarm={function(){setScreen("setup");}}
         onDeleteFarm={function(fid){
           setFarms(function(prev){ return prev.filter(function(f){ return f.id!==fid; }); });
@@ -1318,7 +1319,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
 /* ══════════════════════════════════════
    畑マップ（畝ベース）
 ══════════════════════════════════════ */
-function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onExport, onImport, onShowFaq }) {
+function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq }) {
   const cy = new Date().getFullYear();
   const [fid, setFid]       = useState(farms[0]?farms[0].id:"");
   const [year, setYear]     = useState(cy);
@@ -1630,7 +1631,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               style={{flex:1,padding:"6px 10px",border:"1px solid "+C.indigo,background:C.paper,fontSize:13,fontFamily:SERIF,letterSpacing:1,outline:"none"}}/>
             <button onClick={function(e){e.stopPropagation();setRenamingFarm(false);}}
               style={{padding:"6px 12px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
-            <button onClick={function(e){e.stopPropagation();if(!renameVal.trim())return;setFarms(function(prev){return prev.map(function(f){return f.id===fid?Object.assign({},f,{name:renameVal.trim()}):f;});});setRenamingFarm(false);}}
+            <button onClick={function(e){e.stopPropagation();if(!renameVal.trim())return;onRenameFarm(fid,renameVal.trim());setRenamingFarm(false);}}
               style={{padding:"6px 12px",border:"1px solid "+C.indigo,background:C.indigo,color:C.paper,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>変更</button>
           </div>
         )}
