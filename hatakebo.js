@@ -1098,11 +1098,18 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     lpStart.current={x:e.clientX, y:e.clientY};
     lpActive.current=false;
     clearTimeout(lpTimer.current);
-    lpTimer.current=setTimeout(function(){
+    /* マウス操作はクリックで即始点 */
+    if(e.pointerType==="mouse"){
       lpActive.current=true;
       var pt=getSvgPt(lpStart.current.x, lpStart.current.y);
-      if (pt) { onLongPressStart(pt); if(navigator.vibrate) navigator.vibrate(25); }
-    }, 450);
+      if(pt) onLongPressStart(pt);
+    } else {
+      lpTimer.current=setTimeout(function(){
+        lpActive.current=true;
+        var pt=getSvgPt(lpStart.current.x, lpStart.current.y);
+        if (pt) { onLongPressStart(pt); if(navigator.vibrate) navigator.vibrate(25); }
+      }, 450);
+    }
   }
   function onPM(e) {
     if (!lpStart.current) return;
@@ -1110,7 +1117,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     if (!lpActive.current) { if(Math.sqrt(dx*dx+dy*dy)>10) cancelLP(); return; }
     var pt=getSvgPt(e.clientX, e.clientY);
     if (pt) onMove(pt);
-    onZoomChange(calcZoom(e.clientX, e.clientY));
+    if(e.pointerType!=="mouse") onZoomChange(calcZoom(e.clientX, e.clientY));
   }
   function onPU(e) {
     clearTimeout(lpTimer.current);
@@ -1142,6 +1149,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         onPointerMove={onPM}
         onPointerUp={onPU}
         onPointerCancel={function(){cancelLP();setPress(false);onZoomChange(1);}}
+        onContextMenu={function(e){e.preventDefault();}}
         style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:(s1||isPressing)?"none":"auto",userSelect:"none"}}>
 
       {/* 背景（目印エリア含む） */}
@@ -1814,7 +1822,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             {/* 畝引きヒント */}
             <div style={{flex:1,padding:"14px 0",border:"2px solid "+C.inkBorder,background:"transparent",color:C.ink,fontSize:13,fontFamily:HAND,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"2px 2px 0 "+C.inkLine,borderRadius:3}}>
               <span style={{fontSize:16}}>✏️</span>
-              <span>畑を<strong>長押し→ドラッグ</strong>で畝を引く</span>
+              <span>畑を<strong>クリック/長押し→ドラッグ</strong>で畝を引く</span>
             </div>
 
             {/* 区切り */}
