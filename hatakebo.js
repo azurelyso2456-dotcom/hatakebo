@@ -2050,7 +2050,7 @@ function FAQScreen({ onClose }) {
       <div style={{borderTop:"1px solid "+C.inkLine,padding:"32px 24px",textAlign:"center",background:C.paper2}}>
         {/* ▼▼▼ お問い合わせフォームのURLをここに設定 ▼▼▼ */}
         {(function(){
-          var FORM_URL = "https://forms.google.com/XXXX-ここをGoogleフォームのURLに書き換えてください";
+          var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdlE3jPEoKjx_ILFNv6nvAr2SWC1GheFMEGl7f71iV2-_cVMA/viewform?usp=dialog";
           return (
             <div style={{marginBottom:24}}>
               <div style={{fontSize:13,color:C.ink,fontFamily:SERIF,letterSpacing:2,marginBottom:6}}>
