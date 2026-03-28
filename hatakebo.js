@@ -1114,7 +1114,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
   function onPM(e) {
     if (!lpStart.current) return;
     var dx=e.clientX-lpStart.current.x, dy=e.clientY-lpStart.current.y;
-    if (!lpActive.current) { if(Math.sqrt(dx*dx+dy*dy)>10) cancelLP(); return; }
+    if (!lpActive.current) { if(Math.sqrt(dx*dx+dy*dy)>15) cancelLP(); return; }
     var pt=getSvgPt(e.clientX, e.clientY);
     if (pt) onMove(pt);
     if(e.pointerType!=="mouse") onZoomChange(calcZoom(e.clientX, e.clientY));
@@ -1150,7 +1150,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         onPointerUp={onPU}
         onPointerCancel={function(){cancelLP();setPress(false);onZoomChange(1);}}
         onContextMenu={function(e){e.preventDefault();}}
-        style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:(s1||isPressing)?"none":"auto",userSelect:"none"}}>
+        style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:"none",userSelect:"none"}}>
 
       {/* 背景（目印エリア含む） */}
       <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
@@ -1221,6 +1221,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         return (
           <g key={ridge.id}
             style={{cursor:s1?"crosshair":"pointer"}}
+            onPointerDown={function(e){ if(!s1 && e.pointerType==="mouse") e.stopPropagation(); }}
             onClick={function(e){ if(!s1){e.stopPropagation();onRidgeTap(ridge.id);} }}>
             <rect x={rx} y={ry} width={rr.w} height={rr.h}
               fill={isSel?"#b8ccec":"#e0d4a8"} stroke={isSel?C.indigo:C.inkBorder}
