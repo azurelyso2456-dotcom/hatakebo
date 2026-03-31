@@ -292,7 +292,7 @@ function extractVid(rec) {
   return typeof rec === "object" ? rec.vid : rec;
 }
 /* ridgeIdをキーとして連作チェック（新方式：ridges[farmId][ridgeId]） */
-function ridgeBBox(r){var RW=RWIDTH;return r.orientation==="H"?{xa:r.gx-r.gl/2,xb:r.gx+r.gl/2,ya:r.gy-RW/2,yb:r.gy+RW/2}:{xa:r.gx-RW/2,xb:r.gx+RW/2,ya:r.gy-r.gl/2,yb:r.gy+r.gl/2};}
+function ridgeBBox(r){var RW=r.ridgeW||RWIDTH;return r.orientation==="H"?{xa:r.gx-r.gl/2,xb:r.gx+r.gl/2,ya:r.gy-RW/2,yb:r.gy+RW/2}:{xa:r.gx-RW/2,xb:r.gx+RW/2,ya:r.gy-r.gl/2,yb:r.gy+r.gl/2};}
 function ridgesOverlap(a,b){var A=ridgeBBox(a),B=ridgeBBox(b);return A.xa<B.xb&&A.xb>B.xa&&A.ya<B.yb&&A.yb>B.ya;}
 function ridgeIntersect(a,b){var A=ridgeBBox(a),B=ridgeBBox(b);var xa=Math.max(A.xa,B.xa),xb=Math.min(A.xb,B.xb),ya=Math.max(A.ya,B.ya),yb=Math.min(A.yb,B.yb);return(xa<xb&&ya<yb)?{xa,xb,ya,yb}:null;}
 function getSoilVid(fid,ridgeId,year,pls,soil,fRidges){
@@ -581,12 +581,18 @@ const DIRS8 = [
   { id:"S",  label:"南" }, { id:"SW", label:"南西" },
   { id:"W",  label:"西" }, { id:"NW", label:"北西" },
 ];
+const CELL_CM = 25; /* 1グリッド = 25cm */
 const PRESETS = [
-  { label:"よこ長",  rows:3, cols:6 },
-  { label:"たて長",  rows:6, cols:3 },
-  { label:"正方形",  rows:4, cols:4 },
-  { label:"L字型",   rows:4, cols:4, cells:function(r,c){ return !(r<2&&c>=2); } },
+  { label:"プランター",        widthM:1.2, heightM:0.5 },
+  { label:"小さな畑",          widthM:2.0, heightM:1.5 },
+  { label:"家庭菜園（標準）",  widthM:5.0, heightM:3.0 },
+  { label:"広い畑（30坪）",    widthM:10.0, heightM:10.0 },
 ];
+function presetToGrid(p) {
+  var cols = Math.max(2, Math.round(p.widthM  * 100 / CELL_CM));
+  var rows = Math.max(2, Math.round(p.heightM * 100 / CELL_CM));
+  return { rows:rows, cols:cols };
+}
 
 /* ══════════════════════════════════════
    目印エディタ
@@ -680,11 +686,12 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
 
 function FarmSetup({ farms, onComplete, onSkip }) {
   const [step, setStep]   = useState(0);
-  const [rows, setRows]   = useState(4);
-  const [cols, setCols]   = useState(5);
-  const [grid, setGrid]   = useState(function(){ return makeGrid(4,5); });
+  const [widthM,  setWidthM]  = useState(2.0);   /* 畑の横幅(m) */
+  const [heightM, setHeightM] = useState(1.5);   /* 畑の縦幅(m) */
+  const cols = Math.max(2, Math.round(widthM  * 100 / CELL_CM));
+  const rows = Math.max(2, Math.round(heightM * 100 / CELL_CM));
+  const [grid, setGrid]   = useState(function(){ return makeGrid(Math.max(2,Math.round(150/CELL_CM)), Math.max(2,Math.round(200/CELL_CM))); });
   const [name, setName]   = useState("");
-  const [sqm, setSqm]     = useState(1);
   const [northDir,  setNorthDir]  = useState("N");
   const [landmarks, setLandmarks] = useState({});
   const [selLMType, setSelLMType] = useState("tree");
@@ -701,13 +708,17 @@ function FarmSetup({ farms, onComplete, onSkip }) {
     });
   }
   function applyPreset(p) {
-    const fn = p.cells || function(){ return true; };
-    setRows(p.rows); setCols(p.cols);
-    setGrid(makeGrid(p.rows, p.cols, fn));
+    var wM = p.widthM  || p.cols * CELL_CM / 100;
+    var hM = p.heightM || p.rows * CELL_CM / 100;
+    setWidthM(wM); setHeightM(hM);
+    var c = Math.max(2, Math.round(wM * 100 / CELL_CM));
+    var r = Math.max(2, Math.round(hM * 100 / CELL_CM));
+    var fn = p.cells || function(){ return true; };
+    setGrid(makeGrid(r, c, fn));
     setStep(2);
   }
   function done() {
-    onComplete({ id:"farm_"+Date.now(), name:name||("畑"+(farms.length+1)), rows:rows, cols:cols, grid:grid, sqmPerCell:sqm, northDir:northDir, landmarks:landmarks });
+    onComplete({ id:"farm_"+Date.now(), name:name||("畑"+(farms.length+1)), rows:rows, cols:cols, grid:grid, cellCm:CELL_CM, widthM:widthM, heightM:heightM, northDir:northDir, landmarks:landmarks });
   }
 
   /* 帳簿風の外枠スタイル */
@@ -787,39 +798,68 @@ function FarmSetup({ farms, onComplete, onSkip }) {
           <div>
             <div style={{ marginBottom:28 }}>
               <div style={{ fontSize:11, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第一記 —</div>
-              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>区画の大きさ</h2>
+              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>畑の大きさ</h2>
+              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.8 }}>実際の広さをメートルで入力してください</p>
             </div>
-            <SectionTitle>プリセット</SectionTitle>
+
+            <SectionTitle>よく使われるサイズ</SectionTitle>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
               {PRESETS.map(function(p){
                 return (
                   <button key={p.label} onClick={function(){ applyPreset(p); }}
-                    style={{ padding:"14px", border:"1px solid " + C.inkBorder, borderRadius:2,
+                    style={{ padding:"14px 10px", border:"1px solid " + C.inkBorder, borderRadius:2,
                       background:C.paper, cursor:"pointer", fontFamily:SERIF, textAlign:"left",
                       boxShadow:"2px 2px 0 " + C.inkLine }}>
-                    <span style={{ fontSize:14, letterSpacing:1 }}>{p.label}</span>
-                    <span style={{ fontSize:11, color:C.inkFaint, marginLeft:8 }}>{p.rows}×{p.cols}</span>
+                    <div style={{ fontSize:13, letterSpacing:1, marginBottom:3 }}>{p.label}</div>
+                    <div style={{ fontSize:11, color:C.inkFaint }}>{p.widthM}m × {p.heightM}m</div>
                   </button>
                 );
               })}
             </div>
-            <SectionTitle>手動で入力</SectionTitle>
-            <NumControl label="よこ（列）" value={cols} min={2} max={8} onChange={function(v){ setCols(v); setGrid(makeGrid(rows,v)); }}/>
-            <NumControl label="たて（行）" value={rows} min={2} max={8} onChange={function(v){ setRows(v); setGrid(makeGrid(v,cols)); }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:24 }}>
-              <span style={{ fontSize:11, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>1区画</span>
-              <select value={sqm} onChange={function(e){ setSqm(Number(e.target.value)); }}
-                style={{ padding:"8px 12px", fontSize:13, border:"1px solid " + C.inkBorder, borderRadius:2,
-                  background:C.paper, fontFamily:SERIF, outline:"none", color:C.ink }}>
-                {[0.5,1,1.5,2,3,5].map(function(v){ return <option key={v} value={v}>{v} ㎡</option>; })}
-              </select>
+
+            <SectionTitle>サイズを入力</SectionTitle>
+            {(function(){
+              function MStep({ label, value, onChange }) {
+                var steps = [];
+                for (var v = 0.25; v <= 15.0; v = Math.round((v+0.25)*100)/100) steps.push(v);
+                var idx = steps.findIndex(function(s){ return Math.abs(s-value)<0.01; });
+                if (idx < 0) idx = 0;
+                return (
+                  <div style={{ marginBottom:18 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                      <span style={{ fontSize:11, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
+                      <span style={{ fontSize:16, color:C.ink, fontFamily:SERIF, fontWeight:"bold" }}>{value.toFixed(2)} m</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <button onClick={function(){ if(idx>0) onChange(steps[idx-1]); }}
+                        style={{ width:40, height:40, border:"1px solid "+C.inkBorder, background:C.paper2, fontSize:20,
+                          color:idx>0?C.ink:C.inkLine, cursor:idx>0?"pointer":"default",
+                          display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>－</button>
+                      <div style={{ flex:1, height:6, background:C.paper2, border:"1px solid "+C.inkLine, position:"relative" }}>
+                        <div style={{ position:"absolute", left:0, top:0, bottom:0, background:C.inkFaint,
+                          width:((idx/(steps.length-1))*100)+"%" }}/>
+                      </div>
+                      <button onClick={function(){ if(idx<steps.length-1) onChange(steps[idx+1]); }}
+                        style={{ width:40, height:40, border:"1px solid "+C.inkBorder, background:C.paper2, fontSize:20,
+                          color:idx<steps.length-1?C.ink:C.inkLine, cursor:idx<steps.length-1?"pointer":"default",
+                          display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>＋</button>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  <MStep label="よこ幅" value={widthM} onChange={function(v){ setWidthM(v); setGrid(makeGrid(Math.max(2,Math.round(heightM*100/CELL_CM)), Math.max(2,Math.round(v*100/CELL_CM)))); }}/>
+                  <MStep label="たて幅" value={heightM} onChange={function(v){ setHeightM(v); setGrid(makeGrid(Math.max(2,Math.round(v*100/CELL_CM)), Math.max(2,Math.round(widthM*100/CELL_CM)))); }}/>
+                </div>
+              );
+            })()}
+
+            <div style={{ padding:"14px 16px", background:C.indigoPale, border:"1px solid "+C.indigo, marginBottom:20, fontSize:12, color:C.indigo, fontFamily:HAND, lineHeight:2, letterSpacing:1 }}>
+              {widthM.toFixed(2)}m × {heightM.toFixed(2)}m　＝　{(widthM*heightM).toFixed(1)} ㎡<br/>
+              <span style={{ fontSize:11, color:C.inkFaint }}>グリッド: {cols}列 × {rows}行（1マス = {CELL_CM}cm）</span>
             </div>
-            <div style={{ textAlign:"center", marginBottom:20 }}>
-              <GridPreview rows={rows} cols={cols} grid={grid} size={Math.min(28,Math.floor(220/cols))} gap={2}/>
-            </div>
-            <div style={{ textAlign:"center", fontSize:12, color:C.inkFaint, marginBottom:24, letterSpacing:1 }}>
-              {cols}列 × {rows}行　= {ac} 区画　≈ {(ac*sqm).toFixed(1)} ㎡
-            </div>
+
             <InkBtn onClick={function(){ setStep(2); }} primary={true}>次へ</InkBtn>
           </div>
         )}
@@ -830,32 +870,44 @@ function FarmSetup({ farms, onComplete, onSkip }) {
             <div style={{ marginBottom:24 }}>
               <div style={{ fontSize:11, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記 —</div>
               <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>区画の形</h2>
-              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.8 }}>使わない区画をタップして除外できます</p>
+              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.8 }}>{rows*cols<=100?"使わない区画をタップして除外できます":"広い畑なので形の編集はスキップできます"}</p>
             </div>
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
-              <div style={{ display:"inline-flex", flexDirection:"column", gap:3, border:"2px solid " + C.ink, padding:6, background:C.paper2, boxShadow:"4px 4px 0 " + C.inkLine }}>
-                {Array.from({length:rows}, function(_,r){
-                  return (
-                    <div key={r} style={{ display:"flex", gap:3 }}>
-                      {Array.from({length:cols}, function(_,c){
-                        const a = grid[r] && grid[r][c];
-                        return (
-                          <div key={c} onClick={function(){ tg(r,c); }}
-                            style={{ width:cs, height:cs, flexShrink:0, cursor:"pointer",
-                              background: a ? C.inkFaint : "transparent",
-                              border:"1px solid " + (a?C.ink:C.inkLine),
-                              display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            {!a && <span style={{ fontSize:cs*.25, color:C.inkLine }}>✕</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
+            {rows*cols <= 100 ? (
+              <div>
+                <div style={{ display:"flex", justifyContent:"center", marginBottom:20, overflowX:"auto" }}>
+                  <div style={{ display:"inline-flex", flexDirection:"column", gap:2, border:"2px solid " + C.ink, padding:4, background:C.paper2, boxShadow:"4px 4px 0 " + C.inkLine }}>
+                    {Array.from({length:rows}, function(_,r){
+                      return (
+                        <div key={r} style={{ display:"flex", gap:2 }}>
+                          {Array.from({length:cols}, function(_,c){
+                            const a = grid[r] && grid[r][c];
+                            const cz = Math.min(36, Math.max(14, Math.floor(280/cols)));
+                            return (
+                              <div key={c} onClick={function(){ tg(r,c); }}
+                                style={{ width:cz, height:cz, flexShrink:0, cursor:"pointer",
+                                  background: a ? C.inkFaint : "transparent",
+                                  border:"1px solid " + (a?C.ink:C.inkLine),
+                                  display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                {!a && <span style={{ fontSize:cz*.25, color:C.inkLine }}>✕</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ textAlign:"center", fontSize:12, color:C.inkFaint, marginBottom:16, letterSpacing:1 }}>{ac} 区画 有効</div>
+                <OutlineBtn onClick={function(){ setGrid(makeGrid(rows,cols)); }}>すべて有効に戻す</OutlineBtn>
               </div>
-            </div>
-            <div style={{ textAlign:"center", fontSize:12, color:C.inkFaint, marginBottom:24, letterSpacing:1 }}>{ac} 区画 有効</div>
-            <OutlineBtn onClick={function(){ setGrid(makeGrid(rows,cols)); }}>すべて有効に戻す</OutlineBtn>
+            ) : (
+              <div style={{ padding:"20px", background:C.paper2, border:"1px solid "+C.inkLine, textAlign:"center", marginBottom:16 }}>
+                <div style={{ fontSize:13, color:C.inkFaint, fontFamily:HAND, lineHeight:2 }}>
+                  {cols}列 × {rows}行（{(widthM*heightM).toFixed(0)}㎡）の畑です<br/>
+                  使わない区画の設定は後から畝を引かないことで対応できます
+                </div>
+              </div>
+            )}
             <div style={{ marginTop:10 }}><InkBtn onClick={function(){ setStep(3); }} primary={true}>次へ</InkBtn></div>
           </div>
         )}
@@ -1012,7 +1064,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
 
             <RuledLine mb={16}/>
             <LedgerRow label="名称" value={name||"（未入力）"}/>
-            <LedgerRow label="区画数" value={cols+"列×"+rows+"行（"+ac+"区画　≈ "+(ac*sqm).toFixed(1)+"㎡）"}/>
+            <LedgerRow label="大きさ" value={widthM.toFixed(2)+"m × "+heightM.toFixed(2)+"m（"+cols+"列×"+rows+"行、1マス"+CELL_CM+"cm）"}/>
             <LedgerRow label="北の方角" value={DIRS8.find(function(d){return d.id===northDir;})?.label || northDir}/>
             {Object.keys(landmarks).length > 0 && <LedgerRow label="目印" value={Object.keys(landmarks).length+"件"}/>}
             <div style={{ marginTop:24 }}><InkBtn onClick={function(){ setStep(5); }} primary={true}>帳簿に登録する</InkBtn></div>
@@ -1047,17 +1099,23 @@ function FarmSetup({ farms, onComplete, onSkip }) {
 /* ══════════════════════════════════════
    SVGフィールド（グリッドなし）
 ══════════════════════════════════════ */
-var CS = 72; /* 1グリッド単位のピクセル */
-var RWIDTH = 0.46; /* 畝の幅（グリッド単位） */
+var RWIDTH = 0.46; /* 畝の幅デフォルト（グリッド単位） */
 
-function getRect(ridge) {
+function getRect(ridge, CS) {
+  var cs = CS || 72;
+  var rw = ridge.ridgeW || RWIDTH;
   if (ridge.orientation === "H") {
-    return { x:(ridge.gx-ridge.gl/2)*CS, y:(ridge.gy-RWIDTH/2)*CS, w:ridge.gl*CS, h:RWIDTH*CS };
+    return { x:(ridge.gx-ridge.gl/2)*cs, y:(ridge.gy-rw/2)*cs, w:ridge.gl*cs, h:rw*cs };
   }
-  return { x:(ridge.gx-RWIDTH/2)*CS, y:(ridge.gy-ridge.gl/2)*CS, w:RWIDTH*CS, h:ridge.gl*CS };
+  return { x:(ridge.gx-rw/2)*cs, y:(ridge.gy-ridge.gl/2)*cs, w:rw*cs, h:ridge.gl*cs };
 }
 
+function farmCS(farm) {
+  var maxW = typeof window !== "undefined" ? Math.min(window.innerWidth * 0.88, 480) : 360;
+  return Math.max(8, Math.min(72, Math.floor(maxW / (farm.cols || 5))));
+}
 function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange }) {
+  var CS = farmCS(farm);
   var W = farm.cols * CS;
   var H = farm.rows * CS;
   var svgRef = useRef(null);
@@ -1134,9 +1192,10 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     var dori = ddx >= ddy ? "H" : "V";
     var dgx = (s1.x+hov.x)/2, dgy = (s1.y+hov.y)/2;
     var dgl = Math.max(dori==="H"?ddx:ddy, 0.5);
+    var drw = RWIDTH;
     draftRect = dori==="H"
-      ? {x:padL+(dgx-dgl/2)*CS, y:padT+(dgy-RWIDTH/2)*CS, w:dgl*CS, h:RWIDTH*CS}
-      : {x:padL+(dgx-RWIDTH/2)*CS, y:padT+(dgy-dgl/2)*CS, w:RWIDTH*CS, h:dgl*CS};
+      ? {x:padL+(dgx-dgl/2)*CS, y:padT+(dgy-drw/2)*CS, w:dgl*CS, h:drw*CS}
+      : {x:padL+(dgx-drw/2)*CS, y:padT+(dgy-dgl/2)*CS, w:drw*CS, h:dgl*CS};
   }
 
   var LM_FS = Math.min(PAD * 0.45, 22);
@@ -1211,7 +1270,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
 
       {/* 畝 */}
       {Object.values(farmRidges).map(function(ridge){
-        var rr = getRect(ridge);
+        var rr = getRect(ridge, CS);
         var rx = rr.x+padL, ry = rr.y+padT;
         var pl = farmPlant[ridge.id];
         var vid = pl && pl.vid;
@@ -1350,29 +1409,53 @@ function PickerRow({ label, value, min, max, onChange, unit }) {
     </div>
   );
 }
-function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid }) {
+function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid, pickerRidgeW, setPickerRidgeW }) {
   var isH = pickerOri === "H";
-  var sc = pickerStart - 1; /* 0-indexed start */
-  var ec = pickerEnd;       /* 0-indexed end (exclusive) */
+  var sc = pickerStart - 1;
+  var ec = pickerEnd;
   var gl = ec - sc;
   var isZero = gl < 0.5;
   var maxA  = isH ? farm.rows : farm.cols;
   var maxPos = isH ? farm.cols : farm.rows;
+  var cellCm = farm.cellCm || 100; /* 旧データは1マス=100cm相当 */
+
+  /* 実寸ヘルパー */
+  function cmLabel(cells) {
+    var cm = cells * cellCm;
+    return cm >= 100 ? (cm/100).toFixed(cm%100===0?0:1)+"m" : cm+"cm";
+  }
+
+  /* 畝幅プリセット */
+  var RIDGE_W_PRESETS = [
+    { label:"細畝",  cm:30  },
+    { label:"普通",  cm:60  },
+    { label:"幅広",  cm:90  },
+    { label:"広畝",  cm:120 },
+  ].map(function(p){ return Object.assign({}, p, { w: p.cm / cellCm }); })
+   .filter(function(p){ return p.w <= maxA; });
+
+  /* 実効 ridgeW */
+  var effectiveRW = pickerRidgeW || (cellCm === 25 ? 60/cellCm : RWIDTH);
 
   /* ミニプレビューSVG */
   var miniCS = Math.min(48, Math.floor((typeof window!=="undefined"?Math.min(window.innerWidth-64,340):300) / Math.max(farm.rows, farm.cols)));
   var W = farm.cols * miniCS, H = farm.rows * miniCS;
   var previewRect = null;
   if (!isZero) {
+    var prw = effectiveRW;
     if (isH) {
-      previewRect = {x:sc*miniCS, y:(pickerA-1+0.5-RWIDTH/2)*miniCS, w:gl*miniCS, h:RWIDTH*miniCS};
+      previewRect = {x:sc*miniCS, y:(pickerA-1+0.5-prw/2)*miniCS, w:gl*miniCS, h:prw*miniCS};
     } else {
-      previewRect = {x:(pickerA-1+0.5-RWIDTH/2)*miniCS, y:sc*miniCS, w:RWIDTH*miniCS, h:gl*miniCS};
+      previewRect = {x:(pickerA-1+0.5-prw/2)*miniCS, y:sc*miniCS, w:prw*miniCS, h:gl*miniCS};
     }
   }
+
+  /* 実寸サマリー */
+  var lengthCm = gl * cellCm;
   var summaryText = isZero ? "始めと終わりの位置を選んでください"
-    : isH ? (pickerA+"行目　"+pickerStart+"〜"+pickerEnd+"列の横畝")
-           : (pickerA+"列目　"+pickerStart+"〜"+pickerEnd+"行の縦畝");
+    : isH
+      ? (pickerA+"行目　"+cmLabel(pickerStart-1)+"〜"+cmLabel(pickerEnd)+"（長さ"+cmLabel(gl)+"）")
+      : (pickerA+"列目　"+cmLabel(pickerStart-1)+"〜"+cmLabel(pickerEnd)+"（長さ"+cmLabel(gl)+"）");
 
   return (
     <div onClick={function(e){e.stopPropagation();}} style={{
@@ -1434,9 +1517,10 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
               });
             }).filter(Boolean)}
             {Object.values(farmRidges).map(function(ridge){
+              var rwp = ridge.ridgeW||RWIDTH;
               var rr = ridge.orientation==="H"
-                ? {x:(ridge.gx-ridge.gl/2)*miniCS,y:(ridge.gy-RWIDTH/2)*miniCS,w:ridge.gl*miniCS,h:RWIDTH*miniCS}
-                : {x:(ridge.gx-RWIDTH/2)*miniCS,y:(ridge.gy-ridge.gl/2)*miniCS,w:RWIDTH*miniCS,h:ridge.gl*miniCS};
+                ? {x:(ridge.gx-ridge.gl/2)*miniCS,y:(ridge.gy-rwp/2)*miniCS,w:ridge.gl*miniCS,h:rwp*miniCS}
+                : {x:(ridge.gx-rwp/2)*miniCS,y:(ridge.gy-ridge.gl/2)*miniCS,w:rwp*miniCS,h:ridge.gl*miniCS};
               return <rect key={ridge.id} x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#e0d4a8" stroke={C.inkBorder} strokeWidth={1} rx={2}/>;
             })}
             {previewRect && (
@@ -1450,19 +1534,50 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
           </div>
         </div>
 
+        {/* 畝幅プリセット */}
+        {RIDGE_W_PRESETS.length > 0 && (
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:11,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝幅</div>
+            <div style={{display:"flex",gap:6}}>
+              {RIDGE_W_PRESETS.map(function(p){
+                var isSel = pickerRidgeW !== null && Math.abs((pickerRidgeW||0)-p.w) < 0.01;
+                return (
+                  <button key={p.label}
+                    onClick={function(){ setPickerRidgeW(isSel ? null : p.w); }}
+                    style={{flex:1,padding:"10px 4px",border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                      background:isSel?C.indigoPale:C.paper2,color:isSel?C.indigo:C.ink,
+                      fontSize:11,cursor:"pointer",fontFamily:SERIF,
+                      fontWeight:isSel?"bold":"normal",textAlign:"center"}}>
+                    <div style={{fontSize:12}}>{p.label}</div>
+                    <div style={{fontSize:10,color:isSel?C.indigo:C.inkFaint,marginTop:2}}>{p.cm}cm</div>
+                  </button>
+                );
+              })}
+            </div>
+            {pickerRidgeW && (
+              <div style={{fontSize:11,color:C.indigo,fontFamily:HAND,marginTop:8}}>
+                畝幅 {Math.round(pickerRidgeW * cellCm)}cm で引きます
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 位置ステッパー */}
         <div style={{background:C.paper2,border:"1px solid "+C.inkLine,padding:"16px 12px",marginBottom:20}}>
           <PickerRow
             label={isH?"行（上から）":"列（左から）"}
-            value={pickerA} min={1} max={maxA} unit={isH?"行目":"列目"}
+            value={pickerA} min={1} max={maxA}
+            unit={(isH?"行目":"列目")+"（"+cmLabel(pickerA-1)+"〜"+cmLabel(pickerA)+"）"}
             onChange={function(v){ setPickerA(v); }}/>
           <PickerRow
             label={isH?"始め（左から）":"始め（上から）"}
-            value={pickerStart} min={1} max={pickerEnd} unit={isH?"列目":"行目"}
+            value={pickerStart} min={1} max={pickerEnd}
+            unit={cmLabel(pickerStart-1)+"の位置"}
             onChange={function(v){ setPickerStart(v); }}/>
           <PickerRow
             label={isH?"終わり（左から）":"終わり（上から）"}
-            value={pickerEnd} min={pickerStart} max={maxPos} unit={isH?"列目":"行目"}
+            value={pickerEnd} min={pickerStart} max={maxPos}
+            unit={cmLabel(pickerEnd)+"の位置"}
             onChange={function(v){ setPickerEnd(v); }}/>
         </div>
 
@@ -1534,11 +1649,13 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mainTab, setMainTab] = useState("map"); /* "map" | "history" */
   const [snapMsg, setSnapMsg] = useState(null);
+  const [confirmSnapId, setConfirmSnapId] = useState(null); /* 変遷削除確認用 */
   const [sharedMonth, setSharedMonth] = useState(null);
   const [sharedDay,   setSharedDay]   = useState(null);
   const [showRidgePicker, setShowRidgePicker] = useState(false);
   const [lastAddedRid, setLastAddedRid]     = useState(null); /* 新規追加畝のガイド用 */
   const [pickerVid,   setPickerVid]         = useState(null); /* 畝ピッカーで先行選択した野菜 */
+  const [pickerRidgeW, setPickerRidgeW]     = useState(null); /* 畝幅（グリッド単位、nullは自動） */
   const [pickerOri,   setPickerOri]   = useState("H");
   const [pickerA,     setPickerA]     = useState(1);
   const [pickerStart, setPickerStart] = useState(1);
@@ -1625,7 +1742,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     const gl=Math.max(orientation==="H"?dx:dy, 0.5);
     const id="ridge_"+Date.now();
     const n=Object.keys(farmRidges).length+1;
-    const nr={id:id,gx:gx,gy:gy,gl:gl,orientation:orientation,name:n+"番畝",addedFrom:year};
+    const defaultRW = farm.cellCm ? (60 / farm.cellCm) : RWIDTH;
+    const nr={id:id,gx:gx,gy:gy,gl:gl,orientation:orientation,name:n+"番畝",addedFrom:year,ridgeW:defaultRW};
     if(ridgeOnInactiveCell(nr)){ setS1(null); setHov(null); return; }
     setRidges(function(prev){
       const fd=prev[fid]||{};
@@ -1642,6 +1760,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     setPickerStart(1);
     setPickerEnd(farm.cols);
     setPickerVid(null);
+    setPickerRidgeW(null);
     setShowRidgePicker(true);
     closeSheet();
     setS1(null); setHov(null);
@@ -1661,7 +1780,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     var n = Object.keys(farmRidges).length + 1;
     setRidges(function(prev){
       var fd = prev[fid] || {};
-      return Object.assign({}, prev, {[fid]: Object.assign({}, fd, {[id]: Object.assign({}, nr, {id:id, name:n+'番畝', addedFrom:year})})});
+      var ridgeW = pickerRidgeW || (farm.cellCm ? (60 / farm.cellCm) : RWIDTH);
+      return Object.assign({}, prev, {[fid]: Object.assign({}, fd, {[id]: Object.assign({}, nr, {id:id, name:n+'番畝', addedFrom:year, ridgeW:ridgeW})})});
     });
     if (pickerVid) {
       /* 野菜を先行選択していた場合はそのまま植付記録まで設定 */
@@ -1945,6 +2065,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               })()}
               <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,letterSpacing:2}}>北</span>
               <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginLeft:8}}>{farm.name}　{year}年</span>
+              {farm.widthM && <span style={{fontSize:10,color:C.inkLine,fontFamily:HAND,marginLeft:4}}>{farm.widthM}m×{farm.heightM}m</span>}
               {ridgeCount > 0 && plantedN < ridgeCount && (
                 <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,marginLeft:4,letterSpacing:1,fontWeight:"bold"}}>
                   ▶ 残り{ridgeCount-plantedN}畝に野菜を設定しましょう
@@ -2030,10 +2151,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                           {warn==="danger"?"連作":"注意"}
                         </div>
                       )}
-                      <button onClick={function(e){e.stopPropagation();delRidge(ridge.id);}}
-                        style={{padding:"4px 10px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:11,cursor:"pointer",fontFamily:SERIF,flexShrink:0}}>
-                        削除
-                      </button>
+                      <span style={{fontSize:12,color:C.inkLine,flexShrink:0}}>›</span>
                     </div>
                   );
                 })}
@@ -2078,10 +2196,19 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                           style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:11,cursor:"pointer",fontFamily:SERIF,display:"flex",alignItems:"center",gap:4}}>
                           <span>🖨</span> 印刷
                         </button>
-                        <button onClick={function(e){e.stopPropagation();delSnapshot(snap.id);}}
-                          style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:11,cursor:"pointer",fontFamily:SERIF}}>
-                          削除
-                        </button>
+                        {confirmSnapId===snap.id ? (
+                          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                            <button onClick={function(e){e.stopPropagation();setConfirmSnapId(null);}}
+                              style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:10,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
+                            <button onClick={function(e){e.stopPropagation();delSnapshot(snap.id);setConfirmSnapId(null);}}
+                              style={{padding:"4px 8px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:10,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold"}}>削除</button>
+                          </div>
+                        ) : (
+                          <button onClick={function(e){e.stopPropagation();setConfirmSnapId(snap.id);}}
+                            style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:11,cursor:"pointer",fontFamily:SERIF}}>
+                            削除
+                          </button>
+                        )}
                       </div>
                       <div style={{padding:"12px 14px",overflowX:"auto"}}>
                         <SnapMiniMap farm={farm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/>
@@ -2210,15 +2337,16 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           pickerStart={pickerStart} setPickerStart={setPickerStart}
           pickerEnd={pickerEnd} setPickerEnd={setPickerEnd}
           pickerVid={pickerVid} setPickerVid={setPickerVid}
+          pickerRidgeW={pickerRidgeW} setPickerRidgeW={setPickerRidgeW}
           isInvalid={pickerInvalid}
           onConfirm={confirmRidgePicker}
-          onCancel={function(){ setShowRidgePicker(false); setPickerVid(null); }}
+          onCancel={function(){ setShowRidgePicker(false); setPickerVid(null); setPickerRidgeW(null); }}
         />
       )}
 
       {selRid && selRidgeObj && (
         <RidgeSheet
-          ridge={selRidgeObj} year={year} farmId={fid} plantings={plantings}
+          ridge={selRidgeObj} year={year} farmId={fid} cellCm={farm&&farm.cellCm} plantings={plantings}
           soil={soil} farmRidges={farmRidges}
           planting={gp(selRid)} history={gh(selRid)}
           warning={checkRot(fid,selRid,year,plantings,soil,farmRidges)}
@@ -2487,9 +2615,9 @@ function SnapMiniMap({ farm, ridges, plantings }) {
       {Object.values(ridges).map(function(ridge){
         var rr;
         if(ridge.orientation==="H"){
-          rr={x:padL+(ridge.gx-ridge.gl/2)*miniCS,y:padT+(ridge.gy-RWIDTH/2)*miniCS,w:ridge.gl*miniCS,h:RWIDTH*miniCS};
+          var RWm=ridge.ridgeW||RWIDTH; rr={x:padL+(ridge.gx-ridge.gl/2)*miniCS,y:padT+(ridge.gy-RWm/2)*miniCS,w:ridge.gl*miniCS,h:RWm*miniCS};
         } else {
-          rr={x:padL+(ridge.gx-RWIDTH/2)*miniCS,y:padT+(ridge.gy-ridge.gl/2)*miniCS,w:RWIDTH*miniCS,h:ridge.gl*miniCS};
+          rr={x:padL+(ridge.gx-RWm/2)*miniCS,y:padT+(ridge.gy-ridge.gl/2)*miniCS,w:RWm*miniCS,h:ridge.gl*miniCS};
         }
         var pl=plantings[ridge.id];
         var vg=pl&&pl.vid?VM[pl.vid]:null;
@@ -2518,7 +2646,15 @@ function SnapMiniMap({ farm, ridges, plantings }) {
 /* ══════════════════════════════════════
    畝ボトムシート
 ══════════════════════════════════════ */
-function RidgeSheet({ ridge, year, farmId, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onRename, onSelect, onClear, onDelete, onClose }) {
+function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onRename, onSelect, onClear, onDelete, onClose }) {
+  var cm = cellCm || 100;
+  function ridgeSizeLabel(r) {
+    var lenCm = Math.round(r.gl * cm);
+    var widCm = Math.round((r.ridgeW || RWIDTH) * cm);
+    var len = lenCm >= 100 ? (lenCm/100).toFixed(lenCm%100===0?0:1)+"m" : lenCm+"cm";
+    var wid = widCm >= 100 ? (widCm/100).toFixed(widCm%100===0?0:1)+"m" : widCm+"cm";
+    return (r.orientation==="H"?"横畝":"縦畝")+"　長さ"+len+"　幅"+wid;
+  }
   const vg = planting && planting.vid ? VM[planting.vid] : null;
   const [editName,  setEditName]  = useState(false);
   const [nameVal,   setNameVal]   = useState(ridge.name);
@@ -2575,6 +2711,7 @@ function RidgeSheet({ ridge, year, farmId, plantings, soil, farmRidges, planting
               <div style={{fontSize:12,color:C.inkFaint,marginTop:3,fontFamily:HAND}}>
                 {vg ? vg.name+"（"+vg.family+"）" : "未設定"}
               </div>
+              <div style={{fontSize:10,color:C.inkLine,marginTop:2,fontFamily:HAND}}>{ridgeSizeLabel(ridge)}</div>
               {vg && planting && planting.month && (
                 <div style={{fontSize:11,color:C.indigo,marginTop:2,fontFamily:HAND,letterSpacing:1}}>
                   {year}年{planting.month}月{planting.day?planting.day+"日":""}植付
@@ -2584,18 +2721,6 @@ function RidgeSheet({ ridge, year, farmId, plantings, soil, farmRidges, planting
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.inkFaint,lineHeight:1}}>×</button>
-            {!cfmDel ? (
-              <button onClick={function(){setCfmDel(true);}}
-                style={{padding:"4px 10px",border:"1px solid "+C.red,background:"transparent",color:C.red,fontSize:11,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,whiteSpace:"nowrap"}}>
-                畝を削除
-              </button>
-            ) : (
-              <div style={{display:"flex",gap:5,alignItems:"center"}}>
-                <span style={{fontSize:10,color:C.red,fontFamily:HAND}}>本当に削除？</span>
-                <button onClick={function(){setCfmDel(false);}} style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:10,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
-                <button onClick={onDelete} style={{padding:"4px 8px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:10,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold"}}>削除</button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -2752,6 +2877,36 @@ function RidgeSheet({ ridge, year, farmId, plantings, soil, farmRidges, planting
                 <button onClick={onClear} style={{padding:"6px 10px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:11,cursor:"pointer",fontFamily:SERIF}}>削除</button>
               </div>
             )}
+
+            {/* 畝を削除（下部・目立つ位置） */}
+            <div style={{marginTop:24,paddingTop:16,borderTop:"1px dashed "+C.inkLine}}>
+              {!cfmDel ? (
+                <button onClick={function(){setCfmDel(true);}}
+                  style={{width:"100%",padding:"13px",background:"transparent",color:C.inkFaint,border:"1px solid "+C.inkLine,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  <span style={{fontSize:15}}>🗑</span>
+                  <span>この畝を削除する…</span>
+                </button>
+              ) : (
+                <div style={{border:"2px solid "+C.red,background:C.redPale,padding:"14px 16px"}}>
+                  <div style={{fontSize:13,color:C.red,fontFamily:SERIF,letterSpacing:1,marginBottom:10,textAlign:"center"}}>
+                    本当に削除しますか？
+                  </div>
+                  <div style={{fontSize:11,color:C.red,fontFamily:HAND,lineHeight:1.8,marginBottom:14,textAlign:"center"}}>
+                    すべての年の作付け記録も一緒に消えます。<br/>元に戻すことはできません。
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={function(){setCfmDel(false);}}
+                      style={{flex:1,padding:"12px",border:"1px solid "+C.inkBorder,background:C.paper,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
+                      やめる
+                    </button>
+                    <button onClick={onDelete}
+                      style={{flex:1,padding:"12px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:2,fontWeight:"bold"}}>
+                      削除する
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2851,7 +3006,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
   /* SVGフィールドを文字列で組み立て（印刷用） */
   function buildSVG() {
     var CS2 = 54; /* 印刷用グリッドサイズ（px） */
-    var RW2 = RWIDTH;
+    /* RW2 は per-ridge で計算 */
     var lm = farm.landmarks || {};
     var PAD = 42;
     var padT=0, padB=0, padL=0, padR=0;
@@ -2900,6 +3055,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     ridgeList.forEach(function(ridge){
       var pl = yp[ridge.id], vid = pl&&pl.vid, vg = vid?VM[vid]:null;
       var rr;
+      var RW2=ridge.ridgeW||RWIDTH;
       if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2, y:padT+(ridge.gy-RW2/2)*CS2, w:ridge.gl*CS2, h:RW2*CS2};
       else rr={x:padL+(ridge.gx-RW2/2)*CS2, y:padT+(ridge.gy-ridge.gl/2)*CS2, w:RW2*CS2, h:ridge.gl*CS2};
       var cx=rr.x+rr.w/2, cy=rr.y+rr.h/2;
@@ -3001,7 +3157,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
   /* プレビュー用SVG（React版） */
   function PreviewField() {
     var CS2 = 48;
-    var RW2 = RWIDTH;
+    /* RW2 は per-ridge で計算 */
     var lm = farm.landmarks || {};
     var PAD = 36;
     var padT=0, padB=0, padL=0, padR=0;
@@ -3039,6 +3195,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
         {ridgeList.map(function(ridge){
           var pl=yp[ridge.id],vid=pl&&pl.vid,vg=vid?VM[vid]:null;
           var rr;
+          var RW2=ridge.ridgeW||RWIDTH;
           if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2,y:padT+(ridge.gy-RW2/2)*CS2,w:ridge.gl*CS2,h:RW2*CS2};
           else rr={x:padL+(ridge.gx-RW2/2)*CS2,y:padT+(ridge.gy-ridge.gl/2)*CS2,w:RW2*CS2,h:ridge.gl*CS2};
           var cx=rr.x+rr.w/2,cy=rr.y+rr.h/2,sz=Math.min(rr.w,rr.h);
