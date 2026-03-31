@@ -497,6 +497,7 @@ function HatakeApp() {
     a.download = "hatakebo_backup_" + new Date().toISOString().slice(0,10) + ".json";
     a.click();
     URL.revokeObjectURL(url);
+    try { localStorage.setItem("hatakebo_lastBackup", new Date().toISOString().slice(0,10)); } catch(e){}
   }
 
   /* ── 復元：JSONファイルを読み込む ── */
@@ -1223,6 +1224,8 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
             style={{cursor:s1?"crosshair":"pointer"}}
             onPointerDown={function(e){ if(!s1 && e.pointerType==="mouse") e.stopPropagation(); }}
             onClick={function(e){ if(!s1){e.stopPropagation();onRidgeTap(ridge.id);} }}>
+            {/* タップ領域拡張用の不可視rect */}
+            <rect x={rx-10} y={ry-10} width={rr.w+20} height={rr.h+20} fill="transparent" stroke="none"/>
             <rect x={rx} y={ry} width={rr.w} height={rr.h}
               fill={isSel?"#b8ccec":"#e0d4a8"} stroke={isSel?C.indigo:C.inkBorder}
               strokeWidth={isSel?2.5:1.5} rx={3}/>
@@ -1326,6 +1329,194 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
 }
 
 /* ══════════════════════════════════════
+   グリッド選択式 畝ひきピッカー（タッチ用）
+══════════════════════════════════════ */
+function PickerRow({ label, value, min, max, onChange, unit }) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,paddingBottom:14,borderBottom:"1px solid "+C.inkLine}}>
+      <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,width:72,flexShrink:0}}>{label}</span>
+      <button onClick={function(){ if(value>min) onChange(value-1); }}
+        style={{width:52,height:52,border:"1px solid "+C.inkBorder,background:C.paper,
+          fontSize:24,color:value>min?C.ink:C.inkLine,cursor:value>min?"pointer":"default",
+          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:SERIF}}>－</button>
+      <div style={{flex:1,textAlign:"center"}}>
+        <span style={{fontSize:20,fontFamily:SERIF,letterSpacing:1,color:C.ink}}>{value}</span>
+        {unit && <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginLeft:2}}>{unit}</span>}
+      </div>
+      <button onClick={function(){ if(value<max) onChange(value+1); }}
+        style={{width:52,height:52,border:"1px solid "+C.inkBorder,background:C.paper,
+          fontSize:24,color:value<max?C.ink:C.inkLine,cursor:value<max?"pointer":"default",
+          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:SERIF}}>＋</button>
+    </div>
+  );
+}
+function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid }) {
+  var isH = pickerOri === "H";
+  var sc = pickerStart - 1; /* 0-indexed start */
+  var ec = pickerEnd;       /* 0-indexed end (exclusive) */
+  var gl = ec - sc;
+  var isZero = gl < 0.5;
+  var maxA  = isH ? farm.rows : farm.cols;
+  var maxPos = isH ? farm.cols : farm.rows;
+
+  /* ミニプレビューSVG */
+  var miniCS = Math.min(48, Math.floor((typeof window!=="undefined"?Math.min(window.innerWidth-64,340):300) / Math.max(farm.rows, farm.cols)));
+  var W = farm.cols * miniCS, H = farm.rows * miniCS;
+  var previewRect = null;
+  if (!isZero) {
+    if (isH) {
+      previewRect = {x:sc*miniCS, y:(pickerA-1+0.5-RWIDTH/2)*miniCS, w:gl*miniCS, h:RWIDTH*miniCS};
+    } else {
+      previewRect = {x:(pickerA-1+0.5-RWIDTH/2)*miniCS, y:sc*miniCS, w:RWIDTH*miniCS, h:gl*miniCS};
+    }
+  }
+  var summaryText = isZero ? "始めと終わりの位置を選んでください"
+    : isH ? (pickerA+"行目　"+pickerStart+"〜"+pickerEnd+"列の横畝")
+           : (pickerA+"列目　"+pickerStart+"〜"+pickerEnd+"行の縦畝");
+
+  return (
+    <div onClick={function(e){e.stopPropagation();}} style={{
+      position:"fixed",bottom:0,left:0,right:0,zIndex:60,
+      background:C.paper,borderTop:"2px solid "+C.ink,
+      boxShadow:"0 -6px 24px rgba(28,20,8,0.18)",
+      maxHeight:"88vh",overflowY:"auto"
+    }}>
+      {/* ヘッダー */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid "+C.inkLine,background:C.paper2}}>
+        <span style={{fontSize:15,fontFamily:SERIF,letterSpacing:3,color:C.ink}}>畝を引く</span>
+        <button onClick={onCancel}
+          style={{background:"none",border:"1px solid "+C.inkBorder,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>
+          とじる
+        </button>
+      </div>
+
+      <div style={{padding:"16px 16px 32px"}}>
+        {/* 向き */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:11,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝の向き</div>
+          <div style={{display:"flex",gap:8}}>
+            {[{id:"H",label:"━ 横畝（左右に長い）"},{id:"V",label:"┃ 縦畝（上下に長い）"}].map(function(o){
+              var isSel = pickerOri===o.id;
+              return (
+                <button key={o.id}
+                  onClick={function(){
+                    setPickerOri(o.id);
+                    setPickerA(o.id==="H" ? Math.ceil(farm.rows/2) : Math.ceil(farm.cols/2));
+                    setPickerStart(1);
+                    setPickerEnd(o.id==="H" ? farm.cols : farm.rows);
+                  }}
+                  style={{flex:1,padding:"12px 4px",border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                    background:isSel?C.indigoPale:C.paper2,color:isSel?C.indigo:C.ink,
+                    fontSize:12,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,
+                    fontWeight:isSel?"bold":"normal"}}>
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ミニプレビュー */}
+        <div style={{marginBottom:20,display:"flex",justifyContent:"center",flexDirection:"column",alignItems:"center",gap:8}}>
+          <div style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>プレビュー</div>
+          <svg viewBox={"0 0 "+W+" "+H} width={W} height={H}
+            style={{border:"2px solid "+C.ink,display:"block",background:"#d4c89c",boxShadow:"3px 3px 0 "+C.inkLine}}>
+            {Array.from({length:farm.cols+1},function(_,i){
+              return <line key={"vg"+i} x1={i*miniCS} y1={0} x2={i*miniCS} y2={H} stroke={C.inkLine} strokeWidth={0.5}/>;
+            })}
+            {Array.from({length:farm.rows+1},function(_,i){
+              return <line key={"hg"+i} x1={0} y1={i*miniCS} x2={W} y2={i*miniCS} stroke={C.inkLine} strokeWidth={0.5}/>;
+            })}
+            {farm.grid.flatMap(function(row,r){
+              return row.map(function(active,c){
+                if(active) return null;
+                return <rect key={"ia"+r+"-"+c} x={c*miniCS} y={r*miniCS} width={miniCS} height={miniCS} fill={C.paper} opacity={0.85}/>;
+              });
+            }).filter(Boolean)}
+            {Object.values(farmRidges).map(function(ridge){
+              var rr = ridge.orientation==="H"
+                ? {x:(ridge.gx-ridge.gl/2)*miniCS,y:(ridge.gy-RWIDTH/2)*miniCS,w:ridge.gl*miniCS,h:RWIDTH*miniCS}
+                : {x:(ridge.gx-RWIDTH/2)*miniCS,y:(ridge.gy-ridge.gl/2)*miniCS,w:RWIDTH*miniCS,h:ridge.gl*miniCS};
+              return <rect key={ridge.id} x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#e0d4a8" stroke={C.inkBorder} strokeWidth={1} rx={2}/>;
+            })}
+            {previewRect && (
+              <rect x={previewRect.x} y={previewRect.y} width={previewRect.w} height={previewRect.h}
+                fill={isInvalid?C.redPale:C.indigoPale} stroke={isInvalid?C.red:C.indigo}
+                strokeWidth={2} strokeDasharray="5 3" rx={2} opacity={0.9}/>
+            )}
+          </svg>
+          <div style={{fontSize:12,color:isInvalid?C.red:isZero?C.inkFaint:C.indigo,fontFamily:HAND,letterSpacing:1}}>
+            {isInvalid ? "⚠ この位置に畝は引けません" : summaryText}
+          </div>
+        </div>
+
+        {/* 位置ステッパー */}
+        <div style={{background:C.paper2,border:"1px solid "+C.inkLine,padding:"16px 12px",marginBottom:20}}>
+          <PickerRow
+            label={isH?"行（上から）":"列（左から）"}
+            value={pickerA} min={1} max={maxA} unit={isH?"行目":"列目"}
+            onChange={function(v){ setPickerA(v); }}/>
+          <PickerRow
+            label={isH?"始め（左から）":"始め（上から）"}
+            value={pickerStart} min={1} max={pickerEnd} unit={isH?"列目":"行目"}
+            onChange={function(v){ setPickerStart(v); }}/>
+          <PickerRow
+            label={isH?"終わり（左から）":"終わり（上から）"}
+            value={pickerEnd} min={pickerStart} max={maxPos} unit={isH?"列目":"行目"}
+            onChange={function(v){ setPickerEnd(v); }}/>
+        </div>
+
+        {/* 作物を先に選ぶ（任意） */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:11,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:10}}>
+            作物を先に選ぶ（省略できます）
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {VEGGIES.slice(0,16).map(function(v){
+              var isSel = pickerVid === v.id;
+              return (
+                <button key={v.id}
+                  onClick={function(){ setPickerVid(isSel ? null : v.id); }}
+                  style={{
+                    padding:"8px 10px",
+                    border:"1.5px solid "+(isSel?C.indigo:C.inkBorder),
+                    background:isSel?C.indigoPale:C.paper2,
+                    color:isSel?C.indigo:C.ink,
+                    fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                    display:"flex", alignItems:"center", gap:5,
+                    fontWeight:isSel?"bold":"normal",
+                    boxShadow:isSel?"inset 0 0 0 1px "+C.indigo:"none"
+                  }}>
+                  <span style={{fontSize:15}}>{v.mark}</span>
+                  <span>{v.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          {pickerVid && (
+            <div style={{marginTop:10,padding:"8px 12px",background:C.indigoPale,border:"1px solid "+C.indigo,fontSize:12,color:C.indigo,fontFamily:HAND,letterSpacing:1}}>
+              ✓ {VM[pickerVid].name} を設定済みで畝を引きます
+            </div>
+          )}
+        </div>
+
+        {/* 決定ボタン */}
+        <button onClick={onConfirm} disabled={isZero||isInvalid}
+          style={{width:"100%",padding:"18px 0",
+            border:"2px solid "+(isZero||isInvalid?C.inkLine:C.ink),
+            background:isZero||isInvalid?C.paper2:C.ink,
+            color:isZero||isInvalid?C.inkLine:C.paper,
+            fontSize:16,cursor:isZero||isInvalid?"default":"pointer",
+            fontFamily:SERIF,letterSpacing:3,
+            boxShadow:isZero||isInvalid?"none":"3px 3px 0 "+C.inkFaint}}>
+          {pickerVid ? "🌱 "+VM[pickerVid].name+"の畝を引く" : "この畝を引く"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════
    畑マップ（畝ベース）
 ══════════════════════════════════════ */
 function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq }) {
@@ -1345,6 +1536,21 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [snapMsg, setSnapMsg] = useState(null);
   const [sharedMonth, setSharedMonth] = useState(null);
   const [sharedDay,   setSharedDay]   = useState(null);
+  const [showRidgePicker, setShowRidgePicker] = useState(false);
+  const [lastAddedRid, setLastAddedRid]     = useState(null); /* 新規追加畝のガイド用 */
+  const [pickerVid,   setPickerVid]         = useState(null); /* 畝ピッカーで先行選択した野菜 */
+  const [pickerOri,   setPickerOri]   = useState("H");
+  const [pickerA,     setPickerA]     = useState(1);
+  const [pickerStart, setPickerStart] = useState(1);
+  const [pickerEnd,   setPickerEnd]   = useState(1);
+  const isTouchDevice = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const lastBackup = (function(){ try { return localStorage.getItem("hatakebo_lastBackup"); } catch(e){ return null; } })();
+  const totalRidgeCount = Object.values(ridges).reduce(function(s,v){ return s+Object.keys(v||{}).length; }, 0);
+  const showBackupNudge = totalRidgeCount >= 3 && (function(){
+    if (!lastBackup) return true;
+    var daysSince = (Date.now() - new Date(lastBackup).getTime()) / 86400000;
+    return daysSince >= 30;
+  })();
 
   const farm       = farms.find(function(f){ return f.id===fid; }) || farms[0];
   const farmRidges = (function(){
@@ -1426,7 +1632,51 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       return Object.assign({},prev,{[fid]:Object.assign({},fd,{[id]:nr})});
     });
     setS1(null); setHov(null);
+    setSelRid(id); setTab("plant");
   }
+
+  /* ── グリッド選択ピッカー ── */
+  function openRidgePicker() {
+    setPickerOri('H');
+    setPickerA(Math.ceil(farm.rows / 2));
+    setPickerStart(1);
+    setPickerEnd(farm.cols);
+    setPickerVid(null);
+    setShowRidgePicker(true);
+    closeSheet();
+    setS1(null); setHov(null);
+  }
+  function pickerToRidge() {
+    var isH = pickerOri === 'H';
+    var sc = pickerStart - 1; /* 0-indexed */
+    var ec = pickerEnd;       /* 0-indexed exclusive */
+    if (isH) return { orientation:'H', gx:(sc+ec)/2, gy:pickerA-1+0.5, gl:ec-sc };
+    return            { orientation:'V', gx:pickerA-1+0.5, gy:(sc+ec)/2, gl:ec-sc };
+  }
+  function confirmRidgePicker() {
+    var nr = pickerToRidge();
+    if (nr.gl < 0.5) return;
+    if (ridgeOnInactiveCell(nr)) return;
+    var id = 'ridge_' + Date.now();
+    var n = Object.keys(farmRidges).length + 1;
+    setRidges(function(prev){
+      var fd = prev[fid] || {};
+      return Object.assign({}, prev, {[fid]: Object.assign({}, fd, {[id]: Object.assign({}, nr, {id:id, name:n+'番畝', addedFrom:year})})});
+    });
+    if (pickerVid) {
+      /* 野菜を先行選択していた場合はそのまま植付記録まで設定 */
+      sp(id, pickerVid, year, null, null);
+      setShowRidgePicker(false);
+      setPickerVid(null);
+      /* シートは開かず完了 */
+    } else {
+      /* 未選択の場合は従来通りシートを開く */
+      setShowRidgePicker(false);
+      setSelRid(id); setTab("plant");
+    }
+  }
+  var pickerRidgePreview = showRidgePicker ? pickerToRidge() : null;
+  var pickerInvalid = pickerRidgePreview ? ridgeOnInactiveCell(pickerRidgePreview) : false;
 
   function renameRidge(rid, name){
     setRidges(function(prev){
@@ -1530,7 +1780,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   };
 
   /* ── ボトムバーの高さ（畝モード時は高くなる） ── */
-  var bottomBarH = s1 ? 120 : 80;
+  var bottomBarH = isTouchDevice ? 138 : (s1 ? 120 : 80);
 
   return (
     <div style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
@@ -1575,15 +1825,30 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           </div>
 
           {/* 年ナビ */}
-          <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:"auto"}}>
-            <button onClick={function(e){e.stopPropagation();setYear(function(y){return y-1;});}}
-              style={{background:"none",border:"1px solid "+C.inkBorder,width:28,height:28,cursor:"pointer",fontSize:14,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
-            <div style={{minWidth:60,textAlign:"center"}}>
-              <span style={{fontSize:15,letterSpacing:3,fontFamily:HAND}}>{year}</span>
-              <span style={{fontSize:10,color:C.inkFaint,marginLeft:2,fontFamily:HAND}}>年</span>
+          <div style={{display:"flex",alignItems:"center",gap:2,marginLeft:"auto"}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+              <button onClick={function(e){e.stopPropagation();setYear(function(y){return y-1;});}}
+                style={{background:"none",border:"1px solid "+C.inkBorder,width:34,height:34,cursor:"pointer",fontSize:15,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
+              <span style={{fontSize:8,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>前の年</span>
             </div>
-            <button onClick={function(e){e.stopPropagation();setYear(function(y){return y+1;});}} 
-              style={{background:"none",border:"1px solid "+C.inkBorder,width:28,height:28,cursor:"pointer",fontSize:14,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF,opacity:year>=cy?.3:1}}>›</button>
+            <div style={{minWidth:72,textAlign:"center",padding:"0 4px"}}>
+              <div style={{fontSize:15,letterSpacing:2,fontFamily:HAND,color:year<cy?C.red:C.ink,fontWeight:"bold"}}>{year}年</div>
+              {year===cy ? (
+                <div style={{fontSize:9,color:C.green,fontFamily:HAND,letterSpacing:0,marginTop:1}}>今年</div>
+              ) : year<cy ? (
+                <button onClick={function(e){e.stopPropagation();setYear(cy);}}
+                  style={{fontSize:9,color:C.indigo,background:"transparent",border:"none",cursor:"pointer",fontFamily:HAND,padding:0,textDecoration:"underline",marginTop:1,display:"block",width:"100%"}}>
+                  今年に戻る
+                </button>
+              ) : (
+                <div style={{fontSize:9,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>来年以降</div>
+              )}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+              <button onClick={function(e){e.stopPropagation();setYear(function(y){return y+1;});}}
+                style={{background:"none",border:"1px solid "+C.inkBorder,width:34,height:34,cursor:"pointer",fontSize:15,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>›</button>
+              <span style={{fontSize:8,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>次の年</span>
+            </div>
           </div>
 
           {/* … メニュー */}
@@ -1607,8 +1872,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   <span>🖨</span> 印刷する
                 </button>
                 <button onClick={function(e){e.stopPropagation();onExport();setMenuOpen(false);}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
-                  <span>💾</span> バックアップ
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:showBackupNudge?"#fffbe6":"transparent",cursor:"pointer",fontSize:13,color:showBackupNudge?"#7a5800":C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left",fontWeight:showBackupNudge?"bold":"normal"}}>
+                  <span>💾</span>
+                  <span style={{flex:1}}>バックアップ</span>
+                  {showBackupNudge && <span style={{fontSize:10,background:"#d4a800",color:"#fff",padding:"2px 6px",borderRadius:10}}>推奨</span>}
                 </button>
                 <label style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine}}>
                   <span>📂</span> データを読込む
@@ -1622,6 +1889,20 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             )}
           </div>
         </div>
+
+        {/* バックアップ催促バナー */}
+        {showBackupNudge && (
+          <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:"#fffbe6",borderTop:"1px solid #d4a800",borderBottom:"1px solid #d4a800"}}>
+            <span style={{fontSize:16,flexShrink:0}}>💾</span>
+            <span style={{flex:1,fontSize:11,color:"#7a5800",fontFamily:HAND,letterSpacing:0.5,lineHeight:1.7}}>
+              大切なデータが失われる前に<strong>バックアップ</strong>を保存しましょう
+            </span>
+            <button onClick={function(e){e.stopPropagation();onExport();}}
+              style={{padding:"5px 12px",border:"1px solid #d4a800",background:"#d4a800",color:"#fff",fontSize:11,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,whiteSpace:"nowrap"}}>
+              今すぐ保存
+            </button>
+          </div>
+        )}
 
         {/* 削除確認バー */}
         {confirmDelete && farm && (
@@ -1664,8 +1945,15 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               })()}
               <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,letterSpacing:2}}>北</span>
               <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginLeft:8}}>{farm.name}　{year}年</span>
-              {ridgeCount > 0 && (
-                <span style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,marginLeft:4}}>{plantedN}/{ridgeCount}畝 設定済み</span>
+              {ridgeCount > 0 && plantedN < ridgeCount && (
+                <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,marginLeft:4,letterSpacing:1,fontWeight:"bold"}}>
+                  ▶ 残り{ridgeCount-plantedN}畝に野菜を設定しましょう
+                </span>
+              )}
+              {ridgeCount > 0 && plantedN === ridgeCount && (
+                <span style={{fontSize:11,color:C.green,fontFamily:HAND,marginLeft:4,letterSpacing:1}}>
+                  ✓ 全{ridgeCount}畝 設定済み
+                </span>
               )}
             </div>
 
@@ -1687,8 +1975,27 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
             {/* 畝が0のヒント */}
             {ridgeCount===0 && !s1 && (
-              <div style={{marginTop:14,padding:"14px 16px",border:"1px dashed "+C.inkLine,background:C.paper2,fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2}}>
-                まだ畝がありません<br/>畑の上を<strong>長押し→ドラッグ</strong>して畝を引きましょう
+              <div style={{marginTop:16,padding:"20px 16px",border:"2px dashed "+C.inkLine,background:C.paper2,textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:8}}>🌱</div>
+                <div style={{fontSize:14,fontFamily:SERIF,letterSpacing:2,color:C.ink,marginBottom:6}}>まだ畝がありません</div>
+                {isTouchDevice ? (
+                  <div>
+                    <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2,marginBottom:14}}>
+                      下の「畝を引く」ボタンを押して<br/>最初の畝を作りましょう
+                    </div>
+                    <button onClick={function(e){e.stopPropagation();openRidgePicker();}}
+                      style={{padding:"14px 32px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
+                        fontSize:15,fontFamily:SERIF,letterSpacing:3,cursor:"pointer",
+                        boxShadow:"3px 3px 0 "+C.inkFaint}}>
+                      ＋ 畝を引く
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2.2}}>
+                    畑の上を<strong style={{color:C.ink}}>クリック → ドラッグ</strong>して<br/>
+                    最初の畝を引いてみましょう
+                  </div>
+                )}
               </div>
             )}
 
@@ -1705,14 +2012,18 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                     <div key={ridge.id}
                       onClick={function(e){e.stopPropagation();setSelRid(isSel?null:ridge.id);setTab("plant");}}
                       style={{display:"flex",alignItems:"center",gap:12,padding:"11px 10px",marginBottom:4,cursor:"pointer",background:isSel?C.indigoPale:C.paper2,border:"1px solid "+(isSel?C.indigo:C.inkLine),borderRadius:3,transition:"all .1s"}}>
-                      <div style={{width:38,height:38,border:"1px solid "+(vg?C.inkLine:C.inkLine),background:C.paper,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,borderRadius:2}}>
-                        {vg ? <VeggieStamp id={vg.id} size={30}/> : <span style={{fontSize:18,color:C.inkLine}}>＋</span>}
+                      <div style={{width:42,height:42,border:"2px solid "+(vg?C.inkLine:C.indigo),background:vg?C.paper:C.indigoPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,borderRadius:2}}>
+                        {vg ? <VeggieStamp id={vg.id} size={32}/> : <span style={{fontSize:20,color:C.indigo,fontWeight:"bold"}}>＋</span>}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:13,letterSpacing:1,color:isSel?C.indigo:C.ink}}>{ridge.name}</div>
-                        <div style={{fontSize:11,color:vg?C.indigo:C.inkFaint,fontFamily:HAND,marginTop:2}}>
-                          {vg ? (vg.name+"　"+vg.family+(pl.month?"　"+pl.month+"月植付":"")) : "タップして野菜を設定"}
-                        </div>
+                        {vg ? (
+                          <div style={{fontSize:11,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?"　"+pl.month+"月植付":""}</div>
+                        ) : (
+                          <div style={{fontSize:12,color:C.indigo,fontFamily:SERIF,marginTop:3,fontWeight:"bold",letterSpacing:1}}>
+                            野菜を設定する →
+                          </div>
+                        )}
                       </div>
                       {warn && (
                         <div style={{flexShrink:0,padding:"3px 7px",border:"1px solid "+(warn==="danger"?C.red:C.orange),color:warn==="danger"?C.red:C.orange,fontSize:10,fontFamily:HAND}}>
@@ -1803,12 +2114,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       {mainTab === "map" && (
         <div onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
 
-          {/* 畝引き中の案内 */}
-          {s1 && (
+          {/* 畝引き中の案内（マウス用のみ表示） */}
+          {s1 && !isTouchDevice && (
             <div style={{padding:"10px 20px",background:C.indigoPale,borderBottom:"1px solid "+C.inkLine,display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:24,height:24,borderRadius:"50%",background:C.indigo,color:C.paper,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:"bold",flexShrink:0}}>2</div>
               <span style={{fontSize:13,color:C.indigo,fontFamily:HAND,letterSpacing:1,flex:1}}>
-                そのまま指をスライドして終点で離す
+                そのままドラッグして終点でクリック
               </span>
               <button onClick={function(e){e.stopPropagation();setS1(null);setHov(null);setZoom(1);}}
                 style={{padding:"5px 14px",border:"1px solid "+C.indigo,background:"transparent",color:C.indigo,fontSize:12,cursor:"pointer",fontFamily:SERIF,flexShrink:0}}>
@@ -1818,36 +2129,63 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           )}
 
           {/* メインボタン行 */}
-          <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px"}}>
-
-            {/* 畝引きヒント */}
-            <div style={{flex:1,padding:"14px 0",border:"2px solid "+C.inkBorder,background:"transparent",color:C.ink,fontSize:13,fontFamily:HAND,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"2px 2px 0 "+C.inkLine,borderRadius:3}}>
-              <span style={{fontSize:16}}>✏️</span>
-              <span>畑を<strong>クリック/長押し→ドラッグ</strong>で畝を引く</span>
+          {isTouchDevice ? (
+            /* ── タッチ用：畝を引く（大）＋ 記録する（小） ── */
+            <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={function(e){e.stopPropagation();openRidgePicker();}}
+                style={{width:"100%",padding:"16px 0",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
+                  fontSize:16,fontFamily:SERIF,letterSpacing:3,cursor:"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+                  boxShadow:"3px 3px 0 "+C.inkFaint}}>
+                <span style={{fontSize:20}}>＋</span>
+                <span>畝を引く</span>
+              </button>
+              <button
+                onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
+                disabled={isSameAsLastSnap}
+                style={{
+                  width:"100%", padding:"11px 0",
+                  border:"1px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.inkBorder),
+                  background:snapMsg?C.greenPale:"transparent",
+                  color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink,
+                  fontSize:13, cursor:isSameAsLastSnap?"default":"pointer", fontFamily:SERIF, letterSpacing:2,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                  transition:"all .25s", opacity:isSameAsLastSnap?0.45:1,
+                }}>
+                <span style={{fontSize:15}}>📸</span>
+                <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし（記録済み）" : "この状態を記録する"}</span>
+              </button>
             </div>
-
-            {/* 区切り */}
-            <div style={{width:1,height:36,background:C.inkLine}}/>
-
-            {/* 記録する */}
-            <button
-              onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
-              disabled={isSameAsLastSnap}
-              style={{
-                flex:1, padding:"14px 0",
-                border:"2px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.inkBorder),
-                background:snapMsg?C.greenPale:"transparent",
-                color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink,
-                fontSize:14, cursor:isSameAsLastSnap?"default":"pointer", fontFamily:SERIF, letterSpacing:2,
-                display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                boxShadow:"2px 2px 0 "+C.inkLine,
-                borderRadius:3, transition:"all .25s",
-                opacity:isSameAsLastSnap?0.45:1,
-              }}>
-              <span style={{fontSize:18}}>📸</span>
-              <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし" : "記録する"}</span>
-            </button>
-          </div>
+          ) : (
+            /* ── マウス用：ヒント＋記録するを横並び ── */
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px"}}>
+              <div style={{flex:1,padding:"14px 0",border:"2px solid "+(ridgeCount===0?C.indigo:C.inkBorder),background:ridgeCount===0?C.indigoPale:"transparent",color:ridgeCount===0?C.indigo:C.ink,fontSize:13,fontFamily:ridgeCount===0?SERIF:HAND,letterSpacing:ridgeCount===0?2:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"2px 2px 0 "+C.inkLine,borderRadius:3}}>
+                <span style={{fontSize:16}}>✏️</span>
+                {ridgeCount===0
+                  ? <span><strong>畑をクリック</strong>して最初の畝を引く</span>
+                  : <span>畑をクリック→ドラッグで畝を追加</span>
+                }
+              </div>
+              <div style={{width:1,height:36,background:C.inkLine}}/>
+              <button
+                onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
+                disabled={isSameAsLastSnap}
+                style={{
+                  flex:1, padding:"14px 0",
+                  border:"2px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.inkBorder),
+                  background:snapMsg?C.greenPale:"transparent",
+                  color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink,
+                  fontSize:14, cursor:isSameAsLastSnap?"default":"pointer", fontFamily:SERIF, letterSpacing:2,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                  boxShadow:"2px 2px 0 "+C.inkLine,
+                  borderRadius:3, transition:"all .25s",
+                  opacity:isSameAsLastSnap?0.45:1,
+                }}>
+                <span style={{fontSize:18}}>📸</span>
+                <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし" : "記録する"}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1864,6 +2202,20 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       )}
 
       {/* 畝ボトムシート */}
+      {showRidgePicker && farm && (
+        <RidgePicker
+          farm={farm} farmRidges={farmRidges} year={year}
+          pickerOri={pickerOri} setPickerOri={setPickerOri}
+          pickerA={pickerA} setPickerA={setPickerA}
+          pickerStart={pickerStart} setPickerStart={setPickerStart}
+          pickerEnd={pickerEnd} setPickerEnd={setPickerEnd}
+          pickerVid={pickerVid} setPickerVid={setPickerVid}
+          isInvalid={pickerInvalid}
+          onConfirm={confirmRidgePicker}
+          onCancel={function(){ setShowRidgePicker(false); setPickerVid(null); }}
+        />
+      )}
+
       {selRid && selRidgeObj && (
         <RidgeSheet
           ridge={selRidgeObj} year={year} farmId={fid} plantings={plantings}
@@ -1916,9 +2268,10 @@ const FAQ_DATA = [
   ]},
   { cat: "畑・畝の設定について", items: [
     { q: "畝の引き方がわかりません",
-      a: ["畝引きは、畑の上を長押し→そのままドラッグする操作で行います。",
-         {type:"ol", items:["畑フィールドを指で長押し（約0.5秒）すると始点が確定します（振動でお知らせ）","そのまま指を目的地まで引きずります","指が画面端に近づくほど地図が自動でズームアウトし、広い範囲が見えます","目的の位置で指を離すと畝が確定します"]},
-         {type:"note", text:"縦方向に引くと縦畝、横方向に引くと横畝になります。始点と終点の距離が長い方向に自動判定されます。"}] },
+      a: ["スマートフォンをお使いの場合は、画面下の「＋ 畝を引く」ボタンを押してください。",
+         {type:"ol", items:["「＋ 畝を引く」ボタンをタップする","向き（横畝・縦畝）を選ぶ","行（または列）・始め・終わりを「－」「＋」で調整する","プレビューで確認して「この畝を引く」を押す"]},
+         "パソコンをお使いの場合は、畑フィールドを直接クリック→ドラッグして引くこともできます。",
+         {type:"note", text:"縦方向に引くと縦畝、横方向に引くと横畝になります。"}] },
     { q: "畝に名前をつけたり変更したりできますか？",
       a: ["畝をタップすると画面下から詳細パネルが開きます。畝名の横にある「✎」アイコンをタップすると名前を編集できます。"] },
     { q: "畝を削除するにはどうすればいいですか？",
