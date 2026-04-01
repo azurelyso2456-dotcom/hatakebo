@@ -575,12 +575,7 @@ const LM_TYPES = [
   { id:"fence",    icon:"🪵", label:"垣根・柵"      },
   { id:"other",    icon:"📌", label:"その他"        },
 ];
-const DIRS8 = [
-  { id:"N",  label:"北" }, { id:"NE", label:"北東" },
-  { id:"E",  label:"東" }, { id:"SE", label:"南東" },
-  { id:"S",  label:"南" }, { id:"SW", label:"南西" },
-  { id:"W",  label:"西" }, { id:"NW", label:"北西" },
-];
+
 const CELL_CM = 25; /* 1グリッド = 25cm */
 const PRESETS = [
   { label:"プランター",        widthM:1.2, heightM:0.5 },
@@ -592,6 +587,204 @@ function presetToGrid(p) {
   var cols = Math.max(2, Math.round(p.widthM  * 100 / CELL_CM));
   var rows = Math.max(2, Math.round(p.heightM * 100 / CELL_CM));
   return { rows:rows, cols:cols };
+}
+
+/* ══════════════════════════════════════
+   かんたん目印エディタ（大きな畑向け）
+══════════════════════════════════════ */
+function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmTypes }) {
+  var [selSide, setSelSide] = React.useState(null); /* "top"|"bot"|"lft"|"rgt" */
+  var [selType, setSelType] = React.useState(lmTypes[0] ? lmTypes[0].id : "tree");
+
+  /* 辺の定義 */
+  var SIDES = [
+    { id:"top", label:"上辺（北）", axis:"H", max:cols },
+    { id:"bot", label:"下辺（南）", axis:"H", max:cols },
+    { id:"lft", label:"左辺（西）", axis:"V", max:rows },
+    { id:"rgt", label:"右辺（東）", axis:"V", max:rows },
+  ];
+
+  /* 配置ポジション */
+  var POSITIONS = [
+    { id:"start",  label:"左寄り",  ratio:0.15 },
+    { id:"center", label:"中央",    ratio:0.5  },
+    { id:"end",    label:"右寄り",  ratio:0.85 },
+    { id:"all",    label:"全体",    ratio:null },
+  ];
+
+  function placeAt(side, pos) {
+    var t = lmTypes.find(function(t){ return t.id===selType; });
+    if (!t) return;
+    var newLM = Object.assign({}, landmarks);
+
+    if (pos.ratio === null) {
+      /* 全体：辺の全セルに配置 */
+      var total = side.id === "top" || side.id === "bot" ? cols : rows;
+      for (var i = 0; i < total; i++) {
+        var key = side.id + "-" + i;
+        /* 既存があれば上書きしない */
+        if (!newLM[key]) newLM[key] = { id:t.id, icon:t.icon, label:t.label, memo:"" };
+      }
+    } else {
+      var max = side.id === "top" || side.id === "bot" ? cols : rows;
+      var idx = Math.min(max - 1, Math.round(pos.ratio * (max - 1)));
+      var k = side.id + "-" + idx;
+      newLM[k] = { id:t.id, icon:t.icon, label:t.label, memo:"" };
+    }
+    setLandmarks(newLM);
+    setSelSide(null);
+  }
+
+  /* 設置済み目印のキーを辺ごとに集計 */
+  function countSide(sid) {
+    return Object.keys(landmarks).filter(function(k){ return k.startsWith(sid+"-"); }).length;
+  }
+
+  return (
+    <div>
+      {/* ダイアグラム */}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:20 }}>
+        {/* 上辺 */}
+        {(function(){
+          var cnt = countSide("top");
+          var isSel = selSide === "top";
+          return (
+            <button onClick={function(){ setSelSide(isSel ? null : "top"); }}
+              style={{ padding:"10px 60px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
+                color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                letterSpacing:1, marginBottom:4, width:"100%", maxWidth:280 }}>
+              {cnt > 0 ? "上辺 ✓ ("+cnt+"件)" : "上辺（北）をタップ"}
+            </button>
+          );
+        })()}
+        {/* 中段：左辺・畑・右辺 */}
+        <div style={{ display:"flex", alignItems:"stretch", gap:4, width:"100%", maxWidth:280 }}>
+          {(function(){
+            var cnt = countSide("lft");
+            var isSel = selSide === "lft";
+            return (
+              <button onClick={function(){ setSelSide(isSel ? null : "lft"); }}
+                style={{ padding:"0 6px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                  background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
+                  color:isSel?C.indigo:C.ink, fontSize:11, cursor:"pointer", fontFamily:SERIF,
+                  writingMode:"vertical-rl", letterSpacing:1, flexShrink:0 }}>
+                {cnt > 0 ? "左辺✓" : "左辺"}
+              </button>
+            );
+          })()}
+          <div style={{ flex:1, border:"2px solid "+C.ink, background:"#d4c89c",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            padding:"24px 0", fontSize:12, color:C.inkFaint, fontFamily:HAND }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:20 }}>🌾</div>
+              <div style={{ fontSize:10, marginTop:4, letterSpacing:1 }}>{cols}×{rows}</div>
+            </div>
+          </div>
+          {(function(){
+            var cnt = countSide("rgt");
+            var isSel = selSide === "rgt";
+            return (
+              <button onClick={function(){ setSelSide(isSel ? null : "rgt"); }}
+                style={{ padding:"0 6px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                  background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
+                  color:isSel?C.indigo:C.ink, fontSize:11, cursor:"pointer", fontFamily:SERIF,
+                  writingMode:"vertical-rl", letterSpacing:1, flexShrink:0 }}>
+                {cnt > 0 ? "右辺✓" : "右辺"}
+              </button>
+            );
+          })()}
+        </div>
+        {/* 下辺 */}
+        {(function(){
+          var cnt = countSide("bot");
+          var isSel = selSide === "bot";
+          return (
+            <button onClick={function(){ setSelSide(isSel ? null : "bot"); }}
+              style={{ padding:"10px 60px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
+                color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                letterSpacing:1, marginTop:4, width:"100%", maxWidth:280 }}>
+              {cnt > 0 ? "下辺 ✓ ("+countSide("bot")+"件)" : "下辺（南）をタップ"}
+            </button>
+          );
+        })()}
+      </div>
+
+      {/* 辺が選択されたら：種類と位置を選ぶ */}
+      {selSide && (
+        <div style={{ border:"2px solid "+C.indigo, background:C.indigoPale, padding:"16px 14px", marginBottom:16 }}>
+          <div style={{ fontSize:12, color:C.indigo, fontFamily:SERIF, letterSpacing:2, marginBottom:12 }}>
+            {SIDES.find(function(s){ return s.id===selSide; }).label}
+          </div>
+
+          {/* 種類 */}
+          <div style={{ fontSize:10, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>目印の種類</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:14 }}>
+            {lmTypes.map(function(t){
+              var isSel = selType === t.id;
+              return (
+                <button key={t.id} onClick={function(){ setSelType(t.id); }}
+                  style={{ padding:"7px 12px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
+                    background:isSel?C.indigo:"transparent", color:isSel?C.paper:C.ink,
+                    fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                    display:"flex", alignItems:"center", gap:5 }}>
+                  <span>{t.icon}</span><span>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 位置 */}
+          <div style={{ fontSize:10, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>配置する位置</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+            {POSITIONS.map(function(pos){
+              return (
+                <button key={pos.id} onClick={function(){ placeAt(SIDES.find(function(s){ return s.id===selSide; }), pos); }}
+                  style={{ padding:"12px 8px", border:"2px solid "+C.ink,
+                    background:C.ink, color:C.paper,
+                    fontSize:13, cursor:"pointer", fontFamily:SERIF, letterSpacing:1 }}>
+                  {lmTypes.find(function(t){ return t.id===selType; }).icon} {pos.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 設置済み一覧 */}
+      {Object.keys(landmarks).length > 0 && (
+        <div style={{ marginTop:8 }}>
+          <div style={{ fontSize:10, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>設置済み目印</div>
+          {(function(){
+            var sides = [
+              { id:"top", label:"上辺" }, { id:"bot", label:"下辺" },
+              { id:"lft", label:"左辺" }, { id:"rgt", label:"右辺" },
+            ];
+            return sides.map(function(s){
+              var keys = Object.keys(landmarks).filter(function(k){ return k.startsWith(s.id+"-"); });
+              if (keys.length === 0) return null;
+              /* 代表アイコンだけ表示 */
+              var icons = keys.slice(0,3).map(function(k){ return landmarks[k].icon; }).join(" ");
+              return (
+                <div key={s.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", borderBottom:"1px solid "+C.inkLine }}>
+                  <span style={{ fontSize:11, color:C.inkFaint, fontFamily:HAND, width:40 }}>{s.label}</span>
+                  <span style={{ fontSize:14 }}>{icons}</span>
+                  <span style={{ fontSize:10, color:C.inkFaint, fontFamily:HAND }}>{keys.length}件</span>
+                  <button onClick={function(){
+                    var n = Object.assign({}, landmarks);
+                    keys.forEach(function(k){ delete n[k]; });
+                    setLandmarks(n);
+                  }} style={{ marginLeft:"auto", padding:"2px 8px", border:"1px solid "+C.inkLine,
+                    background:"transparent", fontSize:10, cursor:"pointer", fontFamily:SERIF, color:C.red }}>消す</button>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════
@@ -692,10 +885,10 @@ function FarmSetup({ farms, onComplete, onSkip }) {
   const rows = Math.max(2, Math.round(heightM * 100 / CELL_CM));
   const [grid, setGrid]   = useState(function(){ return makeGrid(Math.max(2,Math.round(150/CELL_CM)), Math.max(2,Math.round(200/CELL_CM))); });
   const [name, setName]   = useState("");
-  const [northDir,  setNorthDir]  = useState("N");
   const [landmarks, setLandmarks] = useState({});
   const [selLMType, setSelLMType] = useState("tree");
   const [editLM,    setEditLM]    = useState(null); /* { key, label } */
+  const [lmMode,    setLmMode]    = useState("auto"); /* "auto"|"quick"|"detail" */
   const sn = SETUP_STEPS[step];
   const ac = grid.flat().filter(Boolean).length;
   const cs = Math.min(40, Math.floor(240/cols));
@@ -718,7 +911,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
     setStep(2);
   }
   function done() {
-    onComplete({ id:"farm_"+Date.now(), name:name||("畑"+(farms.length+1)), rows:rows, cols:cols, grid:grid, cellCm:CELL_CM, widthM:widthM, heightM:heightM, northDir:northDir, landmarks:landmarks });
+    onComplete({ id:"farm_"+Date.now(), name:name||("畑"+(farms.length+1)), rows:rows, cols:cols, grid:grid, cellCm:CELL_CM, widthM:widthM, heightM:heightM, landmarks:landmarks });
   }
 
   /* 帳簿風の外枠スタイル */
@@ -922,80 +1115,64 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.9 }}>方角と周りの目印を記録します（省略可）</p>
             </div>
 
-            {/* 方角 */}
-            <SectionTitle>北の方角</SectionTitle>
-            <div style={{ display:"flex", gap:20, alignItems:"flex-start", marginBottom:28 }}>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, width:154, flexShrink:0 }}>
-                {[
-                  {id:"NW",label:"北西"},{id:"N",label:"北"},{id:"NE",label:"北東"},
-                  {id:"W", label:"西"}, {id:null,label:null},{id:"E",label:"東"},
-                  {id:"SW",label:"南西"},{id:"S",label:"南"},{id:"SE",label:"南東"},
-                ].map(function(d, i) {
-                  if (!d.id) return (
-                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <span style={{ fontSize:18 }}>🌾</span>
+            {/* 目印エディタ：大きな畑はかんたんモード優先 */}
+            {(function(){
+              var isLarge = rows * cols > 60;
+              var effectiveMode = lmMode === "auto" ? (isLarge ? "quick" : "detail") : lmMode;
+              return (
+                <div>
+                  {/* モード切替 */}
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14 }}>
+                    <SectionTitle style={{ margin:0 }}>目印の配置</SectionTitle>
+                    <div style={{ marginLeft:"auto", display:"flex", gap:4 }}>
+                      <button onClick={function(){ setLmMode("quick"); }}
+                        style={{ padding:"4px 10px", border:"1px solid "+(effectiveMode==="quick"?C.ink:C.inkLine),
+                          background:effectiveMode==="quick"?C.ink:"transparent",
+                          color:effectiveMode==="quick"?C.paper:C.inkFaint,
+                          fontSize:10, cursor:"pointer", fontFamily:SERIF }}>かんたん</button>
+                      <button onClick={function(){ setLmMode("detail"); }}
+                        style={{ padding:"4px 10px", border:"1px solid "+(effectiveMode==="detail"?C.ink:C.inkLine),
+                          background:effectiveMode==="detail"?C.ink:"transparent",
+                          color:effectiveMode==="detail"?C.paper:C.inkFaint,
+                          fontSize:10, cursor:"pointer", fontFamily:SERIF }}>詳細</button>
                     </div>
-                  );
-                  const sel = northDir === d.id;
-                  return (
-                    <button key={d.id} onClick={function(){ setNorthDir(d.id); }}
-                      style={{ padding:"8px 0", border:"1px solid " + (sel?C.ink:C.inkLine),
-                        background:sel?C.ink:"transparent", color:sel?C.paper:C.inkFaint,
-                        fontSize:10, cursor:"pointer", fontFamily:HAND, letterSpacing:1 }}>
-                      {d.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* コンパスプレビュー */}
-              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
-                {(function(){
-                  const di = DIRS8.findIndex(function(d){ return d.id===northDir; });
-                  const ge = function(offset){ return DIRS8[(di+offset+8)%8].label; };
-                  const ms = { fontSize:9, color:C.indigo, background:C.indigoPale, border:"1px solid " + C.inkBorder, padding:"2px 8px", letterSpacing:1, fontFamily:HAND, whiteSpace:"nowrap" };
-                  return (
-                    <Fragment>
-                      <div style={ms}>↑ {ge(0)}</div>
-                      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                        <div style={Object.assign({},ms,{writingMode:"vertical-rl"})}>← {ge(6)}</div>
-                        <GridPreview rows={rows} cols={cols} grid={grid} size={Math.min(16,Math.floor(72/cols))} gap={2}/>
-                        <div style={Object.assign({},ms,{writingMode:"vertical-rl"})}>→ {ge(2)}</div>
+                  </div>
+
+                  {effectiveMode === "quick" ? (
+                    <QuickLandmarkEditor
+                      rows={rows} cols={cols} grid={grid}
+                      landmarks={landmarks} setLandmarks={setLandmarks}
+                      lmTypes={LM_TYPES}/>
+                  ) : (
+                    <div>
+                      <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:12 }}>
+                        {LM_TYPES.map(function(t){
+                          const sel = selLMType === t.id;
+                          return (
+                            <button key={t.id} onClick={function(){ setSelLMType(t.id); }}
+                              style={{ padding:"6px 11px", border:"1px solid " + (sel?C.ink:C.inkLine),
+                                background:sel?C.ink:"transparent", color:sel?C.paper:C.inkFaint,
+                                fontSize:11, cursor:"pointer", fontFamily:SERIF, display:"flex", alignItems:"center", gap:5 }}>
+                              <span>{t.icon}</span><span>{t.label}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <div style={ms}>↓ {ge(4)}</div>
-                    </Fragment>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* 目印タイプ選択 */}
-            <SectionTitle>目印の種類</SectionTitle>
-            <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:16 }}>
-              {LM_TYPES.map(function(t){
-                const sel = selLMType === t.id;
-                return (
-                  <button key={t.id} onClick={function(){ setSelLMType(t.id); }}
-                    style={{ padding:"6px 11px", border:"1px solid " + (sel?C.ink:C.inkLine),
-                      background:sel?C.ink:"transparent", color:sel?C.paper:C.inkFaint,
-                      fontSize:11, cursor:"pointer", fontFamily:SERIF, display:"flex", alignItems:"center", gap:5 }}>
-                    <span>{t.icon}</span><span>{t.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* 目印マップ */}
-            <SectionTitle>配置（周囲と内部）</SectionTitle>
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>
-              <LandmarkEditor
-                rows={rows} cols={cols} grid={grid}
-                landmarks={landmarks} setLandmarks={setLandmarks}
-                selType={selLMType} lmTypes={LM_TYPES}
-                editLM={editLM} setEditLM={setEditLM}/>
-            </div>
-            <p style={{ fontSize:11, color:C.inkFaint, letterSpacing:.5, fontFamily:HAND, marginBottom:16, lineHeight:1.8 }}>
-              枠外の升 → 周囲の目印　／　枠内の空き升 → 畑内の目印
-            </p>
+                      <div style={{ display:"flex", justifyContent:"center", marginBottom:12, overflowX:"auto" }}>
+                        <LandmarkEditor
+                          rows={rows} cols={cols} grid={grid}
+                          landmarks={landmarks} setLandmarks={setLandmarks}
+                          selType={selLMType} lmTypes={LM_TYPES}
+                          editLM={editLM} setEditLM={setEditLM}/>
+                      </div>
+                      <p style={{ fontSize:11, color:C.inkFaint, letterSpacing:.5, fontFamily:HAND, marginBottom:12, lineHeight:1.8 }}>
+                        枠外の升 → 周囲の目印　／　枠内の空き升 → 畑内の目印
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {Object.keys(landmarks).length > 0 && (
               <OutlineBtn onClick={function(){ setLandmarks({}); }}>目印をすべて消す</OutlineBtn>
@@ -1065,7 +1242,6 @@ function FarmSetup({ farms, onComplete, onSkip }) {
             <RuledLine mb={16}/>
             <LedgerRow label="名称" value={name||"（未入力）"}/>
             <LedgerRow label="大きさ" value={widthM.toFixed(2)+"m × "+heightM.toFixed(2)+"m（"+cols+"列×"+rows+"行、1マス"+CELL_CM+"cm）"}/>
-            <LedgerRow label="北の方角" value={DIRS8.find(function(d){return d.id===northDir;})?.label || northDir}/>
             {Object.keys(landmarks).length > 0 && <LedgerRow label="目印" value={Object.keys(landmarks).length+"件"}/>}
             <div style={{ marginTop:24 }}><InkBtn onClick={function(){ setStep(5); }} primary={true}>帳簿に登録する</InkBtn></div>
           </div>
@@ -1082,10 +1258,10 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 {name||"畑"} を登録しました
               </h2>
               <p style={{ fontSize:12, color:C.inkFaint, letterSpacing:1 }}>{cols}列×{rows}行　{ac}区画</p>
-              {Object.keys(landmarks).length > 0 && <p style={{ fontSize:12, color:C.inkFaint, marginTop:4, letterSpacing:1 }}>目印 {Object.keys(landmarks).length}件　北：{DIRS8.find(function(d){return d.id===northDir;})?.label}</p>}
+              {Object.keys(landmarks).length > 0 && <p style={{ fontSize:12, color:C.inkFaint, marginTop:4, letterSpacing:1 }}>目印 {Object.keys(landmarks).length}件</p>}
             </div>
             <RuledLine mb={24}/>
-            <OutlineBtn onClick={function(){ setStep(1); setRows(4); setCols(5); setGrid(makeGrid(4,5)); setName(""); setLandmarks({}); setNorthDir("N"); }}>
+            <OutlineBtn onClick={function(){ setStep(1); setRows(4); setCols(5); setGrid(makeGrid(4,5)); setName(""); setLandmarks({}); }}>
               ＋ もう一つ登録する
             </OutlineBtn>
             <div style={{ marginTop:10 }}><InkBtn onClick={done} primary={true}>ハタケボをひらく</InkBtn></div>
@@ -1110,12 +1286,17 @@ function getRect(ridge, CS) {
   return { x:(ridge.gx-rw/2)*cs, y:(ridge.gy-ridge.gl/2)*cs, w:rw*cs, h:ridge.gl*cs };
 }
 
-function farmCS(farm) {
-  var maxW = typeof window !== "undefined" ? Math.min(window.innerWidth * 0.88, 480) : 360;
-  return Math.max(8, Math.min(72, Math.floor(maxW / (farm.cols || 5))));
+function farmCS(farm, mapZoom) {
+  if (typeof window === "undefined") return 14;
+  var maxW = Math.min(window.innerWidth * 0.92, 520);
+  var maxH = Math.min(window.innerHeight * 0.52, 380);
+  var csW = Math.floor(maxW / (farm.cols || 5));
+  var csH = Math.floor(maxH / (farm.rows || 4));
+  var base = Math.max(8, Math.min(72, Math.min(csW, csH)));
+  return Math.max(8, Math.min(96, Math.round(base * (mapZoom || 1))));
 }
-function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange }) {
-  var CS = farmCS(farm);
+function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange, mapZoom }) {
+  var CS = farmCS(farm, mapZoom);
   var W = farm.cols * CS;
   var H = farm.rows * CS;
   var svgRef = useRef(null);
@@ -1643,6 +1824,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [s1, setS1]         = useState(null);
   const [hov, setHov]       = useState(null);
   const [zoom, setZoom]     = useState(1);
+  const [mapZoom, setMapZoom] = useState(1.0); /* 地図表示倍率 */
   const [isPressing, setIsPressing] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [printSnap, setPrintSnap] = useState(null); /* null=通常印刷, snap=変遷印刷 */
@@ -1661,7 +1843,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [pickerStart, setPickerStart] = useState(1);
   const [pickerEnd,   setPickerEnd]   = useState(1);
   const isTouchDevice = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-  const lastBackup = (function(){ try { return localStorage.getItem("hatakebo_lastBackup"); } catch(e){ return null; } })();
+  const [lastBackup, setLastBackup] = useState(function(){ try { return localStorage.getItem("hatakebo_lastBackup"); } catch(e){ return null; } });
   const totalRidgeCount = Object.values(ridges).reduce(function(s,v){ return s+Object.keys(v||{}).length; }, 0);
   const showBackupNudge = totalRidgeCount >= 3 && (function(){
     if (!lastBackup) return true;
@@ -1991,7 +2173,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>🖨</span> 印刷する
                 </button>
-                <button onClick={function(e){e.stopPropagation();onExport();setMenuOpen(false);}}
+                <button onClick={function(e){e.stopPropagation();onExport();setLastBackup(new Date().toISOString().slice(0,10));setMenuOpen(false);}}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:showBackupNudge?"#fffbe6":"transparent",cursor:"pointer",fontSize:13,color:showBackupNudge?"#7a5800":C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left",fontWeight:showBackupNudge?"bold":"normal"}}>
                   <span>💾</span>
                   <span style={{flex:1}}>バックアップ</span>
@@ -2017,7 +2199,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <span style={{flex:1,fontSize:11,color:"#7a5800",fontFamily:HAND,letterSpacing:0.5,lineHeight:1.7}}>
               大切なデータが失われる前に<strong>バックアップ</strong>を保存しましょう
             </span>
-            <button onClick={function(e){e.stopPropagation();onExport();}}
+            <button onClick={function(e){e.stopPropagation();onExport();setLastBackup(new Date().toISOString().slice(0,10));}}
               style={{padding:"5px 12px",border:"1px solid #d4a800",background:"#d4a800",color:"#fff",fontSize:11,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,whiteSpace:"nowrap"}}>
               今すぐ保存
             </button>
@@ -2056,15 +2238,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
             {/* フィールドヘッダー */}
             <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
-              {(function(){
-                const northAngles={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
-                const angle=northAngles[farm.northDir]||0;
-                return (
-                  <span style={{fontSize:18,display:"inline-block",transform:"rotate("+angle+"deg)",lineHeight:1,color:C.indigo}}>↑</span>
-                );
-              })()}
-              <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,letterSpacing:2}}>北</span>
-              <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginLeft:8}}>{farm.name}　{year}年</span>
+              <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>{farm.name}　{year}年</span>
               {farm.widthM && <span style={{fontSize:10,color:C.inkLine,fontFamily:HAND,marginLeft:4}}>{farm.widthM}m×{farm.heightM}m</span>}
               {ridgeCount > 0 && plantedN < ridgeCount && (
                 <span style={{fontSize:11,color:C.indigo,fontFamily:HAND,marginLeft:4,letterSpacing:1,fontWeight:"bold"}}>
@@ -2078,11 +2252,38 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               )}
             </div>
 
-            {/* SVGフィールド */}
-            <div style={{border:"2px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkLine,display:"inline-block",overflowX:"auto",maxWidth:"100%"}}>
+            {/* SVGフィールド + ズームコントロール */}
+            {(function(){
+              var isLarge = farm.rows * farm.cols > 80;
+              var ZOOM_STEPS = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0];
+              var zIdx = ZOOM_STEPS.findIndex(function(s){ return Math.abs(s-mapZoom)<0.01; });
+              if (zIdx < 0) zIdx = 2;
+              return (
+                <div>
+                  {isLarge && (
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                      <span style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>表示倍率</span>
+                      <button
+                        onClick={function(e){e.stopPropagation();if(zIdx>0){var nz=ZOOM_STEPS[zIdx-1];setMapZoom(nz);}}}
+                        disabled={zIdx<=0}
+                        style={{width:30,height:30,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx>0?"pointer":"default",color:zIdx>0?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>－</button>
+                      <span style={{fontSize:12,fontFamily:SERIF,minWidth:36,textAlign:"center",color:C.ink}}>{Math.round(mapZoom*100)}%</span>
+                      <button
+                        onClick={function(e){e.stopPropagation();if(zIdx<ZOOM_STEPS.length-1){var nz=ZOOM_STEPS[zIdx+1];setMapZoom(nz);}}}
+                        disabled={zIdx>=ZOOM_STEPS.length-1}
+                        style={{width:30,height:30,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx<ZOOM_STEPS.length-1?"pointer":"default",color:zIdx<ZOOM_STEPS.length-1?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>＋</button>
+                      {mapZoom!==1.0&&<button
+                        onClick={function(e){e.stopPropagation();setMapZoom(1.0);}}
+                        style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:10,cursor:"pointer",fontFamily:HAND,color:C.inkFaint}}>全体</button>}
+                    </div>
+                  )}
+                  <div style={{border:"2px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkLine,
+                    overflowX:"auto",overflowY:"auto",maxWidth:"100%",
+                    maxHeight:isLarge?(typeof window!=="undefined"?Math.min(window.innerHeight*0.55,400)+"px":"380px"):"none",
+                    position:"relative"}}>
               <FarmField
                 farm={farm} farmRidges={farmRidges} farmPlant={farmPlant}
-                s1={s1} hov={hov} zoom={zoom}
+                s1={s1} hov={hov} zoom={zoom} mapZoom={mapZoom}
                 soil={soil} fid={fid} year={year}
                 onLongPressStart={function(pt){ setS1(clampPt(pt)); closeSheet(); }}
                 onTap={handleFieldTap}
@@ -2092,7 +2293,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 onRidgeTap={function(rid){ if(!s1){setSelRid(rid);setTab("plant");} }}
                 selRid={selRid}
               />
-            </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* 畝が0のヒント */}
             {ridgeCount===0 && !s1 && (
@@ -2567,7 +2771,7 @@ function FAQScreen({ onClose }) {
    スナップショット用ミニマップ
 ══════════════════════════════════════ */
 function SnapMiniMap({ farm, ridges, plantings }) {
-  var miniCS = Math.min(32, Math.floor(240 / farm.cols));
+  var miniCS = Math.min(32, Math.floor(240 / Math.max(farm.cols, farm.rows)));
   var lm = farm.landmarks || {};
   var PAD = Math.round(miniCS * 0.7);
   var padT=0, padB=0, padL=0, padR=0;
@@ -2614,8 +2818,9 @@ function SnapMiniMap({ farm, ridges, plantings }) {
       }).flat().filter(Boolean)}
       {Object.values(ridges).map(function(ridge){
         var rr;
+        var RWm = ridge.ridgeW||RWIDTH;
         if(ridge.orientation==="H"){
-          var RWm=ridge.ridgeW||RWIDTH; rr={x:padL+(ridge.gx-ridge.gl/2)*miniCS,y:padT+(ridge.gy-RWm/2)*miniCS,w:ridge.gl*miniCS,h:RWm*miniCS};
+          rr={x:padL+(ridge.gx-ridge.gl/2)*miniCS,y:padT+(ridge.gy-RWm/2)*miniCS,w:ridge.gl*miniCS,h:RWm*miniCS};
         } else {
           rr={x:padL+(ridge.gx-RWm/2)*miniCS,y:padT+(ridge.gy-ridge.gl/2)*miniCS,w:RWm*miniCS,h:ridge.gl*miniCS};
         }
@@ -3102,8 +3307,6 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
   }
 
   function doPrint() {
-    var northAngles = {N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
-    var angle = northAngles[farm.northDir] || 0;
     var svgStr = buildSVG();
 
     /* 畝テーブルHTML */
@@ -3227,8 +3430,6 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     );
   }
 
-  var northAngles = {N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
-  var northAngle = northAngles[farm.northDir] || 0;
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,20,8,0.55)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"24px 16px"}}
@@ -3269,11 +3470,8 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
         {/* プレビュー本体 */}
         <div style={{flex:1,overflowY:"auto",padding:"20px 20px 0"}}>
 
-          {/* 北矢印 */}
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-            <span style={{fontSize:16,display:"inline-block",transform:"rotate("+northAngle+"deg)",lineHeight:1,color:C.indigo}}>↑</span>
-            <span style={{fontSize:10,color:C.indigo,fontFamily:HAND,letterSpacing:2}}>北</span>
-            <span style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,marginLeft:10}}>{activeYear}年の作付け</span>
+          <div style={{marginBottom:10}}>
+            <span style={{fontSize:11,color:C.inkFaint,fontFamily:HAND}}>{activeYear}年の作付け</span>
           </div>
 
           {/* 畑の図 */}
