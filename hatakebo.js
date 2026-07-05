@@ -481,15 +481,19 @@ function HatakeApp() {
   });
 
   /* ── データが変わるたびに自動保存 ── */
+  const [saveError, setSaveError] = useState(false);
   useEffect(function(){
     try {
       localStorage.setItem("hatakebo_data", JSON.stringify({ farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots, soil:soil }));
-    } catch(e) {}
+      if (saveError) setSaveError(false);
+    } catch(e) {
+      setSaveError(true);
+    }
   }, [farms, plantings, ridges, snapshots, soil]);
 
   /* ── バックアップ：JSONファイルとしてダウンロード ── */
   function exportData() {
-    const data = JSON.stringify({ farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots }, null, 2);
+    const data = JSON.stringify({ farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots, soil:soil }, null, 2);
     const blob = new Blob([data], { type:"application/json" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -513,6 +517,7 @@ function HatakeApp() {
         setPlantings(d.plantings || {});
         setRidges(d.ridges || {});
         setSnapshots(d.snapshots || {});
+        setSoil(d.soil || {});
         if (d.farms && d.farms.length > 0) setScreen("map");
         alert("データを読み込みました！");
       } catch(err) {
@@ -534,11 +539,32 @@ function HatakeApp() {
 
   const [showFaq, setShowFaq] = useState(false);
 
+  /* ── 文字サイズ（標準・大きめ・特大） ── */
+  const [uiScale, setUiScale] = useState(function(){
+    try { return Number(localStorage.getItem("hatakebo_uiScale")) || 1.0; } catch(e){ return 1.0; }
+  });
+  function changeUiScale(v) {
+    setUiScale(v);
+    try { localStorage.setItem("hatakebo_uiScale", String(v)); } catch(e){}
+  }
+
   if (screen === "setup") {
-    return <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>;
+    return (
+      <div style={{zoom:uiScale}}>
+        <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
+      </div>
+    );
   }
   return (
-    <React.Fragment>
+    <div style={{zoom:uiScale}}>
+      {saveError && (
+        <div style={{position:"fixed",top:0,left:0,right:0,zIndex:200,background:"#b3382c",color:"#fff",
+          padding:"12px 16px",fontSize:13,fontFamily:"'Hiragino Mincho ProN','Yu Mincho',serif",
+          textAlign:"center",letterSpacing:1,lineHeight:1.7}}>
+          ⚠ データを保存できません。プライベートモードを解除するか、<br/>
+          「⋯」メニューからバックアップを取ってください。
+        </div>
+      )}
       <FarmMap farms={farms} plantings={plantings} setPlantings={setPlantings} ridges={ridges} setRidges={setRidges}
         snapshots={snapshots} setSnapshots={setSnapshots} soil={soil} setSoil={setSoil}
         onRenameFarm={function(fid, name){ setFarms(function(prev){ return prev.map(function(f){ return f.id===fid ? Object.assign({},f,{name:name}) : f; }); }); }}
@@ -550,9 +576,10 @@ function HatakeApp() {
           setSnapshots(function(prev){ const n=Object.assign({},prev); delete n[fid]; return n; });
         }}
         onExport={exportData} onImport={importData}
+        uiScale={uiScale} onChangeUiScale={changeUiScale}
         onShowFaq={function(){setShowFaq(true);}}/>
       {showFaq && <FAQScreen onClose={function(){setShowFaq(false);}}/>}
-    </React.Fragment>
+    </div>
   );
 }
 
@@ -587,6 +614,58 @@ function presetToGrid(p) {
   var cols = Math.max(2, Math.round(p.widthM  * 100 / CELL_CM));
   var rows = Math.max(2, Math.round(p.heightM * 100 / CELL_CM));
   return { rows:rows, cols:cols };
+}
+
+/* ══════════════════════════════════════
+   はじめてガイド（3枚カード）
+══════════════════════════════════════ */
+function WelcomeGuide({ onClose, isTouchDevice }) {
+  var [page, setPage] = React.useState(0);
+  var CARDS = [
+    { icon:"✏️", title:"畝（うね）を引く",
+      body: isTouchDevice
+        ? "画面下の「＋ 畝を引く」ボタンを押すと、向きと場所を選ぶだけで畝が引けます。"
+        : "畑をクリックして、そのまま引っぱると畝が引けます。" },
+    { icon:"🍅", title:"野菜をえらぶ",
+      body:"引いた畝を押すと、野菜のリストが出てきます。植えた野菜と月日を選ぶだけで記録できます。" },
+    { icon:"🔄", title:"連作をお知らせ",
+      body:"去年と同じ場所に同じ仲間の野菜を植えようとすると、ハタケボが自動でお知らせします。" },
+  ];
+  var card = CARDS[page];
+  var isLast = page === CARDS.length - 1;
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,20,8,0.55)",
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:C.paper,border:"2px solid "+C.ink,boxShadow:"6px 6px 0 rgba(28,20,8,0.3)",
+        maxWidth:340,width:"100%",padding:"32px 24px",textAlign:"center"}}>
+        <div style={{fontSize:11,color:C.inkFaint,letterSpacing:3,fontFamily:HAND,marginBottom:20}}>
+          ハタケボの使い方　{page+1} / {CARDS.length}
+        </div>
+        <div style={{fontSize:56,marginBottom:16,lineHeight:1}}>{card.icon}</div>
+        <div style={{fontSize:19,fontFamily:SERIF,letterSpacing:3,color:C.ink,marginBottom:14}}>{card.title}</div>
+        <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,lineHeight:2,letterSpacing:0.5,marginBottom:28,textAlign:"left"}}>{card.body}</div>
+        <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:24}}>
+          {CARDS.map(function(_,i){
+            return <div key={i} style={{width:10,height:10,borderRadius:"50%",
+              background:i===page?C.ink:C.inkLine}}/>;
+          })}
+        </div>
+        <button
+          onClick={function(){ if(isLast) onClose(); else setPage(page+1); }}
+          style={{width:"100%",padding:"16px 0",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
+            fontSize:16,cursor:"pointer",fontFamily:SERIF,letterSpacing:3,
+            boxShadow:"3px 3px 0 "+C.inkFaint,marginBottom:10}}>
+          {isLast ? "はじめる" : "つぎへ"}
+        </button>
+        {!isLast && (
+          <button onClick={onClose}
+            style={{background:"none",border:"none",fontSize:12,color:C.inkFaint,cursor:"pointer",fontFamily:HAND,textDecoration:"underline",letterSpacing:1}}>
+            とばす
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════
@@ -1590,7 +1669,7 @@ function PickerRow({ label, value, min, max, onChange, unit }) {
     </div>
   );
 }
-function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid, pickerRidgeW, setPickerRidgeW }) {
+function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid, pickerRidgeW, setPickerRidgeW, onBulkConfirm }) {
   var isH = pickerOri === "H";
   var sc = pickerStart - 1;
   var ec = pickerEnd;
@@ -1618,9 +1697,28 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
   /* 実効 ridgeW */
   var effectiveRW = pickerRidgeW || (cellCm === 25 ? 60/cellCm : RWIDTH);
 
-  /* ミニプレビューSVG */
-  var miniCS = Math.min(48, Math.floor((typeof window!=="undefined"?Math.min(window.innerWidth-64,340):300) / Math.max(farm.rows, farm.cols)));
+  /* ミニプレビューSVG（最小12px保証・大きな畑はスクロール） */
+  var fitCS = Math.floor((typeof window!=="undefined"?Math.min(window.innerWidth-64,340):300) / Math.max(farm.rows, farm.cols));
+  var miniCS = Math.max(12, Math.min(48, fitCS));
+  var needScroll = fitCS < 12; /* 全体が収まらない場合 */
   var W = farm.cols * miniCS, H = farm.rows * miniCS;
+  var svgTapRef = React.useRef(null);
+
+  /* ① プレビュー直接タップで位置決め */
+  function onPreviewTap(e) {
+    var svg = svgTapRef.current;
+    if (!svg) return;
+    var rect = svg.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / rect.width  * farm.cols;
+    var py = (e.clientY - rect.top)  / rect.height * farm.rows;
+    if (isH) {
+      var row = Math.min(farm.rows, Math.max(1, Math.round(py + 0.5)));
+      setPickerA(row);
+    } else {
+      var col = Math.min(farm.cols, Math.max(1, Math.round(px + 0.5)));
+      setPickerA(col);
+    }
+  }
   var previewRect = null;
   if (!isZero) {
     var prw = effectiveRW;
@@ -1680,11 +1778,36 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
           </div>
         </div>
 
+        {/* おまかせ一括 */}
+        {onBulkConfirm && Object.keys(farmRidges).length === 0 && (
+          <div style={{marginBottom:20,border:"2px solid "+C.green,background:C.greenPale,padding:"14px 12px"}}>
+            <div style={{fontSize:12,color:C.green,fontFamily:SERIF,letterSpacing:2,marginBottom:10,fontWeight:"bold"}}>
+              ⚡ おまかせでまとめて引く
+            </div>
+            <div style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,lineHeight:1.8,marginBottom:10}}>
+              畑いっぱいに等間隔で{pickerOri==="H"?"横":"縦"}畝を引きます
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              {[2,3,4,5].map(function(n){
+                return (
+                  <button key={n} onClick={function(){ onBulkConfirm(n, pickerOri); }}
+                    style={{flex:1,padding:"14px 0",border:"2px solid "+C.green,background:C.paper,
+                      color:C.green,fontSize:15,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold",letterSpacing:1}}>
+                    {n}本
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ミニプレビュー */}
         <div style={{marginBottom:20,display:"flex",justifyContent:"center",flexDirection:"column",alignItems:"center",gap:8}}>
-          <div style={{fontSize:11,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>プレビュー</div>
-          <svg viewBox={"0 0 "+W+" "+H} width={W} height={H}
-            style={{border:"2px solid "+C.ink,display:"block",background:"#d4c89c",boxShadow:"3px 3px 0 "+C.inkLine}}>
+          <div style={{fontSize:12,color:C.indigo,fontFamily:HAND,letterSpacing:1,fontWeight:"bold"}}>👆 地図をタップして場所を選べます</div>
+          <div style={{maxWidth:"100%",maxHeight:needScroll?280:"none",overflow:needScroll?"auto":"visible",border:needScroll?"1px solid "+C.inkLine:"none"}}>
+          <svg ref={svgTapRef} viewBox={"0 0 "+W+" "+H} width={W} height={H}
+            onClick={onPreviewTap}
+            style={{border:"2px solid "+C.ink,display:"block",background:"#d4c89c",boxShadow:"3px 3px 0 "+C.inkLine,cursor:"pointer",touchAction:"manipulation"}}>
             {Array.from({length:farm.cols+1},function(_,i){
               return <line key={"vg"+i} x1={i*miniCS} y1={0} x2={i*miniCS} y2={H} stroke={C.inkLine} strokeWidth={0.5}/>;
             })}
@@ -1710,6 +1833,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
                 strokeWidth={2} strokeDasharray="5 3" rx={2} opacity={0.9}/>
             )}
           </svg>
+          </div>
           <div style={{fontSize:12,color:isInvalid?C.red:isZero?C.inkFaint:C.indigo,fontFamily:HAND,letterSpacing:1}}>
             {isInvalid ? "⚠ この位置に畝は引けません" : summaryText}
           </div>
@@ -1815,7 +1939,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
 /* ══════════════════════════════════════
    畑マップ（畝ベース）
 ══════════════════════════════════════ */
-function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq }) {
+function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq, uiScale, onChangeUiScale }) {
   const cy = new Date().getFullYear();
   const [fid, setFid]       = useState(farms[0]?farms[0].id:"");
   const [year, setYear]     = useState(cy);
@@ -1832,6 +1956,20 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [mainTab, setMainTab] = useState("map"); /* "map" | "history" */
   const [snapMsg, setSnapMsg] = useState(null);
   const [confirmSnapId, setConfirmSnapId] = useState(null); /* 変遷削除確認用 */
+  const [toast, setToast] = useState(null); /* {msg, undo} */
+  const toastTimer = useRef(null);
+  function showToast(msg, undoFn, extra){
+    clearTimeout(toastTimer.current);
+    setToast({msg:msg, undo:undoFn||null, extra:extra||null});
+    toastTimer.current = setTimeout(function(){ setToast(null); }, 7000);
+  }
+  const [showGuide, setShowGuide] = useState(function(){
+    try { return !localStorage.getItem("hatakebo_guideSeen"); } catch(e){ return false; }
+  });
+  function closeGuide(){
+    setShowGuide(false);
+    try { localStorage.setItem("hatakebo_guideSeen", "1"); } catch(e){}
+  }
   const [sharedMonth, setSharedMonth] = useState(null);
   const [sharedDay,   setSharedDay]   = useState(null);
   const [showRidgePicker, setShowRidgePicker] = useState(false);
@@ -1954,6 +2092,92 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     if (isH) return { orientation:'H', gx:(sc+ec)/2, gy:pickerA-1+0.5, gl:ec-sc };
     return            { orientation:'V', gx:pickerA-1+0.5, gy:(sc+ec)/2, gl:ec-sc };
   }
+  /* ── ② となりにもう1本（平行畝を複製） ── */
+  function addAdjacentRidge(srcId) {
+    var src = (ridges[fid]||{})[srcId];
+    if (!src) return;
+    var rw = src.ridgeW || RWIDTH;
+    var gap = farm.cellCm ? (30 / farm.cellCm) : 0.54; /* 通路30cm */
+    var offset = rw + gap;
+    var maxPerp = src.orientation === "H" ? farm.rows : farm.cols;
+
+    /* +方向 → だめなら −方向 */
+    var candidates = [offset, -offset];
+    var nr = null;
+    for (var i = 0; i < candidates.length; i++) {
+      var perp = (src.orientation === "H" ? src.gy : src.gx) + candidates[i];
+      if (perp - rw/2 < 0 || perp + rw/2 > maxPerp) continue;
+      var cand = src.orientation === "H"
+        ? { orientation:"H", gx:src.gx, gy:perp, gl:src.gl }
+        : { orientation:"V", gx:perp, gy:src.gy, gl:src.gl };
+      if (ridgeOnInactiveCell(Object.assign({ridgeW:rw}, cand))) continue;
+      /* 既存のアクティブ畝と重ならないか */
+      var overlaps = Object.values(farmRidges).some(function(r){
+        return ridgesOverlap(Object.assign({ridgeW:rw}, cand), r);
+      });
+      if (overlaps) continue;
+      nr = cand;
+      break;
+    }
+    if (!nr) { showToast("⚠ となりに引く場所がありません"); return; }
+
+    var id = 'ridge_' + Date.now();
+    var n = Object.keys(farmRidges).length + 1;
+    var srcVid = extractVid(plantings[fid] && plantings[fid][year] && plantings[fid][year][srcId]);
+    setRidges(function(prev){
+      var fd = prev[fid] || {};
+      return Object.assign({}, prev, {[fid]: Object.assign({}, fd, {[id]: Object.assign({}, nr, {id:id, name:n+'番畝', addedFrom:year, ridgeW:rw})})});
+    });
+    if (srcVid) sp(id, srcVid, year, null, null);
+    showToast("✓ となりに畝を引きました", function(){
+      setRidges(function(prev){
+        var fd=Object.assign({},prev[fid]||{}); delete fd[id];
+        return Object.assign({},prev,{[fid]:fd});
+      });
+      if (srcVid) setPlantings(function(prev){
+        var f=Object.assign({},prev[fid]||{});
+        if(f[year]){ var y=Object.assign({},f[year]); delete y[id]; f[year]=y; }
+        return Object.assign({},prev,{[fid]:f});
+      });
+    }, { label:"となりにもう1本", fn:function(){ addAdjacentRidge(id); } });
+  }
+
+  /* ── ③ おまかせ一括畝引き ── */
+  function bulkCreateRidges(n, ori) {
+    var isH = ori === "H";
+    var maxPerp = isH ? farm.rows : farm.cols;
+    var maxLen  = isH ? farm.cols : farm.rows;
+    var rw = farm.cellCm ? (60 / farm.cellCm) : RWIDTH;
+    var newIds = [];
+    var created = {};
+    var count = 0;
+    for (var i = 0; i < n; i++) {
+      var perp = (i + 0.5) * (maxPerp / n);
+      var cand = isH
+        ? { orientation:"H", gx:maxLen/2, gy:perp, gl:maxLen }
+        : { orientation:"V", gx:perp, gy:maxLen/2, gl:maxLen };
+      if (ridgeOnInactiveCell(Object.assign({ridgeW:rw}, cand))) continue;
+      var id = 'ridge_' + Date.now() + '_' + i;
+      created[id] = Object.assign({}, cand, {id:id, name:(Object.keys(farmRidges).length + count + 1)+'番畝', addedFrom:year, ridgeW:rw});
+      newIds.push(id);
+      count++;
+    }
+    if (newIds.length === 0) { showToast("⚠ 畝を引ける場所がありません"); return; }
+    setRidges(function(prev){
+      var fd = Object.assign({}, prev[fid] || {}, created);
+      return Object.assign({}, prev, {[fid]: fd});
+    });
+    setShowRidgePicker(false);
+    setPickerVid(null);
+    showToast("✓ "+newIds.length+"本の畝を引きました", function(){
+      setRidges(function(prev){
+        var fd = Object.assign({}, prev[fid] || {});
+        newIds.forEach(function(id){ delete fd[id]; });
+        return Object.assign({}, prev, {[fid]: fd});
+      });
+    });
+  }
+
   function confirmRidgePicker() {
     var nr = pickerToRidge();
     if (nr.gl < 0.5) return;
@@ -1970,7 +2194,17 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       sp(id, pickerVid, year, null, null);
       setShowRidgePicker(false);
       setPickerVid(null);
-      /* シートは開かず完了 */
+      showToast("✓ "+(VM[pickerVid]?VM[pickerVid].name+"の":"")+"畝を引きました", function(){
+        setRidges(function(prev){
+          const fd=Object.assign({},prev[fid]||{}); delete fd[id];
+          return Object.assign({},prev,{[fid]:fd});
+        });
+        setPlantings(function(prev){
+          const f=Object.assign({},prev[fid]||{});
+          if(f[year]){ const y=Object.assign({},f[year]); delete y[id]; f[year]=y; }
+          return Object.assign({},prev,{[fid]:f});
+        });
+      }, { label:"となりにもう1本", fn:function(){ addAdjacentRidge(id); } });
     } else {
       /* 未選択の場合は従来通りシートを開く */
       setShowRidgePicker(false);
@@ -2003,10 +2237,25 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         return Object.assign({},prev,{[fid]:(prev[fid]||[]).concat(recs)});
       });
       /* 物理削除せずdeletedFromをマーク（過去年の表示を維持） */
+      const ridgeBefore = ridge; /* deletedFrom なしの状態 */
+      const recCount = recs.length;
       setRidges(function(prev){
         const fd=Object.assign({},prev[fid]||{});
         fd[rid]=Object.assign({},ridge,{deletedFrom:year});
         return Object.assign({},prev,{[fid]:fd});
+      });
+      showToast("「"+ridge.name+"」を削除しました", function(){
+        /* deletedFrom を外して復元 */
+        setRidges(function(prev){
+          const fd=Object.assign({},prev[fid]||{});
+          fd[rid]=ridgeBefore;
+          return Object.assign({},prev,{[fid]:fd});
+        });
+        /* 転記した soil レコードを末尾から取り除く */
+        if (recCount > 0) setSoil(function(prev){
+          const arr = (prev[fid]||[]).slice(0, -recCount);
+          return Object.assign({},prev,{[fid]:arr});
+        });
       });
     }
     setSelRid(null);
@@ -2114,12 +2363,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
           {/* マップ／変遷 セグメント */}
           <div style={{display:"flex",border:"1px solid "+C.inkLine,borderRadius:3,overflow:"hidden",flexShrink:0}}>
-            {[{id:"map",label:"地図"},{id:"history",label:"変遷"}].map(function(t){
+            {[{id:"map",label:"畑の地図"},{id:"history",label:"きろく帳"}].map(function(t){
               const active=mainTab===t.id;
               return (
                 <button key={t.id}
                   onClick={function(e){e.stopPropagation();setMainTab(t.id);closeSheet();setS1(null);setHov(null);}}
-                  style={{padding:"6px 14px",border:"none",background:active?C.ink:"transparent",color:active?C.paper:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
+                  style={{padding:"12px 16px",border:"none",background:active?C.ink:"transparent",color:active?C.paper:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,fontWeight:active?"bold":"normal"}}>
                   {t.label}
                 </button>
               );
@@ -2130,11 +2379,11 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           <div style={{display:"flex",alignItems:"center",gap:2,marginLeft:"auto"}}>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
               <button onClick={function(e){e.stopPropagation();setYear(function(y){return y-1;});}}
-                style={{background:"none",border:"1px solid "+C.inkBorder,width:34,height:34,cursor:"pointer",fontSize:15,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
-              <span style={{fontSize:8,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>前の年</span>
+                style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
+              <span style={{fontSize:10,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>前の年</span>
             </div>
             <div style={{minWidth:72,textAlign:"center",padding:"0 4px"}}>
-              <div style={{fontSize:15,letterSpacing:2,fontFamily:HAND,color:year<cy?C.red:C.ink,fontWeight:"bold"}}>{year}年</div>
+              <div style={{fontSize:17,letterSpacing:2,fontFamily:HAND,color:year<cy?C.red:C.ink,fontWeight:"bold"}}>{year}年</div>
               {year===cy ? (
                 <div style={{fontSize:9,color:C.green,fontFamily:HAND,letterSpacing:0,marginTop:1}}>今年</div>
               ) : year<cy ? (
@@ -2148,8 +2397,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
               <button onClick={function(e){e.stopPropagation();setYear(function(y){return y+1;});}}
-                style={{background:"none",border:"1px solid "+C.inkBorder,width:34,height:34,cursor:"pointer",fontSize:15,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>›</button>
-              <span style={{fontSize:8,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>次の年</span>
+                style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>›</button>
+              <span style={{fontSize:10,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>次の年</span>
             </div>
           </div>
 
@@ -2165,6 +2414,26 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>❓</span> よくある質問
                 </button>
+                <div style={{padding:"12px 16px",borderBottom:"1px solid "+C.inkLine}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                    <span>🔍</span>
+                    <span style={{fontSize:13,color:C.ink}}>文字の大きさ</span>
+                  </div>
+                  <div style={{display:"flex",gap:5}}>
+                    {[{v:1.0,l:"標準"},{v:1.2,l:"大きめ"},{v:1.4,l:"特大"}].map(function(o){
+                      var sel = Math.abs((uiScale||1.0)-o.v)<0.01;
+                      return (
+                        <button key={o.v}
+                          onClick={function(e){e.stopPropagation();onChangeUiScale(o.v);}}
+                          style={{flex:1,padding:"9px 0",border:"2px solid "+(sel?C.ink:C.inkLine),
+                            background:sel?C.ink:"transparent",color:sel?C.paper:C.inkFaint,
+                            fontSize:o.v===1.0?12:o.v===1.2?14:16,cursor:"pointer",fontFamily:SERIF}}>
+                          {o.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <button onClick={function(e){e.stopPropagation();setRenameVal(farm.name);setRenamingFarm(true);setMenuOpen(false);}}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>✎</span> 畑名を変更
@@ -2368,7 +2637,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {farm && mainTab === "history" && (
           <div style={{maxWidth:560}}>
             <div style={{marginBottom:20,padding:"14px 16px",background:C.paper2,border:"1px solid "+C.inkLine,borderRadius:3}}>
-              <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:4}}>変遷の記録について</div>
+              <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:4}}>きろく帳について</div>
               <div style={{fontSize:12,color:C.ink,fontFamily:HAND,lineHeight:1.9}}>
                 下の「📸 記録する」ボタンを押すと、そのときの畑の状態が保存されます。
               </div>
@@ -2533,6 +2802,31 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       )}
 
       {/* 畝ボトムシート */}
+      {toast && (
+        <div style={{position:"fixed",bottom:bottomBarH+16,left:"50%",transform:"translateX(-50%)",zIndex:80,
+          background:C.ink,color:C.paper,padding:"14px 18px",borderRadius:4,
+          boxShadow:"0 4px 16px rgba(28,20,8,0.35)",display:"flex",alignItems:"center",gap:14,
+          fontSize:14,fontFamily:SERIF,letterSpacing:1,maxWidth:"90vw",whiteSpace:"nowrap"}}>
+          <span>{toast.msg}</span>
+          {toast.extra && (
+            <button onClick={function(){var fn=toast.extra.fn;setToast(null);clearTimeout(toastTimer.current);fn();}}
+              style={{border:"2px solid "+C.paper,background:C.paper,color:C.ink,
+                padding:"8px 14px",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,fontWeight:"bold"}}>
+              {toast.extra.label}
+            </button>
+          )}
+          {toast.undo && (
+            <button onClick={function(){toast.undo();setToast(null);clearTimeout(toastTimer.current);}}
+              style={{border:"1px solid "+C.paper,background:"transparent",color:C.paper,
+                padding:"8px 14px",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0}}>
+              もとに戻す
+            </button>
+          )}
+        </div>
+      )}
+
+      {showGuide && <WelcomeGuide onClose={closeGuide} isTouchDevice={isTouchDevice}/>}
+
       {showRidgePicker && farm && (
         <RidgePicker
           farm={farm} farmRidges={farmRidges} year={year}
@@ -2543,6 +2837,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           pickerVid={pickerVid} setPickerVid={setPickerVid}
           pickerRidgeW={pickerRidgeW} setPickerRidgeW={setPickerRidgeW}
           isInvalid={pickerInvalid}
+          onBulkConfirm={bulkCreateRidges}
           onConfirm={confirmRidgePicker}
           onCancel={function(){ setShowRidgePicker(false); setPickerVid(null); setPickerRidgeW(null); }}
         />
@@ -2599,6 +2894,9 @@ const FAQ_DATA = [
          {type:"warn", text:"畝の削除や畑の削除は即時反映されます。操作の前によくご確認ください。"}] },
   ]},
   { cat: "畑・畝の設定について", items: [
+    { q: "文字が小さくて読みにくいです",
+      a: ["画面右上の「⋯」メニューを開くと「文字の大きさ」があります。「大きめ」「特大」を選ぶと、アプリ全体の文字と画面が大きくなります。",
+         {type:"note", text:"一度選ぶと次からもその大きさで表示されます。"}] },
     { q: "畝の引き方がわかりません",
       a: ["スマートフォンをお使いの場合は、画面下の「＋ 畝を引く」ボタンを押してください。",
          {type:"ol", items:["「＋ 畝を引く」ボタンをタップする","向き（横畝・縦畝）を選ぶ","行（または列）・始め・終わりを「－」「＋」で調整する","プレビューで確認して「この畝を引く」を押す"]},
@@ -2611,7 +2909,7 @@ const FAQ_DATA = [
          {type:"ul", items:["畝一覧の各行右端にある「削除」ボタンをタップする","畝をタップして詳細パネルを開き、下部の「畝を削除」ボタンをタップする（確認ステップあり）"]},
          {type:"warn", text:"削除すると、その畝のすべての年の作付け記録も同時に削除されます。"}] },
     { q: "目印（石・木・水路など）を設定したのに地図に表示されません",
-      a: ["目印は、畑の設定（セットアップ）の「目印」ステップで設定します。設定した目印はメインの地図・変遷記録・印刷のすべてに反映されます。",
+      a: ["目印は、畑の設定（セットアップ）の「目印」ステップで設定します。設定した目印はメインの地図・きろく帳・印刷のすべてに反映されます。",
          "目印には2種類の設置場所があります：畑の外周（上下左右の辺）と、使わない区画の中（L字形の畑の角など）。外周の目印はその辺に余白が生まれてアイコンが表示され、区画内の目印はそのマスの中央に表示されます。",
          {type:"note", text:"セットアップ完了後の目印の編集は現在サポートされていません。"}] },
     { q: "複数の畑を登録できますか？",
@@ -2630,19 +2928,19 @@ const FAQ_DATA = [
     { q: "年をまたいで過去の記録を見たい",
       a: ["ヘッダーの「‹ 年 ›」ナビで過去の年に切り替えると、その年に記録した作付け内容を確認できます。また、各畝の詳細パネルの「記録」タブからも、その畝の作付け歴を一覧で確認できます。"] },
   ]},
-  { cat: "変遷記録について", items: [
+  { cat: "きろく帳について", items: [
     { q: "「📸 記録する」ボタンは何をするものですか？",
       a: ["ボタンを押したその瞬間の畑の状態（畝の配置・作付け内容）をスナップショットとして保存する機能です。季節ごとや作業の節目に記録しておくことで、畑がどのように変化してきたかを振り返ることができます。",
-         "記録は「変遷」タブで一覧表示されます。各記録から印刷もできます。不要な記録は個別に削除できます。",
+         "記録は「きろく帳」タブで一覧表示されます。各記録から印刷もできます。不要な記録は個別に削除できます。",
          {type:"note", text:"前回の記録から畝の配置や作付けに変化がない場合、ボタンは「変化なし」となり押せません。変更を加えると自動的に押せるようになります。"}] },
-    { q: "変遷記録はいつ押せばよいですか？",
+    { q: "きろく帳への保存はいつ押せばよいですか？",
       a: ["特に決まりはありませんが、以下のタイミングがおすすめです。",
          {type:"ul", items:["春の植付けが完了したとき","夏野菜から秋野菜に切り替えたとき","畝の配置を大きく変えたとき","収穫が終わり、次のシーズンに向けて整理したとき"]}] },
   ]},
   { cat: "印刷・動作環境・その他", items: [
     { q: "印刷機能はありますか？",
       a: ["あります。「⋯」メニューから「🖨 印刷する」を選ぶと、畑の地図（目印・畝・作物を含む図）と畝一覧テーブルを印刷できます。",
-         "変遷タブに保存した過去の記録も、各カードの「🖨 印刷」ボタンからそのときの畑の状態を印刷できます。",
+         "きろく帳に保存した過去の記録も、各カードの「🖨 印刷」ボタンからそのときの畑の状態を印刷できます。",
          {type:"note", text:"スマートフォンでもブラウザの印刷・PDF保存機能をご利用いただけます。"}] },
     { q: "どのブラウザ・端末で使えますか？",
       a: ["以下の環境での動作を確認しています。",
@@ -3318,7 +3616,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     }).join('');
 
     var titleRight = isSnap
-      ? ('ハタケボ 作付け帳　　'+activeYear+'年　　変遷記録：'+snapDateStr)
+      ? ('ハタケボ 作付け帳　　'+activeYear+'年　　きろく帳：'+snapDateStr)
       : ('ハタケボ 作付け帳　　'+activeYear+'年　　印刷日：'+new Date().toLocaleDateString('ja-JP'));
 
     var w = window.open('','_blank','width=900,height=700');
@@ -3351,7 +3649,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       w.document.write('<p class="section-title">畝一覧</p>');
       w.document.write('<table><thead><tr><th>畝名</th><th>作物</th><th>科</th><th>植付日</th><th>連作</th></tr></thead><tbody>'+tableRows+'</tbody></table>');
     }
-    w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — 変遷記録':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
+    w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — きろく帳':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
     w.document.write('</div></body></html>');
     w.document.close();
     setTimeout(function(){ w.print(); }, 400);
@@ -3441,7 +3739,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
         <div style={{padding:"16px 20px",borderBottom:"2px solid "+C.ink,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
           <div style={{flex:1}}>
             <div style={{fontSize:11,color:C.inkFaint,letterSpacing:3,fontFamily:HAND}}>
-              {isSnap ? "変遷記録 — 印刷プレビュー" : "印刷プレビュー"}
+              {isSnap ? "きろく帳 — 印刷プレビュー" : "印刷プレビュー"}
             </div>
             <div style={{fontSize:17,letterSpacing:3,marginTop:2}}>{farm.name}</div>
             {isSnap && (
