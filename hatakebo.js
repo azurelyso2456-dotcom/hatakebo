@@ -1841,6 +1841,25 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
 /* ══════════════════════════════════════
    畑マップ（畝ベース）
 ══════════════════════════════════════ */
+function ScrollableMenu({children,onClose,scale}) {
+  const panel=useRef(null);
+  useEffect(function(){
+    var previous=document.activeElement;
+    if(panel.current)panel.current.querySelector("button").focus();
+    return function(){if(previous&&previous.isConnected)previous.focus();};
+  },[]);
+  return ReactDOM.createPortal(
+    <div onClick={function(e){e.stopPropagation();onClose();}} style={{position:"fixed",inset:0,zIndex:250,background:"rgba(28,20,8,.25)",padding:12,display:"flex",justifyContent:"flex-end",alignItems:"flex-start"}}>
+      <section ref={panel} role="dialog" aria-modal="true" aria-label="メニュー" onClick={function(e){e.stopPropagation();}}
+        onKeyDown={function(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(panel.current.querySelectorAll('button,input:not([type="file"]),[tabindex="0"]')).filter(n=>!n.disabled);var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}}
+        style={{width:360,maxWidth:"100%",maxHeight:"calc(100dvh - 24px)",minHeight:0,display:"flex",flexDirection:"column",background:C.paper,border:"1.5px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkFaint,fontFamily:SERIF,color:C.ink}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",borderBottom:"1px solid "+C.inkLine,flexShrink:0}}><span style={{fontSize:18}}>メニュー</span><button onClick={onClose} style={{minHeight:44,padding:"8px 16px",fontSize:16,background:C.paper,border:"1px solid "+C.inkBorder}}>閉じる</button></div>
+        <div tabIndex={0} aria-label="メニュー項目（スクロールできます）" style={{minHeight:0,overflowY:"auto",overflowX:"hidden",overscrollBehavior:"contain",WebkitOverflowScrolling:"touch",touchAction:"pan-y",scrollbarGutter:"stable",paddingBottom:"env(safe-area-inset-bottom, 0px)"}}>
+          <div style={{zoom:scale||1}}>{children}</div>
+        </div>
+      </section>
+    </div>,document.body);
+}
 function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq, onUpdateFarm, onRestoreImport, onUndo, canUndo, saveError, uiScale, onChangeUiScale, initialFarmId, onActiveFarmChange }) {
   const cy = new Date().getFullYear();
   const [fid, setFid]       = useState(farms.some(function(f){return f.id===initialFarmId;})?initialFarmId:(farms[0]?farms[0].id:""));
@@ -2333,7 +2352,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               ⋯
             </button>
             {menuOpen && (
-              <div onClick={function(e){e.stopPropagation();}} style={{position:"absolute",top:38,right:0,background:C.paper,border:"1.5px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkFaint,zIndex:50,minWidth:160,fontFamily:SERIF}}>
+              <ScrollableMenu onClose={function(){setMenuOpen(false);}} scale={uiScale}>
                 <button onClick={function(){setEditFarm(true);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>畑・目印を編集</button>
                 <button onClick={onRestoreImport} style={{padding:14,fontSize:16,width:"100%"}}>読込前の記録に戻す</button>
                 {canUndo&&<button onClick={function(){onUndo();setToast(null);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>直前の操作を戻す</button>}
@@ -2383,7 +2402,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.red,textAlign:"left"}}>
                   <span>🗑</span> この畑を削除
                 </button>
-              </div>
+              </ScrollableMenu>
             )}
           </div>
         </div>
