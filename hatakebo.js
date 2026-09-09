@@ -3708,6 +3708,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       : ('ハタケボ 作付け帳　　'+activeYear+'年　　印刷日：'+new Date().toLocaleDateString('ja-JP'));
 
     var w = window.open('','_blank','width=900,height=700');
+    if(!w){alert("印刷用のウィンドウを開けませんでした。このサイトのポップアップを許可して、もう一度お試しください。アプリ内ブラウザで開いている場合は、ChromeやEdgeなど通常のブラウザでお試しください。");return;}
     w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>ハタケボ — '+farm.name+'</title>');
     w.document.write('<style>');
     w.document.write('*{box-sizing:border-box;margin:0;padding:0;}');
@@ -3719,7 +3720,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     w.document.write('header .meta{font-size:9pt;color:#7a6848;letter-spacing:1pt;}');
     w.document.write('.field-area{display:flex;align-items:flex-start;gap:16pt;margin-bottom:14pt;}');
     w.document.write('.north{font-size:8pt;color:#3d4f8c;letter-spacing:2pt;margin-bottom:6pt;display:flex;align-items:center;gap:4pt;}');
-    w.document.write('.north .arrow{font-size:16pt;display:inline-block;transform:rotate('+angle+'deg);line-height:1;}');
+    w.document.write('.north .arrow{font-size:16pt;display:inline-block;line-height:1;}');
     w.document.write('table{width:100%;border-collapse:collapse;font-size:9pt;}');
     w.document.write('th{text-align:left;border-bottom:1pt solid #1c1408;padding:4pt 6pt;font-size:8pt;letter-spacing:1pt;color:#7a6848;font-weight:normal;}');
     w.document.write('td{padding:5pt 6pt;border-bottom:0.5pt solid #c8b898;vertical-align:middle;}');
@@ -3740,7 +3741,10 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — きろく帳':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
     w.document.write('</div></body></html>');
     w.document.close();
-    setTimeout(function(){ w.print(); }, 400);
+    setTimeout(function(){
+      try { w.focus(); w.print(); }
+      catch(e) { alert("印刷画面を開けませんでした。開いた印刷用ページで、ブラウザのメニューから「印刷」を選んでください。"); }
+    }, 400);
   }
 
   /* プレビュー用SVG（React版） */
