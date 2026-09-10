@@ -7,14 +7,14 @@
 ══════════════════════════════════════ */
 
 const C = {
-  paper:    "#f4edd8",   /* 和紙ベージュ */
-  paper2:   "#ede4cc",   /* 少し濃い和紙 */
-  ink:      "#1c1408",   /* インク色 */
-  inkFaint: "#7a6848",   /* 薄いインク */
-  inkLine:  "#c8b898",   /* 罫線 */
-  inkBorder:"#a09070",   /* 枠線 */
-  indigo:   "#2a3468",   /* 藍インク（アクセント） */
-  indigoPale:"#dde2f4",  /* 薄藍 */
+  paper:    "#faf8f1",   /* 台帳の紙 */
+  paper2:   "#efeee5",   /* 補助面 */
+  ink:      "#293f38",   /* 墨緑 */
+  inkFaint: "#596559",   /* 補助文字 */
+  inkLine:  "#c9cbbd",   /* 罫線 */
+  inkBorder:"#929d8d",   /* 枠線 */
+  indigo:   "#304f43",   /* 操作用の深緑（既存トークン名を維持） */
+  indigoPale:"#e3eadc",  /* 選択面 */
   red:      "#8a2020",   /* 朱印 */
   redPale:  "#f4e8e8",   /* 薄朱 */
   orange:   "#8a5010",   /* 注意朱 */
@@ -25,7 +25,39 @@ const C = {
 };
 const SERIF  = "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif";
 const SANS   = "'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif";
-const HAND   = "'Hiragino Mincho ProN', cursive";
+const HAND   = SANS;
+
+function LedgerStyle(){return <style>{`
+  .ledger-app{max-width:1200px;margin:auto;border-left:10px solid ${C.indigo};padding:0 30px!important;background-image:none!important;font-family:${SANS}!important}
+  .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important}
+  .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
+  .ledger-header{position:relative!important;border-bottom:0!important;background:${C.paper}!important}
+  .ledger-brand{display:flex;align-items:center;gap:14px;padding:22px 0 16px;border-bottom:1px solid ${C.ink}}
+  .ledger-seal{writing-mode:vertical-rl;border:1px solid ${C.indigo};padding:4px 7px;font:20px/1.2 ${SERIF};letter-spacing:2px}
+  .ledger-logo{font:500 28px/1.4 ${SERIF};letter-spacing:3px}.ledger-tagline{font-size:13px;color:${C.inkFaint}}
+  .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
+  .ledger-navrow{flex-wrap:wrap;padding:18px 0!important}.ledger-navtabs{border:0!important;gap:18px}.ledger-navtabs button{background:transparent!important;color:${C.ink}!important;border-bottom:2px solid transparent!important;padding:8px 0!important}
+  .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important}
+  .ledger-title{padding:8px 0 22px}.ledger-title h1{font:500 32px/1.4 ${SERIF};overflow-wrap:anywhere}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
+  .ledger-content{padding:0 0 28px!important;overflow:visible!important}
+  .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:3px double ${C.ink};border-bottom:1px solid ${C.ink};align-items:start}
+  .ledger-map{min-width:0;padding:18px 24px 22px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
+  .ledger-maphead span{color:${C.inkFaint}!important;font-size:14px!important}
+  .ledger-fieldbox{border:1px solid ${C.inkBorder}!important;box-shadow:none!important;margin:12px 0;max-height:520px!important}
+  .ledger-fieldbox>div{display:block!important;width:max-content;min-width:0;margin:auto}.ledger-aside{min-width:0;border-left:1px solid ${C.inkLine};padding:22px;font-size:16px;align-self:stretch}
+  .ledger-aside h2{font:500 24px/1.5 ${SERIF};margin:12px 0;overflow-wrap:anywhere}.ledger-aside small{font-size:14px;color:${C.inkFaint}}
+  .ledger-aside dl{margin:16px 0}.ledger-aside dl>div{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid ${C.inkLine};flex-wrap:wrap}
+  .ledger-aside dt{color:${C.inkFaint};font-size:14px}.ledger-aside dd{margin:0}.ledger-aside button{width:100%;padding:12px;background:${C.indigo};color:${C.paper};border:1px solid ${C.indigo};font:16px ${SANS}}
+  .ledger-aside p{font-size:14px;line-height:1.8;margin-top:16px;color:${C.inkFaint}}
+  .ledger-list{max-width:none!important}.ledger-list>button{width:100%;text-align:left;font-family:${SANS};border-width:0 0 1px!important;margin:0!important;background:transparent!important;border-radius:0!important}
+  .ledger-bottom{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;border-top:0!important;box-shadow:none!important}
+  .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
+  .ledger-status{border-top:1px solid ${C.inkLine};padding:16px 0 22px!important;font:14px/1.8 ${SANS}}
+  .ledger-backup{background:transparent!important;border:0!important;border-bottom:1px solid ${C.inkLine}!important;padding:12px 0!important;flex-wrap:wrap}
+  .ledger-toast{white-space:normal!important;flex-wrap:wrap;max-width:calc(100vw - 32px)!important}
+  .ledger-compact .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-compact .ledger-aside{display:none}.ledger-compact .ledger-map{padding-right:0}
+  @media(max-width:800px){.ledger-app{border-left-width:6px;padding:0 14px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:27px}.ledger-navrow{gap:8px!important}.ledger-navtabs{width:100%}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
+`}</style>}
 
 /* ══════════════════════════════════════
    野菜データ
@@ -1380,7 +1412,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
       </defs>
 
       {/* 畑フィールドの土 */}
-      <rect x={padL} y={padT} width={W} height={H} fill="#d4c89c"/>
+      <rect x={padL} y={padT} width={W} height={H} fill="#eef0e4"/>
 
       {/* ポインターイベント受け取り用の透明rect */}
       <rect x={padL} y={padT} width={W} height={H} fill="transparent"
@@ -1443,7 +1475,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
             {/* タップ領域拡張用の不可視rect */}
             <rect x={rx-10} y={ry-10} width={rr.w+20} height={rr.h+20} fill="transparent" stroke="none"/>
             <rect x={rx} y={ry} width={rr.w} height={rr.h}
-              fill={isSel?"#b8ccec":"#e0d4a8"} stroke={isSel?C.indigo:C.inkBorder}
+              fill={isSel?"#c2d1b8":"#dce3cc"} stroke={isSel?C.indigo:C.inkBorder}
               strokeWidth={isSel?2.5:1.5} rx={3}/>
             {/* 土壌重なり（連作由来）ハッチ表示 */}
             {(soil&&soil[fid]||[]).filter(function(s){return s.year<year&&ridgesOverlap(ridge,s);}).map(function(s,i){
@@ -1451,10 +1483,10 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
               return <rect key={"soil"+i} x={padL+ix.xa*CS} y={padT+ix.ya*CS} width={(ix.xb-ix.xa)*CS} height={(ix.yb-ix.ya)*CS} fill="url(#soilHatch)" rx={2} style={{pointerEvents:"none"}}/>;
             })}
             {vg && sz > 20 && (
-              <VegetableImage id={vg.id} size={Math.min(sz,28)} x={cx-Math.min(sz,28)/2} y={cy-Math.min(sz,28)/2-6}/>
+              <VegetableImage id={vg.id} size={Math.min(sz-4,28)} x={ridge.orientation==="H"&&rr.w>120?cx-62:cx-Math.min(sz-4,28)/2} y={ridge.orientation==="H"&&rr.w>120?cy-Math.min(sz-4,28)/2:cy-Math.min(sz-4,28)/2-10}/>
             )}
-            <text x={cx} y={cy+(vg&&sz>20?10:4)} textAnchor="middle"
-              fontSize={Math.min(sz*0.65,9)} fill={isSel?C.indigo:C.inkFaint}
+            <text x={vg&&ridge.orientation==="H"&&rr.w>120?cx+10:cx} y={cy+(vg&&sz>20&&!(ridge.orientation==="H"&&rr.w>120)?20:5)} textAnchor="middle"
+              fontSize={Math.min(sz*0.5,14,Math.max(8,(rr.w-8)/((vg?vg.name:ridge.name)||"").length))} fill={isSel?C.indigo:C.ink}
               fontFamily={SERIF} style={{pointerEvents:"none"}}>
               {vg ? vg.name : ridge.name}
             </text>
@@ -1886,6 +1918,11 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   useEffect(function(){if(onActiveFarmChange)onActiveFarmChange(fid);},[fid]);
   const [year, setYear]     = useState(cy);
   const [selRid, setSelRid] = useState(null);
+  const [previewRid,setPreviewRid]=useState(null);
+  const [viewportWidth,setViewportWidth]=useState(window.innerWidth);
+  useEffect(function(){function resize(){setViewportWidth(window.innerWidth);}window.addEventListener("resize",resize);return function(){window.removeEventListener("resize",resize);};},[]);
+  const ledgerDesktop=viewportWidth/(uiScale||1)>800;
+  function selectLedgerRidge(rid){setPreviewRid(rid);setTab("plant");if(!ledgerDesktop)setSelRid(rid);}
   const [tab, setTab]       = useState("plant");
   const [s1, setS1]         = useState(null);
   const [hov, setHov]       = useState(null);
@@ -2257,7 +2294,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       var rid = curRidgeIds[i];
       var cr = farmRidges[rid], lr = last.ridges[rid];
       if (!lr) return false;
-      if (cr.gx!==lr.gx||cr.gy!==lr.gy||cr.gl!==lr.gl||cr.orientation!==lr.orientation||cr.name!==lr.name) return false;
+      if (cr.gx!==lr.gx||cr.gy!==lr.gy||cr.gl!==lr.gl||cr.ridgeW!==lr.ridgeW||cr.orientation!==lr.orientation||cr.name!==lr.name) return false;
     }
     /* 作付けの比較 */
     var curP = (plantings[fid]&&plantings[fid][year]) || {};
@@ -2282,8 +2319,11 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   }
 
   const ridgeCount = Object.keys(farmRidges).length;
-  const plantedN   = Object.values(farmRidges).filter(function(r){ return farmPlant[r.id]&&farmPlant[r.id].vid; }).length;
+  const plantedN   = Object.values(farmRidges).filter(function(r){ return extractVid(farmPlant[r.id]); }).length;
   const selRidgeObj = selRid ? farmRidges[selRid] : null;
+  const previewRidge=farmRidges[previewRid]||Object.values(farmRidges)[0]||null;
+  const previewPlant=previewRidge?gp(previewRidge.id):null;
+  const previewVeg=previewPlant&&VM[previewPlant.vid];
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [renamingFarm, setRenamingFarm] = useState(false);
@@ -2297,14 +2337,16 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   var bottomBarH = isTouchDevice ? 138 : (s1 ? 120 : 80);
 
   return (
-    <div style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
+    <div className={"ledger-app"+(ledgerDesktop?"":" ledger-compact")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
       onClick={function(){ closeSheet(); if(s1){setS1(null);setHov(null);} setMenuOpen(false); }}>
+      <LedgerStyle/>
 
       {/* ══ ヘッダー（シンプル） ══ */}
-      <div style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
+      <div className="ledger-header" style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
+        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの作付け台帳</div></div></header>
 
         {/* 畑タブ行 */}
-        <div style={{display:"flex",alignItems:"stretch",overflowX:"auto",borderBottom:"1px solid "+C.inkLine}}>
+        <div className="ledger-farms" style={{display:"flex",alignItems:"stretch",overflowX:"auto",borderBottom:"1px solid "+C.inkLine}}>
           {farms.map(function(f){
             const active=fid===f.id;
             return (
@@ -2322,14 +2364,14 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         </div>
 
         {/* 年ナビ + メニュー */}
-        <div style={{display:"flex",alignItems:"center",padding:"10px 16px",gap:12}}>
+        <div className="ledger-navrow" style={{display:"flex",alignItems:"center",padding:"10px 16px",gap:12}}>
 
           {/* マップ／変遷 セグメント */}
-          <div style={{display:"flex",border:"1px solid "+C.inkLine,borderRadius:3,overflow:"hidden",flexShrink:0}}>
-            {[{id:"map",label:"畑の地図"},{id:"history",label:"きろく帳"}].map(function(t){
+          <div className="ledger-navtabs" style={{display:"flex",border:"1px solid "+C.inkLine,borderRadius:3,overflow:"hidden",flexShrink:0}}>
+            {[{id:"map",label:"畑のようす"},{id:"history",label:"きろく帳"}].map(function(t){
               const active=mainTab===t.id;
               return (
-                <button key={t.id}
+                <button key={t.id} aria-current={active?"page":undefined}
                   onClick={function(e){e.stopPropagation();setMainTab(t.id);closeSheet();setS1(null);setHov(null);}}
                   style={{padding:"12px 16px",border:"none",background:active?C.ink:"transparent",color:active?C.paper:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,fontWeight:active?"bold":"normal"}}>
                   {t.label}
@@ -2367,7 +2409,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
           {/* … メニュー */}
           <div style={{position:"relative",flexShrink:0}}>
-            <button onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
+            <button aria-label="その他の操作" onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
               style={{background:menuOpen?C.ink:"none",color:menuOpen?C.paper:C.inkFaint,border:"1px solid "+(menuOpen?C.ink:C.inkBorder),width:32,height:32,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF,letterSpacing:0}}>
               ⋯
             </button>
@@ -2430,7 +2472,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
         {/* バックアップ催促バナー */}
         {showBackupNudge && (
-          <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:"#fffbe6",borderTop:"1px solid #d4a800",borderBottom:"1px solid #d4a800"}}>
+          <div className="ledger-backup" onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:"#fffbe6",borderTop:"1px solid #d4a800",borderBottom:"1px solid #d4a800"}}>
             <span style={{fontSize:16,flexShrink:0}}>💾</span>
             <span style={{flex:1,fontSize:12,color:"#7a5800",fontFamily:HAND,letterSpacing:0.5,lineHeight:1.7}}>
               大切なデータが失われる前に<strong>バックアップ</strong>を保存しましょう
@@ -2445,7 +2487,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {/* 削除確認バー */}
         {confirmDelete && farm && (
           <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",background:C.redPale,borderTop:"1px solid "+C.red}}>
-            <span style={{flex:1,fontSize:12,color:C.red,fontFamily:HAND}}>「{farm.name}」を削除しますか？　元に戻せません。</span>
+            <span style={{flex:1,fontSize:14,color:C.red,fontFamily:HAND}}>「{farm.name}」と、この畑の記録を削除しますか？ 大切な記録は先にバックアップしてください。</span>
             <button onClick={function(e){e.stopPropagation();setConfirmDelete(false);}} style={{padding:"6px 14px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
             <button onClick={function(e){e.stopPropagation();const rem=farms.filter(function(f){return f.id!==fid;});onDeleteFarm(fid);setConfirmDelete(false);if(rem.length>0)setFid(rem[0].id);}}
               style={{padding:"6px 14px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>削除する</button>
@@ -2466,16 +2508,18 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       </div>
 
       {/* ══ コンテンツエリア ══ */}
-      <div style={{padding:"20px 16px",paddingBottom:(bottomBarH+24)+"px",overflowX:"auto",touchAction:(s1||isPressing)?"none":"auto"}} onClick={function(e){e.stopPropagation();}}>
+      <div className="ledger-title"><small>{mainTab==="map"?"畑の名前":"きろく帳"}</small><h1>{farm.name}</h1></div>
+      <div className="ledger-content" style={{padding:"20px 16px",paddingBottom:(bottomBarH+24)+"px",overflowX:"auto",touchAction:(s1||isPressing)?"none":"auto"}} onClick={function(e){e.stopPropagation();}}>
 
         {/* ── マップビュー ── */}
         {farm && mainTab === "map" && (
-          <div style={{display:"inline-block",minWidth:"fit-content"}}>
+          <div className="ledger-spread" style={{display:"inline-block",minWidth:"fit-content"}}>
+            <div className="ledger-map">
 
             {/* フィールドヘッダー */}
-            <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>{farm.name}　{year}年</span>
-              {farm.widthM && <span style={{fontSize:12,color:C.inkLine,fontFamily:HAND,marginLeft:4}}>{farm.widthM}m×{farm.heightM}m</span>}
+            <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
+              <span>畑の見取り図</span>
+              <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
               {ridgeCount > 0 && plantedN < ridgeCount && (
                 <span style={{fontSize:12,color:C.indigo,fontFamily:HAND,marginLeft:4,letterSpacing:1,fontWeight:"bold"}}>
                   ▶ 残り{ridgeCount-plantedN}畝に野菜を設定しましょう
@@ -2513,7 +2557,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                         style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:HAND,color:C.inkFaint}}>全体</button>}
                     </div>
                   )}
-                  <div style={{border:"2px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkLine,
+                  <div className="ledger-fieldbox" style={{border:"2px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkLine,
                     overflowX:"auto",overflowY:"auto",maxWidth:"100%",
                     maxHeight:isLarge?(typeof window!=="undefined"?Math.min(window.innerHeight*0.55,400)+"px":"380px"):"none",
                     position:"relative"}}>
@@ -2526,8 +2570,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 onMove={function(pt){ if(s1) setHov(clampPt(pt)); }}
                 onZoomChange={setZoom}
                 onPressChange={setIsPressing}
-                onRidgeTap={function(rid){ if(!s1){setSelRid(rid);setTab("plant");} }}
-                selRid={selRid}
+                onRidgeTap={function(rid){ if(!s1)selectLedgerRidge(rid); }}
+                selRid={selRid||(ledgerDesktop&&previewRidge?previewRidge.id:null)}
               />
                   </div>
                 </div>
@@ -2556,16 +2600,16 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
             {/* 畝一覧 */}
             {ridgeCount > 0 && (
-              <div style={{marginTop:20,maxWidth:500}}>
+              <div className="ledger-list" style={{marginTop:20,maxWidth:500}}>
                 <SectionTitle>畝一覧</SectionTitle>
                 {Object.values(farmRidges).map(function(ridge){
-                  const pl=farmPlant[ridge.id];
+                  const pl=gp(ridge.id);
                   const vg=pl&&pl.vid?VM[pl.vid]:null;
                   const warn=checkRot(fid,ridge.id,year,plantings,soil,farmRidges);
                   const isSel=selRid===ridge.id;
                   return (
-                    <div key={ridge.id}
-                      onClick={function(e){e.stopPropagation();setSelRid(isSel?null:ridge.id);setTab("plant");}}
+                    <button key={ridge.id} aria-label={ridge.name+" "+(vg?vg.name:"野菜未登録")} aria-pressed={ledgerDesktop?previewRidge&&previewRidge.id===ridge.id:isSel}
+                      onClick={function(e){e.stopPropagation();selectLedgerRidge(ridge.id);}}
                       style={{display:"flex",alignItems:"center",gap:12,padding:"11px 10px",marginBottom:4,cursor:"pointer",background:isSel?C.indigoPale:C.paper2,border:"1px solid "+(isSel?C.indigo:C.inkLine),borderRadius:3,transition:"all .1s"}}>
                       <div style={{width:42,height:42,border:"2px solid "+(vg?C.inkLine:C.indigo),background:vg?C.paper:C.indigoPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,borderRadius:2}}>
                         {vg ? <VeggieStamp id={vg.id} size={32}/> : <span style={{fontSize:20,color:C.indigo,fontWeight:"bold"}}>＋</span>}
@@ -2586,11 +2630,18 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                         </div>
                       )}
                       <span style={{fontSize:12,color:C.inkLine,flexShrink:0}}>›</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             )}
+            </div>
+            <aside className="ledger-aside" aria-label="選んだ畝の記録" aria-live="polite">
+              {previewRidge?<Fragment><small>{previewRidge.name}の記録</small><h2>{previewVeg?previewVeg.name:"野菜を選びましょう"}</h2>{previewVeg&&<VeggieStamp id={previewVeg.id} size={88}/>}
+                <dl><div><dt>植えた日</dt><dd>{previewPlant&&previewPlant.month?previewPlant.month+"月"+(previewPlant.day?previewPlant.day+"日":""):"未記入"}</dd></div><div><dt>畝の幅</dt><dd>{Number(((previewRidge.ridgeW||RWIDTH)*(farm.cellCm||100)).toFixed(1))}cm</dd></div><div><dt>畝の長さ</dt><dd>{Number((previewRidge.gl*(farm.cellCm||100)/100).toFixed(2))}m</dd></div></dl>
+                <button onClick={function(){setSelRid(previewRidge.id);setTab("plant");}}>野菜・記録を開く</button><p>畝や畝一覧を押すと、ここに記録が表示されます。</p>
+              </Fragment>:<Fragment><h2>最初の畝を作る</h2><p>「畝を引く」から、向き・幅・位置を選べます。</p><button onClick={openRidgePicker}>＋ 畝を引く</button></Fragment>}
+            </aside>
           </div>
         )}
 
@@ -2673,7 +2724,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {/* ══ フローティングボトムバー ══ */}
       {mainTab === "map" && (
-        <div onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
+        <div className="ledger-bottom" onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
 
           {/* 畝引き中の案内（マウス用のみ表示） */}
           {s1 && !isTouchDevice && (
@@ -2749,7 +2800,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {/* 変遷タブ用ボトムバー */}
       {mainTab === "history" && (
-        <div onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,padding:"12px 16px",boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
+        <div className="ledger-bottom" onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,padding:"12px 16px",boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
           <button onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
             disabled={isSameAsLastSnap}
             style={{width:"100%",padding:"14px 0",border:"2px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink),background:snapMsg?C.greenPale:isSameAsLastSnap?"transparent":C.ink,color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.paper,fontSize:14,cursor:isSameAsLastSnap?"default":"pointer",fontFamily:SERIF,letterSpacing:2,display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderRadius:3,transition:"all .25s",opacity:isSameAsLastSnap?0.45:1}}>
@@ -2761,10 +2812,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=farm;onUpdateFarm(f);setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
       {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:next}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
-      <div style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"この端末に自動保存済み"}</div><OfflineNotice/></div>
+      <div className="ledger-status" style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"この端末に自動保存済み"}</div><OfflineNotice/><button onClick={function(e){e.stopPropagation();onShowFaq();}} style={{marginTop:8,border:0,background:"transparent",color:C.ink,fontSize:14}}>よくある質問</button></div>
       {/* 畝ボトムシート */}
       {toast && (
-        <div style={{position:"fixed",bottom:bottomBarH+16,left:"50%",transform:"translateX(-50%)",zIndex:80,
+        <div className="ledger-toast" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:80,
           background:C.ink,color:C.paper,padding:"14px 18px",borderRadius:4,
           boxShadow:"0 4px 16px rgba(28,20,8,0.35)",display:"flex",alignItems:"center",gap:14,
           fontSize:14,fontFamily:SERIF,letterSpacing:1,maxWidth:"90vw",whiteSpace:"nowrap"}}>
@@ -2870,7 +2921,7 @@ const FAQ_DATA = [
         "q": "作った畑や畝を直したり、目印を付けたりできますか？",
         "a": [
           "はい。畑の大きさ・形・目印は「⋯」→「畑・目印を編集」から変更できます。「田中さんの家」「入口」など、目印に名前を付けると地図の向きが分かりやすくなります。畑の名前は「⋯」→「畑名を変更」で直せます。",
-          "畝は、その畝を押し、「この畝を編集」を押して項目を開いてから「畝の大きさ・位置を編集」を選びます。作付け履歴を残したまま、幅・長さ・向き・位置を変更できます。畝の名前は、畝名の横の編集から変更してください。",
+          "畝は、その畝を押して記録を開き、「この畝を編集」→「畝の大きさ・位置を編集」を選びます。右側に畝の記録が表示される画面では、先に「野菜・記録を開く」を押してください。作付け履歴を残したまま、幅・長さ・向き・位置を変更できます。畝の名前は、畝名の横の編集から変更してください。",
           "畑を小さくして畝がはみ出すときは、先に畝の位置や長さを直してください。畝の配置は各年で共通なので、以前の配置も見返したいときは、変更前に「記録する」で残しておきましょう。"
         ]
       }
@@ -2882,7 +2933,7 @@ const FAQ_DATA = [
       {
         "q": "育てている野菜を記録したいです。植えた日を忘れていても大丈夫ですか？",
         "a": [
-          "植えた日が分からなくても記録できます。畝を押して野菜を選び、「植え付ける」で確定してください。月・日は分かる範囲だけ選べば大丈夫です。",
+          "植えた日が分からなくても記録できます。畝を押して記録を開き、野菜を選んで「植え付ける」で確定してください。右側に畝の記録が表示される画面では、「野菜・記録を開く」から進みます。月・日は分かる範囲だけ選べば大丈夫です。",
           "すでに育てている野菜から、少しずつ記録していきましょう。前の年の作付けを入力したいときは、画面上部で年を切り替えてから畝を選びます。"
         ]
       },
@@ -3098,6 +3149,7 @@ function FAQScreen({ onClose }) {
 
       {/* コンテンツ */}
       <div style={{maxWidth:680,margin:"0 auto",padding:"32px 16px 60px"}}>
+        <p style={{fontFamily:SANS,fontSize:16,lineHeight:1.8,marginBottom:24}}>畝を押すと記録を開けます。パソコンなどで右側に畝の記録が出るときは、「野菜・記録を開く」から編集や履歴の確認へ進んでください。</p>
         <label style={{display:"block",fontFamily:SANS,fontSize:15,marginBottom:8}} htmlFor="faq-search">知りたいことを検索</label>
         <input id="faq-search" type="search" value={query} onChange={function(e){setQuery(e.target.value);}} placeholder="例：畝幅、季節、バックアップ" style={{width:"100%",minHeight:48,padding:"10px 12px",fontSize:16,border:"1px solid "+C.inkBorder,background:C.paper2,color:C.ink,marginBottom:14}}/>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>{["全て"].concat(FAQ_DATA.map(function(c){return c.cat;})).map(function(name){return <button key={name} aria-pressed={category===name} onClick={function(){setCategory(name);}} style={{minHeight:44,padding:"8px 12px",border:"1px solid "+C.inkBorder,background:category===name?C.indigo:C.paper2,color:category===name?C.paper:C.ink,fontSize:14,cursor:"pointer"}}>{name}</button>;})}</div>
@@ -3565,7 +3617,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
 
   /* snapOverride があれば固定、なければ年選択 */
   var isSnap = !!snapOverride;
-  var activeRidges = isSnap ? (snapOverride.ridges || {}) : (ridges[farm.id] || {});
+  var activeRidges = isSnap ? (snapOverride.ridges || {}) : Object.fromEntries(Object.entries(ridges[farm.id] || {}).filter(function(entry){var r=entry[1];return (!r.addedFrom||r.addedFrom<=year)&&(!r.deletedFrom||r.deletedFrom>year);}));
   var activePlantings = isSnap ? (snapOverride.plantings || {}) : ((plantings[farm.id] && plantings[farm.id][selYear]) || {});
   var activeYear = isSnap ? snapOverride.year : selYear;
 
