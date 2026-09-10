@@ -283,6 +283,21 @@ function GridPreview({ rows, cols, grid, size, gap }) {
 /* ══════════════════════════════════════
    ルート
 ══════════════════════════════════════ */
+function readRecovery() {
+  try {var d=JSON.parse(localStorage.getItem("hatakebo_data")||"{}");return Array.isArray(d.recovery)?d.recovery.filter(function(s){return s&&Array.isArray(s.farms)&&s.plantings&&s.ridges&&s.snapshots&&s.soil;}).slice(-5):[];}catch(e){return [];}
+}
+function saveWithRecovery(current,history) {
+  var kept=history.slice(-5);
+  for(;;){
+    try {localStorage.setItem("hatakebo_data",JSON.stringify(Object.assign({},current,{recovery:kept})));return {saved:true,history:kept};}
+    catch(e){if(!kept.length)return {saved:false,history:history};kept.shift();}
+  }
+}
+function OfflineNotice() {
+  const [status,setStatus]=useState(window.hatakeboOfflineStatus||"preparing");
+  useEffect(function(){function update(){setStatus(window.hatakeboOfflineStatus||"preparing");}window.addEventListener("hatakebo-offline-status",update);update();return function(){window.removeEventListener("hatakebo-offline-status",update);};},[]);
+  return <div role="status" style={{fontSize:14,color:C.inkFaint,padding:"6px 0"}}>{status==="ready"?"電波のない場所でも使えます":status==="offline"?"電波がなくても記録できます":status==="preparing"?"畑で使えるよう準備しています…":"電波のある場所で一度開くと、畑で使う準備ができます"}</div>;
+}
 function HatakeApp() {
   const [activeFarmId,setActiveFarmId] = useState(null);
   /* ── localStorage からデータを読み込む（初回のみ） ── */
@@ -348,24 +363,25 @@ function HatakeApp() {
   });
 
   /* ── データが変わるたびに自動保存 ── */
-  const historyRef=useRef([]), previousRef=useRef(null), undoingRef=useRef(false);
-  const [undoCount,setUndoCount]=useState(0);
+  const [initialRecovery]=useState(readRecovery);
+  const historyRef=useRef(initialRecovery), previousRef=useRef(null), undoingRef=useRef(false);
+  const [undoCount,setUndoCount]=useState(initialRecovery.length);
+  const [recoveryLimited,setRecoveryLimited]=useState(false);
   function undoChange(){
     var d=historyRef.current.pop();if(!d)return;
     undoingRef.current=true;setUndoCount(historyRef.current.length);
     setFarms(d.farms);setPlantings(d.plantings);setRidges(d.ridges);setSnapshots(d.snapshots);setSoil(d.soil);
+    if(d.farms.length){setActiveFarmId(d.farms[0].id);setScreen("map");}
   }
   const [saveError, setSaveError] = useState(false);
   useEffect(function(){
     var current={farms,plantings,ridges,snapshots,soil};
-    if(previousRef.current&&!undoingRef.current){historyRef.current.push(previousRef.current);setUndoCount(historyRef.current.length);}
+    if(previousRef.current&&!undoingRef.current){historyRef.current.push(previousRef.current);historyRef.current=historyRef.current.slice(-5);}
     previousRef.current=current;undoingRef.current=false;
-    try {
-      localStorage.setItem("hatakebo_data", JSON.stringify({ farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots, soil:soil }));
-      if (saveError) setSaveError(false);
-    } catch(e) {
-      setSaveError(true);
-    }
+    var result=saveWithRecovery(current,historyRef.current);
+    setRecoveryLimited(result.saved&&result.history.length<historyRef.current.length);
+    if(result.saved)historyRef.current=result.history;
+    setUndoCount(historyRef.current.length);setSaveError(!result.saved);
   }, [farms, plantings, ridges, snapshots, soil]);
 
   /* ── バックアップ：JSONファイルとしてダウンロード ── */
@@ -428,15 +444,18 @@ function HatakeApp() {
     try { localStorage.setItem("hatakebo_uiScale", String(v)); } catch(e){}
   }
 
-  if (screen === "setup") {
+  if (screen === "setup" || farms.length===0) {
     return (
       <div style={{zoom:uiScale}}>
+        {undoCount>0&&<button onClick={undoChange} style={{minHeight:44,fontSize:16,margin:12}}>直前の操作を戻す</button>}
         <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
+        <OfflineNotice/>
       </div>
     );
   }
   return (
     <div style={{zoom:uiScale}}>
+      {recoveryLimited&&<div role="status" style={{padding:12,fontSize:14}}>今の記録は保存しました。空き容量が少ないため、一部の取り消し履歴を残せませんでした。「バックアップ」で控えを保存してください。</div>}
       {saveError && (
         <div style={{position:"fixed",top:0,left:0,right:0,zIndex:200,background:"#b3382c",color:"#fff",
           padding:"12px 16px",fontSize:13,fontFamily:"'Hiragino Mincho ProN','Yu Mincho',serif",
@@ -1863,6 +1882,7 @@ function ScrollableMenu({children,onClose,scale}) {
 function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots, setSnapshots, soil, setSoil, onAddFarm, onDeleteFarm, onRenameFarm, onExport, onImport, onShowFaq, onUpdateFarm, onRestoreImport, onUndo, canUndo, saveError, uiScale, onChangeUiScale, initialFarmId, onActiveFarmChange }) {
   const cy = new Date().getFullYear();
   const [fid, setFid]       = useState(farms.some(function(f){return f.id===initialFarmId;})?initialFarmId:(farms[0]?farms[0].id:""));
+  useEffect(function(){if(!farms.some(function(f){return f.id===fid;}))setFid(farms[0]?farms[0].id:"");},[farms,fid]);
   useEffect(function(){if(onActiveFarmChange)onActiveFarmChange(fid);},[fid]);
   const [year, setYear]     = useState(cy);
   const [selRid, setSelRid] = useState(null);
@@ -2354,7 +2374,6 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             {menuOpen && (
               <ScrollableMenu onClose={function(){setMenuOpen(false);}} scale={uiScale}>
                 <button onClick={function(){setEditFarm(true);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>畑・目印を編集</button>
-                <button onClick={onRestoreImport} style={{padding:14,fontSize:16,width:"100%"}}>読込前の記録に戻す</button>
                 {canUndo&&<button onClick={function(){onUndo();setToast(null);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>直前の操作を戻す</button>}
                 <button onClick={function(e){e.stopPropagation();onShowFaq();setMenuOpen(false);}}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
@@ -2394,10 +2413,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   <span style={{flex:1}}>バックアップ</span>
                   {showBackupNudge && <span style={{fontSize:12,background:"#d4a800",color:"#fff",padding:"2px 6px",borderRadius:10}}>推奨</span>}
                 </button>
+                <details style={{borderBottom:"1px solid "+C.inkLine}}><summary style={{padding:"12px 16px",minHeight:44,fontSize:14,cursor:"pointer"}}>記録の引き継ぎ・復元</summary>
                 <label style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine}}>
                   <span>📂</span> データを読込む
                   <input type="file" accept=".json" onChange={function(e){e.stopPropagation();onImport(e);setMenuOpen(false);}} style={{display:"none"}}/>
                 </label>
+                <button onClick={onRestoreImport} style={{padding:14,fontSize:14,width:"100%"}}>読込前の記録に戻す</button></details>
                 <button onClick={function(e){e.stopPropagation();setConfirmDelete(function(v){return !v;});setMenuOpen(false);closeSheet();}}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.red,textAlign:"left"}}>
                   <span>🗑</span> この畑を削除
@@ -2740,7 +2761,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=farm;onUpdateFarm(f);setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
       {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:next}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
-      <div role="status" style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}>{saveError?"この端末に保存できていません":"この端末に自動保存済み（他の端末とは同期しません）"}</div>
+      <div style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"この端末に自動保存済み"}</div><OfflineNotice/></div>
       {/* 畝ボトムシート */}
       {toast && (
         <div style={{position:"fixed",bottom:bottomBarH+16,left:"50%",transform:"translateX(-50%)",zIndex:80,
@@ -2849,7 +2870,7 @@ const FAQ_DATA = [
         "q": "作った畑や畝を直したり、目印を付けたりできますか？",
         "a": [
           "はい。畑の大きさ・形・目印は「⋯」→「畑・目印を編集」から変更できます。「田中さんの家」「入口」など、目印に名前を付けると地図の向きが分かりやすくなります。畑の名前は「⋯」→「畑名を変更」で直せます。",
-          "畝は、その畝を押して「畝の大きさ・位置を編集」を選びます。作付け履歴を残したまま、幅・長さ・向き・位置を変更できます。畝の名前は、畝名の横の編集から変更してください。",
+          "畝は、その畝を押して「この畝を編集」→「畝の大きさ・位置を編集」を選びます。作付け履歴を残したまま、幅・長さ・向き・位置を変更できます。畝の名前は、畝名の横の編集から変更してください。",
           "畑を小さくして畝がはみ出すときは、先に畝の位置や長さを直してください。畝の配置は各年で共通なので、以前の配置も見返したいときは、変更前に「記録する」で残しておきましょう。"
         ]
       }
@@ -2884,7 +2905,7 @@ const FAQ_DATA = [
       {
         "q": "1本の畝で、違う野菜を一緒に育てたいです",
         "a": [
-          "畝を押して「2区画に分ける」を選ぶと、長さ方向に半分ずつのA・B区画になります。それぞれに別の野菜を登録できます。長さ60cm以上の畝で使えます。",
+          "畝を押して「この畝を編集」→「2区画に分ける」を選ぶと、長さ方向に半分ずつのA・B区画になります。それぞれに別の野菜を登録できます。長さ60cm以上の畝で使えます。",
           "元の作付け履歴は両方の区画に引き継ぎます。分割は過去の年の地図にも反映されるので、元の配置も残したいときは、先に「記録する」を押しておきましょう。"
         ]
       },
@@ -2904,9 +2925,9 @@ const FAQ_DATA = [
       {
         "q": "電波が届かない畑で使うには、どう準備すればよいですか？",
         "a": [
-          "畑へ出かける前に、電波のある場所でハタケボを開き、畑と野菜の画像が表示されたことを確認しておきましょう。作付けの記録は、インターネットへ送るのではなく、お使いの端末のブラウザ内に保存する仕組みです。",
-          "現在の版は、画面を読み込むときにインターネット接続が必要です。畑では開いておいた画面を使い、ページを閉じたり再読み込みしたりするのは、電波のある場所に戻ってからにしてください。",
-          "端末によっては、ほかのアプリへ切り替えた後に画面が読み直されることもあります。初めて畑へ持っていく前に、お使いの端末で、画面を開いてから通信を切り、入力と「自動保存済み」の表示を一度確かめておくと安心です。"
+          "最初に電波のある場所でハタケボを開き、「電波のない場所でも使えます」と表示されるまでお待ちください。準備は自動で行うので、設定やログインは必要ありません。",
+          "準備ができれば、電波のない畑でも、同じ端末・同じブラウザでいつものアドレスを開いて、畑や野菜の記録を見たり変更したりできます。ページを開き直しても、保存した記録は残ります。",
+          "初めて使うときや、ブラウザのデータを消した後は、電波のある場所で準備してください。「準備しています」と表示されている間は、読み込みが終わるのを待ちましょう。お問い合わせの送信にはインターネット接続が必要です。"
         ]
       },
       {
@@ -2934,12 +2955,12 @@ const FAQ_DATA = [
             "items": [
               "今までの端末で「⋯」→「バックアップ」を押す",
               "保存されたファイルを、使いたい端末へコピーする",
-              "その端末でハタケボを開き、「⋯」→「データを読込む」からファイルを選ぶ",
+              "その端末でハタケボを開き、「⋯」→「記録の引き継ぎ・復元」→「データを読込む」からファイルを選ぶ",
               "置き換えの確認内容を読んで、読み込みを進める"
             ]
           },
           "読み込み先にすでに記録がある場合は、先にそちらもバックアップしてください。読み込みは2つの記録を合わせる操作ではなく、ファイルの内容への置き換えです。",
-          "間違えて読み込んだときは「⋯」→「読込前の記録に戻す」で、直前の1回分を戻せます。スマホとパソコンは自動では同期しないため、片方で変更した記録は、改めてファイルで渡してください。"
+          "間違えて読み込んだときは「⋯」→「記録の引き継ぎ・復元」→「読込前の記録に戻す」で、直前の1回分を戻せます。スマホとパソコンは自動では同期しないため、片方で変更した記録は、改めてファイルで渡してください。"
         ]
       },
       {
@@ -2965,9 +2986,9 @@ const FAQ_DATA = [
       {
         "q": "操作を間違えました。元に戻せますか？",
         "a": [
-          "まず「⋯」→「直前の操作を戻す」をお試しください。案内に「もとに戻す」が出ているときは、そこからも取り消せます。何度か操作した場合は、新しい操作から順に戻せます。",
-          "野菜を選び間違えたときも、取り消してから選び直してください。別の野菜で登録し直すと「植え替え」として前の野菜が履歴に残るためです。",
-          "取り消しは、ページを開いている間に使えます。間違いに気付いたら、再読み込みやページを閉じる前に戻してください。畝を削除しても過去年の記録は残りますが、再読み込み後の復元に備えるにはバックアップが役立ちます。"
+          "「⋯」→「直前の操作を戻す」で、新しい変更から順に戻せます。案内に「もとに戻す」が出ているときは、そこからも取り消せます。最近の5回分まで同じ端末に残すので、ページを開き直した後にも使えます。",
+          "野菜を選び間違えたときは、取り消してから選び直してください。別の野菜で登録し直すと「植え替え」として前の野菜が履歴に残るためです。",
+          "空き容量が少ないと、残せる取り消し履歴が少なくなることがあります。もっと前の記録や端末の故障に備えるには、「バックアップ」で控えを残しておくと安心です。"
         ]
       },
       {
@@ -3278,7 +3299,7 @@ function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, 
           </div>
         </div>
 
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}><button onClick={onEdit} style={{minHeight:44,fontSize:16}}>畝の大きさ・位置を編集</button><button onClick={onSplit} style={{minHeight:44,fontSize:16}}>2区画に分ける</button></div>
+        <details style={{marginBottom:12}}><summary style={{minHeight:44,padding:"10px 0",fontSize:14,cursor:"pointer",color:C.inkFaint}}>この畝を編集</summary><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={onEdit} style={{minHeight:44,fontSize:16}}>畝の大きさ・位置を編集</button><button onClick={onSplit} style={{minHeight:44,fontSize:16}}>2区画に分ける</button></div></details>
         {/* 連作警告 */}
         {warning && (
           <div style={{display:"flex",gap:10,alignItems:"center",padding:"9px 14px",marginBottom:10,borderLeft:"4px solid "+(warning==="danger"?C.red:C.orange),background:warning==="danger"?C.redPale:C.orangePale}}>

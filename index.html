@@ -41,7 +41,7 @@
     "isAccessibleForFree": true,
     "featureList": [
       "畑の畝を図で描いて管理",
-      "野菜の作付け記録（41種類）",
+      "野菜の作付け記録（42種類）",
       "季節ごとの植え付け適期サジェスト",
       "連作チェック機能",
       "変遷記録・スナップショット",
@@ -62,9 +62,8 @@
     gtag('js', new Date());
     gtag('config', 'G-EJKX7Y947N');
   </script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="vendor/react-18.3.1.min.js"></script>
+  <script crossorigin src="vendor/react-dom-18.3.1.min.js"></script>
   <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #f4edd8; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }</style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
 </head>
@@ -72,6 +71,7 @@
   <div id="root"></div>
   <script src="vegetables.js"></script>
   <script src="landmarks.js"></script>
-  <script type="text/babel" src="hatakebo.js"></script>
+  <script src="hatakebo.runtime.js"></script>
+  <script src="offline.js"></script>
 </body>
 </html>
