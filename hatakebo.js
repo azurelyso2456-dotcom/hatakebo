@@ -31,6 +31,15 @@ function LedgerStyle(){return <style>{`
   .ledger-app{max-width:1200px;margin:auto;border-left:10px solid ${C.indigo};padding:0 30px!important;background-image:none!important;font-family:${SANS}!important}
   .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
+  .ledger-app button{min-width:44px;font-size:16px}.ledger-app input,.ledger-app select,.ledger-app textarea{font:16px/1.5 ${SANS};min-height:44px;max-width:100%;color:${C.ink}}
+  .ledger-app{font-size:16px;line-height:1.7}.ledger-list>button div{font-size:16px!important;color:${C.ink}!important}
+  .journal-form{display:grid;gap:16px}.journal-form label{display:grid;gap:6px;font-size:16px}.journal-form input,.journal-form select,.journal-form textarea{width:100%;padding:10px;border:1px solid ${C.inkBorder};background:${C.paper};border-radius:3px}
+  .journal-form .journal-check{display:flex;align-items:center;gap:8px}.journal-check input{width:24px;min-height:24px;height:24px}.journal-form summary{cursor:pointer;padding:10px 0;min-height:44px}.journal-form details label{margin-top:12px}
+  .journal-help,.work-date{display:block;font-size:14px;color:${C.inkFaint}}.journal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.journal-actions button,.work-timeline>button{padding:10px 16px;background:${C.paper};border:1px solid ${C.inkBorder};color:${C.ink}}
+  button.journal-primary{background:${C.indigo};color:white;border-color:${C.indigo}}.work-timeline article{padding:16px 0;border-bottom:1px solid ${C.inkLine};overflow-wrap:anywhere}.work-timeline p{margin:8px 0}.work-timeline strong{font-weight:600;font-size:16px}.journal-empty{padding:20px 0;line-height:1.8;color:${C.inkFaint}}
+  .journal-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.journal-toolbar button{padding:10px 16px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink}}.journal-toolbar .journal-primary{background:${C.indigo};color:white}.journal-mode{padding:12px;background:${C.paper2};border:1px solid ${C.inkLine};margin-bottom:16px}
+  .ledger-app .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-app .ledger-aside{display:none}.ledger-app .ledger-map{padding-right:0}.ledger-app .ledger-content{user-select:text}.ledger-app .ledger-bottom{position:sticky!important;bottom:0!important;z-index:30;padding:10px 0!important;background:${C.paper};border-top:1px solid ${C.inkLine}!important}
+  .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
   .ledger-header{position:relative!important;border-bottom:0!important;background:${C.paper}!important}
   .ledger-brand{display:flex;align-items:center;gap:14px;padding:22px 0 16px;border-bottom:1px solid ${C.ink}}
   .ledger-seal{writing-mode:vertical-rl;border:1px solid ${C.indigo};padding:4px 7px;font:20px/1.2 ${SERIF};letter-spacing:2px}
@@ -54,7 +63,7 @@ function LedgerStyle(){return <style>{`
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
   .ledger-status{border-top:1px solid ${C.inkLine};padding:16px 0 22px!important;font:14px/1.8 ${SANS}}
   .ledger-backup{background:transparent!important;border:0!important;border-bottom:1px solid ${C.inkLine}!important;padding:12px 0!important;flex-wrap:wrap}
-  .ledger-toast{white-space:normal!important;flex-wrap:wrap;max-width:calc(100vw - 32px)!important}
+  .ledger-toast{position:static!important;transform:none!important;margin:12px 0;white-space:normal!important;flex-wrap:wrap;max-width:100%!important}
   .ledger-compact .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-compact .ledger-aside{display:none}.ledger-compact .ledger-map{padding-right:0}
   @media(max-width:800px){.ledger-app{border-left-width:6px;padding:0 14px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:27px}.ledger-navrow{gap:8px!important}.ledger-navtabs{width:100%}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
 `}</style>}
@@ -161,8 +170,8 @@ function Hanko({ text, sub, color }) {
       padding:4, flexShrink:0,
       boxShadow:"inset 0 0 0 1px " + clr + "40",
     }}>
-      <div style={{ fontSize:12, fontWeight:"bold", letterSpacing:1 }}>{text}</div>
-      {sub && <div style={{ fontSize:12, marginTop:1, opacity:.8 }}>{sub}</div>}
+      <div style={{ fontSize:14, fontWeight:"bold", letterSpacing:1 }}>{text}</div>
+      {sub && <div style={{ fontSize:14, marginTop:1, opacity:.8 }}>{sub}</div>}
     </div>
   );
 }
@@ -194,13 +203,15 @@ function getSoilVid(fid,ridgeId,year,pls,soil,fRidges){
   return rec?rec.vid:null;
 }
 function recordedFamily(fid,rid,yr,family,pls,soil,beds){
-  var rec=pls[fid]&&pls[fid][yr]&&pls[fid][yr][rid];
-  var list=typeof rec==="string"?[{vid:rec}]:rec?[rec].concat(rec.past||[]):[];
-  if(list.some(r=>VM[r.vid]&&VM[r.vid].family===family))return true;
-  var bed=beds&&beds[rid];return !!bed&&(soil&&soil[fid]||[]).some(r=>r.year===yr&&ridgesOverlap(bed,r)&&VM[r.vid]&&VM[r.vid].family===family);
+  var bed=beds&&beds[rid];if(!bed)return false;
+  var recorded=Object.entries(pls[fid]&&pls[fid][yr]||{}).some(function([id,raw]){
+    var rec=typeof raw==="string"?{vid:raw}:raw;if(!rec)return false;
+    return [rec].concat(rec.past||[]).some(function(p){var where=p.geometry||(beds[id]&&geometryAt(beds[id],yr));return where&&ridgesOverlap(bed,where)&&VM[p.vid]&&VM[p.vid].family===family;});
+  });
+  return recorded||(soil&&soil[fid]||[]).some(r=>r.year===yr&&ridgesOverlap(bed,r)&&VM[r.vid]&&VM[r.vid].family===family);
 }
 function checkRot(fid,ridgeId,year,pls,soil,fRidges){
-  var id=getSoilVid(fid,ridgeId,year,pls,soil,fRidges);
+  var id=extractVid(pls[fid]&&pls[fid][year]&&pls[fid][year][ridgeId]);
   if(!id) return null;
   var fam=VM[id]&&VM[id].family; if(!fam) return null;
   var n=1;
@@ -225,8 +236,8 @@ function RuledLine({ mb }) {
 function SectionTitle({ children }) {
   return (
     <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:14 }}>
-      <span style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, fontFamily:HAND }}>◇</span>
-      <span style={{ fontSize:12, color:C.ink, letterSpacing:2, fontFamily:HAND }}>{children}</span>
+      <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, fontFamily:HAND }}>◇</span>
+      <span style={{ fontSize:14, color:C.ink, letterSpacing:2, fontFamily:HAND }}>{children}</span>
       <div style={{ flex:1, height:1, background:C.inkLine, opacity:.5 }}/>
     </div>
   );
@@ -249,7 +260,7 @@ function OutlineBtn({ children, onClick }) {
     <button onClick={onClick} style={{
       background:"transparent", color:C.inkFaint,
       border:"1px solid " + C.inkLine, borderRadius:2,
-      padding:"11px 20px", fontSize:13, letterSpacing:1,
+      padding:"11px 20px", fontSize:14, letterSpacing:1,
       cursor:"pointer", fontFamily:SERIF, width:"100%",
     }}>{children}</button>
   );
@@ -257,8 +268,8 @@ function OutlineBtn({ children, onClick }) {
 function LedgerRow({ label, value }) {
   return (
     <div style={{ display:"flex", gap:16, padding:"9px 0", borderBottom:"1px solid " + C.inkLine }}>
-      <span style={{ fontSize:12, color:C.inkFaint, width:72, flexShrink:0, fontFamily:HAND, letterSpacing:1 }}>{label}</span>
-      <span style={{ fontSize:13, color:C.ink, fontFamily:SERIF }}>{value}</span>
+      <span style={{ fontSize:14, color:C.inkFaint, width:72, flexShrink:0, fontFamily:HAND, letterSpacing:1 }}>{label}</span>
+      <span style={{ fontSize:14, color:C.ink, fontFamily:SERIF }}>{value}</span>
     </div>
   );
 }
@@ -266,7 +277,7 @@ function NumControl({ label, value, min, max, onChange }) {
   return (
     <div style={{ marginBottom:18 }}>
       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-        <span style={{ fontSize:12, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
+        <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
         <span style={{ fontSize:14, color:C.ink, fontFamily:SERIF, minWidth:24, textAlign:"right" }}>{value}</span>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -330,6 +341,106 @@ function OfflineNotice() {
   useEffect(function(){function update(){setStatus(window.hatakeboOfflineStatus||"preparing");}window.addEventListener("hatakebo-offline-status",update);update();return function(){window.removeEventListener("hatakebo-offline-status",update);};},[]);
   return <div role="status" style={{fontSize:14,color:C.inkFaint,padding:"6px 0"}}>{status==="ready"?"電波のない場所でも使えます":status==="offline"?"電波がなくても記録できます":status==="preparing"?"畑で使えるよう準備しています…":"電波のある場所で一度開くと、畑で使う準備ができます"}</div>;
 }
+/* Geometry versions keep historical years intact; journal entries live with the farm
+   so existing backup, restore and persistent undo include them atomically. */
+function geometryAt(value, year) {
+  var versions=value.versions||{};
+  var key=Object.keys(versions).map(Number).filter(y=>y<=year).sort((a,b)=>b-a)[0];
+  return key===undefined?value:Object.assign({},value,versions[key]);
+}
+function geometryVersion(value, next, year, keys) {
+  function pick(v){return Object.fromEntries(keys.map(k=>[k,v[k]]));}
+  var versions=Object.assign({0:pick(value)},value.versions||{});
+  versions[year]=pick(next);
+  return Object.assign({},value,pick(next),{versions});
+}
+const BED_GEOMETRY=["gx","gy","gl","ridgeW","orientation","name"];
+const FARM_GEOMETRY=["rows","cols","grid","cellCm","widthM","heightM","landmarks"];
+function normalizeRidges(raw){
+  return Object.fromEntries(Object.entries(raw||{}).map(function([fid,group]){
+    var merged={};
+    Object.entries(group||{}).sort((a,b)=>Number(a[0])-Number(b[0])).forEach(function([key,value]){
+      if(value&&Number.isFinite(value.gx)&&Number.isFinite(value.gl)){merged[key]={...value,id:key};return;}
+      if(!/^\d{4}$/.test(key))return;
+      Object.entries(value||{}).forEach(function([id,r]){if(!r||!Number.isFinite(r.gx)||!Number.isFinite(r.gl))return;var old=merged[id];merged[id]=old?geometryVersion(old,r,Number(key),BED_GEOMETRY):{...r,id,addedFrom:r.addedFrom||Number(key)};});
+    });return [fid,merged];
+  }));
+}
+function bedsAt(beds,year){return Object.fromEntries(Object.entries(beds||{}).filter(([id,r])=>(!r.addedFrom||r.addedFrom<=year)&&(!r.deletedFrom||r.deletedFrom>year)).map(([id,r])=>[id,geometryAt(r,year)]));}
+function localDate(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+const WORK_TYPES={plant:"野菜を植えた",fertilizer:"肥料・堆肥を入れた",greenSow:"緑肥をまいた",greenCut:"緑肥を刈った",greenMix:"緑肥を土に混ぜた",harvest:"収穫した",end:"栽培を終えた",note:"メモを残す"};
+function landTimeline(farm,beds,plantings) {
+  var entries=(farm.journal||[]).map(e=>Object.assign({},e,{source:"journal"}));
+  Object.entries(plantings||{}).forEach(([yr,ps])=>Object.entries(ps||{}).forEach(([rid,raw])=>{
+    var rec=typeof raw==="string"?{vid:raw}:raw;
+    if(!rec)return;
+    (rec.past||[]).concat(rec.vid?[rec]:[]).forEach((p,i)=>{
+      if(!p.vid)return;
+      entries.push({id:"crop-"+yr+"-"+rid+"-"+i,source:"crop",kind:"plant",rid,year:Number(yr),month:p.month||null,day:p.day||null,name:(VM[p.vid]||{}).name||p.vid,note:p.note||"",place:p.place||(beds[rid]?geometryAt(beds[rid],Number(yr)).name:"以前の畝"),geometry:p.geometry||null});
+    });
+  }));
+  return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
+}
+function entryDate(e){return e.year?(e.year+"年"+(e.month?e.month+"月"+(e.day?e.day+"日":"（詳細な日付不明）"):"（月日不明）")):"日付不明";}
+function entryAtBed(entry,rid,beds){
+  if(!entry.rid||entry.rid===rid)return true;
+  var child=beds[rid],seen=new Set();
+  while(child&&child.parentRid&&!seen.has(child.id)){
+    seen.add(child.id);
+    if(entry.rid===child.parentRid)return entry.source!=="crop"||entry.year<child.addedFrom;
+    child=beds[child.parentRid];
+  }
+  return false;
+}
+function appendPlanting(old,incoming){
+  var rec=typeof old==="string"?{vid:old}:old;
+  var past=rec&&rec.past?rec.past.slice():[];
+  if(rec&&rec.vid&&rec.month&&incoming.month&&rec.month*32+(rec.day||0)>incoming.month*32+(incoming.day||0))return {...rec,past:past.concat(incoming)};
+  if(rec&&rec.vid){var prior={...rec};delete prior.past;past.push(prior);}
+  return {...incoming,past};
+}
+function WorkTimeline({entries,onEdit,onRemove,limit}) {
+  const [count,setCount]=useState(20);
+  const [removing,setRemoving]=useState(null);
+  if(!entries.length)return <p className="journal-empty">まだ記録はありません。覚えている作業から、少しずつ残せます。</p>;
+  return <div className="work-timeline">{entries.slice(0,limit||count).map(e=><article key={e.id}>
+    <div className="work-date">{entryDate(e)} · {e.place||"畑全体"}</div>
+    <strong>{WORK_TYPES[e.kind]||"作業"}{e.name?"："+e.name:""}</strong>
+    {e.amount&&<div>量：{e.amount}</div>}{e.note&&<p style={{whiteSpace:"pre-wrap"}}>{e.note}</p>}
+    {e.source==="journal"&&onEdit&&<div className="journal-actions">{removing===e.id?<><span>この作業の記録を削除しますか？</span><button onClick={()=>setRemoving(null)}>やめる</button><button onClick={()=>{onRemove(e);setRemoving(null);}}>削除する</button></>:<><button onClick={()=>onEdit(e)}>訂正</button><button onClick={()=>setRemoving(e.id)}>削除</button></>}</div>}
+  </article>)}{!limit&&entries.length>count&&<button onClick={()=>setCount(count+20)}>さらに前の記録を見る</button>}</div>;
+}
+function WorkForm({farm,beds,initial,onSave,onClose}) {
+  const [kind,setKind]=useState(initial.kind||"fertilizer");
+  const [rid,setRid]=useState(initial.rid||"");
+  const [name,setName]=useState(initial.name||"");
+  const [vid,setVid]=useState("");
+  const [vegQuery,setVegQuery]=useState("");
+  const [amount,setAmount]=useState(initial.amount||"");
+  const [note,setNote]=useState(initial.note||"");
+  const [unknown,setUnknown]=useState((!!initial.id&&!initial.month)||(!!initial.year&&initial.year!==new Date().getFullYear()&&!initial.month));
+  const [date,setDate]=useState(initial.year&&initial.month?initial.year+"-"+String(initial.month).padStart(2,"0")+"-"+String(initial.day||1).padStart(2,"0"):localDate());
+  const [dateYear,setDateYear]=useState(String(initial.year||new Date().getFullYear()));
+  const [error,setError]=useState("");
+  var yr=unknown?Number(dateYear):Number(date.slice(0,4));
+  var available=bedsAt(beds,yr);
+  function submit(e){e.preventDefault();
+    if(!Number.isInteger(yr)||yr<1900||yr>2200||(!unknown&&!/^\d{4}-\d{2}-\d{2}$/.test(date))){setError("日付または年を確認してください。");return;}
+    if(rid&&!available[rid]&&!(initial.id&&initial.rid===rid)){setError("この年に記録する畝を選んでください。畑全体も選べます。");return;}
+    if(kind==="plant"&&(!rid||!vid)){setError("野菜を植えた畝と、野菜を選んでください。");return;}
+    var d=unknown?[yr,null,null]:date.split("-").map(Number);
+    onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind,rid:rid||null,year:d[0],month:d[1],day:d[2],name:name.trim(),vid,amount:amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):null});
+  }
+  return <EditDialog title={initial.id?"作業の記録を訂正":"作業を記録"} onClose={onClose}><form className="journal-form" onSubmit={submit}>
+    <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
+    <label>何をした<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+    {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>(v.name+v.kana).includes(vegQuery.trim())).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
+    <label>いつ{unknown?<input aria-label="作業した年" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label>
+    <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
+    <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
+    {error&&<p role="alert">{error}</p>}<div className="journal-actions"><button type="button" onClick={onClose}>やめる</button><button className="journal-primary" type="submit">{initial.id?"訂正を保存":"記録を残す"}</button></div>
+  </form></EditDialog>;
+}
 function HatakeApp() {
   const [activeFarmId,setActiveFarmId] = useState(null);
   /* ── localStorage からデータを読み込む（初回のみ） ── */
@@ -362,18 +473,7 @@ function HatakeApp() {
       const saved = localStorage.getItem("hatakebo_data");
       if (saved) {
         const d = JSON.parse(saved);
-        const raw = d.ridges || {};
-        /* 旧形式は年順に統合し、破棄せず引き継ぐ */
-        const migrated = {};
-        Object.keys(raw).forEach(function(fid) {
-          const farmRidges = raw[fid] || {};
-          const keys = Object.keys(farmRidges);
-          const isOld = keys.length > 0 && !keys[0].startsWith("ridge_");
-          if(isOld){
-            const merged={};Object.keys(farmRidges).sort().forEach(function(y){Object.entries(farmRidges[y]||{}).forEach(function([id,r]){if(r&&Number.isFinite(r.gx)&&Number.isFinite(r.gl))merged[id]={...r,id,addedFrom:merged[id]?merged[id].addedFrom:Number(y)};});});migrated[fid]=merged;
-          }else migrated[fid]=farmRidges;
-        });
-        return migrated;
+        return normalizeRidges(d.ridges);
       }
     } catch(e) {}
     return {};
@@ -402,12 +502,12 @@ function HatakeApp() {
   function undoChange(){
     var d=historyRef.current.pop();if(!d)return;
     undoingRef.current=true;setUndoCount(historyRef.current.length);
-    setFarms(d.farms);setPlantings(d.plantings);setRidges(d.ridges);setSnapshots(d.snapshots);setSoil(d.soil);
+    setFarms(d.farms);setPlantings(d.plantings);setRidges(normalizeRidges(d.ridges));setSnapshots(d.snapshots);setSoil(d.soil);
     if(d.farms.length){setActiveFarmId(d.farms[0].id);setScreen("map");}
   }
   const [saveError, setSaveError] = useState(false);
   useEffect(function(){
-    var current={farms,plantings,ridges,snapshots,soil};
+    var current={schemaVersion:2,farms,plantings,ridges,snapshots,soil};
     if(previousRef.current&&!undoingRef.current){historyRef.current.push(previousRef.current);historyRef.current=historyRef.current.slice(-5);}
     previousRef.current=current;undoingRef.current=false;
     var result=saveWithRecovery(current,historyRef.current);
@@ -418,7 +518,7 @@ function HatakeApp() {
 
   /* ── バックアップ：JSONファイルとしてダウンロード ── */
   function exportData() {
-    const data = JSON.stringify({ farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots, soil:soil }, null, 2);
+    const data = JSON.stringify({ schemaVersion:2, farms:farms, plantings:plantings, ridges:ridges, snapshots:snapshots, soil:soil }, null, 2);
     const blob = new Blob([data], { type:"application/json" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -438,11 +538,12 @@ function HatakeApp() {
       try {
         const d = JSON.parse(ev.target.result);
         if (!Array.isArray(d.farms)||!d.farms.every(function(f){return f&&typeof f.id==="string"&&Number.isInteger(f.rows)&&f.rows>0&&f.rows<=150&&Number.isInteger(f.cols)&&f.cols>0&&f.cols<=150&&Array.isArray(f.grid)&&f.grid.length===f.rows&&f.grid.every(row=>Array.isArray(row)&&row.length===f.cols);})||[d.plantings,d.ridges,d.snapshots,d.soil].some(function(v){return v!==undefined&&(!v||typeof v!=="object"||Array.isArray(v));})) { alert("このファイルはハタケボのバックアップではありません"); return; }
+        if(d.farms.some(f=>f.journal!==undefined&&(!Array.isArray(f.journal)||f.journal.some(e=>!e||typeof e.id!=="string"||typeof e.kind!=="string")))){alert("作業の記録を読み取れませんでした。別のバックアップをお試しください。");return;}
         if(!confirm("現在の畑と記録を、ファイル内の畑"+d.farms.length+"件に置き換えます。続けますか？（置き換え前の状態はこの端末に退避します）"))return;
         localStorage.setItem("hatakebo_before_import",JSON.stringify({farms,plantings,ridges,snapshots,soil}));
         setFarms(d.farms || []);
         setPlantings(d.plantings || {});
-        setRidges(d.ridges || {});
+        setRidges(normalizeRidges(d.ridges));
         setSnapshots(d.snapshots || {});
         setSoil(d.soil || {});
         if (d.farms && d.farms.length > 0) setScreen("map");
@@ -478,7 +579,7 @@ function HatakeApp() {
 
   if (screen === "setup" || farms.length===0) {
     return (
-      <div style={{zoom:uiScale}}>
+      <div style={{zoom:uiScale,"--ui-scale":uiScale}}>
         {undoCount>0&&<button onClick={undoChange} style={{minHeight:44,fontSize:16,margin:12}}>直前の操作を戻す</button>}
         <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
         <OfflineNotice/>
@@ -486,11 +587,11 @@ function HatakeApp() {
     );
   }
   return (
-    <div style={{zoom:uiScale}}>
+    <div style={{zoom:uiScale,"--ui-scale":uiScale}}>
       {recoveryLimited&&<div role="status" style={{padding:12,fontSize:14}}>今の記録は保存しました。空き容量が少ないため、一部の取り消し履歴を残せませんでした。「バックアップ」で控えを保存してください。</div>}
       {saveError && (
         <div style={{position:"fixed",top:0,left:0,right:0,zIndex:200,background:"#b3382c",color:"#fff",
-          padding:"12px 16px",fontSize:13,fontFamily:"'Hiragino Mincho ProN','Yu Mincho',serif",
+          padding:"12px 16px",fontSize:14,fontFamily:"'Hiragino Mincho ProN','Yu Mincho',serif",
           textAlign:"center",letterSpacing:1,lineHeight:1.7}}>
           ⚠ データを保存できません。プライベートモードを解除するか、<br/>
           「⋯」メニューからバックアップを取ってください。
@@ -509,7 +610,7 @@ function HatakeApp() {
         }}
         onExport={exportData} onImport={importData} onUndo={undoChange} canUndo={undoCount>0} saveError={saveError}
         onUpdateFarm={onComplete}
-        onRestoreImport={function(){try{var raw=localStorage.getItem("hatakebo_before_import");if(!raw){alert("退避した記録はありません");return;}if(!confirm("読み込み前の記録に戻しますか？"))return;var d=JSON.parse(raw);setFarms(d.farms);setPlantings(d.plantings);setRidges(d.ridges);setSnapshots(d.snapshots);setSoil(d.soil);}catch(e){alert("復元できませんでした");}}}
+        onRestoreImport={function(){try{var raw=localStorage.getItem("hatakebo_before_import");if(!raw){alert("退避した記録はありません");return;}if(!confirm("読み込み前の記録に戻しますか？"))return;var d=JSON.parse(raw);setFarms(d.farms);setPlantings(d.plantings);setRidges(normalizeRidges(d.ridges));setSnapshots(d.snapshots);setSoil(d.soil);}catch(e){alert("復元できませんでした");}}}
         uiScale={uiScale} onChangeUiScale={changeUiScale}
         onShowFaq={function(){setShowFaq(true);}}/>
       {showFaq && <FAQScreen onClose={function(){setShowFaq(false);}}/>}
@@ -569,9 +670,9 @@ function WelcomeGuide({ onClose, isTouchDevice }) {
   var [page, setPage] = React.useState(0);
   var CARDS = [
     { icon:"✏️", title:"畝（うね）を引く",
-      body: "画面下の「＋ 畝を引く」ボタンから、向き・畝幅・場所を選べます。パソコンでは、畑の上でドラッグする方法も使えます。" },
+      body: "最初は「畝を作る」から向き・幅・場所を選べます。後から直すときは「畑を編集」を押してください。" },
     { icon:"🍅", title:"野菜をえらぶ",
-      body:"引いた畝を押すと、野菜のリストが出てきます。植えた野菜と月日を選ぶだけで記録できます。" },
+      body:"畝を押すと、今のようすと最近の作業が見られます。「作業を記録」で野菜・肥料・緑肥などを残せます。" },
     { icon:"🔄", title:"連作をお知らせ",
       body:"去年と同じ場所に同じ仲間の野菜を植えようとすると、ハタケボが自動でお知らせします。" },
   ];
@@ -582,7 +683,7 @@ function WelcomeGuide({ onClose, isTouchDevice }) {
       display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:C.paper,border:"2px solid "+C.ink,boxShadow:"6px 6px 0 rgba(28,20,8,0.3)",
         maxWidth:340,width:"100%",padding:"32px 24px",textAlign:"center"}}>
-        <div style={{fontSize:12,color:C.inkFaint,letterSpacing:3,fontFamily:HAND,marginBottom:20}}>
+        <div style={{fontSize:14,color:C.inkFaint,letterSpacing:3,fontFamily:HAND,marginBottom:20}}>
           ハタケボの使い方　{page+1} / {CARDS.length}
         </div>
         <div style={{fontSize:56,marginBottom:16,lineHeight:1}}>{card.icon}</div>
@@ -603,7 +704,7 @@ function WelcomeGuide({ onClose, isTouchDevice }) {
         </button>
         {!isLast && (
           <button onClick={onClose}
-            style={{background:"none",border:"none",fontSize:12,color:C.inkFaint,cursor:"pointer",fontFamily:HAND,textDecoration:"underline",letterSpacing:1}}>
+            style={{background:"none",border:"none",fontSize:14,color:C.inkFaint,cursor:"pointer",fontFamily:HAND,textDecoration:"underline",letterSpacing:1}}>
             とばす
           </button>
         )}
@@ -637,7 +738,10 @@ function SimpleLandmarks({rows,cols,landmarks,onChange}) {
   </div>;
 }
 function EditDialog({title,children,onClose}) {
-  return <div role="dialog" aria-modal="true" aria-label={title} style={{position:"fixed",inset:0,zIndex:180,background:"#0007",display:"flex",alignItems:"center",justifyContent:"center",padding:12}} onClick={e=>e.stopPropagation()}><div style={{background:C.paper,color:C.ink,padding:20,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto",boxSizing:"border-box"}}><h2 style={{fontSize:22}}>{title}</h2>{children}<button style={{...EDIT_STYLE,marginTop:12}} onClick={onClose}>変更せず閉じる</button></div></div>;
+  const ref=useRef(null);
+  useEffect(function(){var before=document.activeElement;ref.current.focus();return function(){if(before&&before.isConnected)before.focus();};},[]);
+  function keys(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(ref.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select,textarea,summary,[tabindex="0"]')).filter(n=>n.getClientRects().length);if(!nodes.length){e.preventDefault();return;}var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===ref.current)){e.preventDefault();first.focus();}}}
+  return <div role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1} onKeyDown={keys} style={{position:"fixed",inset:0,zIndex:180,background:"#0007",display:"flex",alignItems:"center",justifyContent:"center",padding:12}} onClick={e=>e.stopPropagation()}><div style={{background:C.paper,color:C.ink,padding:20,width:"100%",maxWidth:600,maxHeight:"calc(90dvh / var(--ui-scale, 1))",overflowY:"auto",boxSizing:"border-box"}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><h2 style={{fontSize:22,flex:1}}>{title}</h2><button type="button" style={{...EDIT_STYLE,width:"auto",flexShrink:0}} onClick={onClose}>閉じる</button></div>{children}</div></div>;
 }
 function FarmEdit({farm,beds,onSave,onClose}) {
   const [w,setW]=useState(farm.cols*(farm.cellCm||100)/100),[h,setH]=useState(farm.rows*(farm.cellCm||100)/100),[lm,setLm]=useState(farm.landmarks||{});
@@ -724,7 +828,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
             <button onClick={function(){ setSelSide(isSel ? null : "top"); }}
               style={{ padding:"10px 60px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                 background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
-                color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                color:isSel?C.indigo:C.ink, fontSize:14, cursor:"pointer", fontFamily:SERIF,
                 letterSpacing:1, marginBottom:4, width:"100%", maxWidth:280 }}>
               {cnt > 0 ? "上辺 ✓ ("+cnt+"件)" : "上辺（北）をタップ"}
             </button>
@@ -739,7 +843,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
               <button onClick={function(){ setSelSide(isSel ? null : "lft"); }}
                 style={{ padding:"0 6px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                   background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
-                  color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                  color:isSel?C.indigo:C.ink, fontSize:14, cursor:"pointer", fontFamily:SERIF,
                   writingMode:"vertical-rl", letterSpacing:1, flexShrink:0 }}>
                 {cnt > 0 ? "左辺✓" : "左辺"}
               </button>
@@ -747,10 +851,10 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
           })()}
           <div style={{ flex:1, border:"2px solid "+C.ink, background:"#d4c89c",
             display:"flex", alignItems:"center", justifyContent:"center",
-            padding:"24px 0", fontSize:12, color:C.inkFaint, fontFamily:HAND }}>
+            padding:"24px 0", fontSize:14, color:C.inkFaint, fontFamily:HAND }}>
             <div style={{ textAlign:"center" }}>
               <div style={{ fontSize:20 }}>🌾</div>
-              <div style={{ fontSize:12, marginTop:4, letterSpacing:1 }}>{cols}×{rows}</div>
+              <div style={{ fontSize:14, marginTop:4, letterSpacing:1 }}>{cols}×{rows}</div>
             </div>
           </div>
           {(function(){
@@ -760,7 +864,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
               <button onClick={function(){ setSelSide(isSel ? null : "rgt"); }}
                 style={{ padding:"0 6px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                   background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
-                  color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                  color:isSel?C.indigo:C.ink, fontSize:14, cursor:"pointer", fontFamily:SERIF,
                   writingMode:"vertical-rl", letterSpacing:1, flexShrink:0 }}>
                 {cnt > 0 ? "右辺✓" : "右辺"}
               </button>
@@ -775,7 +879,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
             <button onClick={function(){ setSelSide(isSel ? null : "bot"); }}
               style={{ padding:"10px 60px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                 background:isSel?C.indigoPale:cnt>0?C.paper2:"transparent",
-                color:isSel?C.indigo:C.ink, fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                color:isSel?C.indigo:C.ink, fontSize:14, cursor:"pointer", fontFamily:SERIF,
                 letterSpacing:1, marginTop:4, width:"100%", maxWidth:280 }}>
               {cnt > 0 ? "下辺 ✓ ("+countSide("bot")+"件)" : "下辺（南）をタップ"}
             </button>
@@ -786,12 +890,12 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
       {/* 辺が選択されたら：種類と位置を選ぶ */}
       {selSide && (
         <div style={{ border:"2px solid "+C.indigo, background:C.indigoPale, padding:"16px 14px", marginBottom:16 }}>
-          <div style={{ fontSize:12, color:C.indigo, fontFamily:SERIF, letterSpacing:2, marginBottom:12 }}>
+          <div style={{ fontSize:14, color:C.indigo, fontFamily:SERIF, letterSpacing:2, marginBottom:12 }}>
             {SIDES.find(function(s){ return s.id===selSide; }).label}
           </div>
 
           {/* 種類 */}
-          <div style={{ fontSize:12, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>目印の種類</div>
+          <div style={{ fontSize:14, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>目印の種類</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:14 }}>
             {lmTypes.map(function(t){
               var isSel = selType === t.id;
@@ -799,7 +903,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
                 <button key={t.id} onClick={function(){ setSelType(t.id); }}
                   style={{ padding:"7px 12px", border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                     background:isSel?C.indigo:"transparent", color:isSel?C.paper:C.ink,
-                    fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                    fontSize:14, cursor:"pointer", fontFamily:SERIF,
                     display:"flex", alignItems:"center", gap:5 }}>
                   <LandmarkImage item={t} size={28}/><span>{t.label}</span>
                 </button>
@@ -808,14 +912,14 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
           </div>
 
           {/* 位置 */}
-          <div style={{ fontSize:12, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>配置する位置</div>
+          <div style={{ fontSize:14, color:C.indigo, fontFamily:HAND, marginBottom:6, letterSpacing:1 }}>配置する位置</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
             {POSITIONS.map(function(pos){
               return (
                 <button key={pos.id} onClick={function(){ placeAt(SIDES.find(function(s){ return s.id===selSide; }), pos); }}
                   style={{ padding:"12px 8px", border:"2px solid "+C.ink,
                     background:C.ink, color:C.paper,
-                    fontSize:13, cursor:"pointer", fontFamily:SERIF, letterSpacing:1 }}>
+                    fontSize:14, cursor:"pointer", fontFamily:SERIF, letterSpacing:1 }}>
                   {<LandmarkImage item={lmTypes.find(function(t){ return t.id===selType; })} size={24}/>} {pos.label}
                 </button>
               );
@@ -827,7 +931,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
       {/* 設置済み一覧 */}
       {Object.keys(landmarks).length > 0 && (
         <div style={{ marginTop:8 }}>
-          <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>設置済み目印</div>
+          <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>設置済み目印</div>
           {(function(){
             var sides = [
               { id:"top", label:"上辺" }, { id:"bot", label:"下辺" },
@@ -840,15 +944,15 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
               var icons = keys.slice(0,3).map(function(k){ return <LandmarkImage key={k} item={landmarks[k]} size={24}/>; });
               return (
                 <div key={s.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", borderBottom:"1px solid "+C.inkLine }}>
-                  <span style={{ fontSize:12, color:C.inkFaint, fontFamily:HAND, width:40 }}>{s.label}</span>
+                  <span style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND, width:40 }}>{s.label}</span>
                   <span style={{ fontSize:14 }}>{icons}</span>
-                  <span style={{ fontSize:12, color:C.inkFaint, fontFamily:HAND }}>{keys.length}件</span>
+                  <span style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND }}>{keys.length}件</span>
                   <button onClick={function(){
                     var n = Object.assign({}, landmarks);
                     keys.forEach(function(k){ delete n[k]; });
                     setLandmarks(n);
                   }} style={{ marginLeft:"auto", padding:"2px 8px", border:"1px solid "+C.inkLine,
-                    background:"transparent", fontSize:12, cursor:"pointer", fontFamily:SERIF, color:C.red }}>消す</button>
+                    background:"transparent", fontSize:14, cursor:"pointer", fontFamily:SERIF, color:C.red }}>消す</button>
                 </div>
               );
             });
@@ -883,7 +987,7 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
           border:"1px solid " + (lm?C.inkBorder:C.inkLine),
           background:lm?C.paper2:"transparent",
           fontSize:lm?14:10, borderRadius:2 }}>
-        {lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ fontSize:12, color:C.inkLine }}>＋</span>}
+        {lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ fontSize:14, color:C.inkLine }}>＋</span>}
       </div>
     );
   }
@@ -898,7 +1002,7 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
           background:active?C.inkFaint:lm?C.paper2:"transparent",
           cursor:active?"default":"pointer",
           display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:12, opacity:active?0.6:1, borderRadius:1 }}>
+          fontSize:14, opacity:active?0.6:1, borderRadius:1 }}>
         {!active && (lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ color:C.inkLine, fontSize:8 }}>＋</span>)}
       </div>
     );
@@ -930,16 +1034,16 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
       </div>
       {Object.keys(landmarks).length > 0 && (
         <div style={{ marginTop:10, width:"100%" }}>
-          <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>設置済み目印</div>
+          <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>設置済み目印</div>
           {Object.entries(landmarks).map(function(e){
             var lm = e[1];
             return (
               <div key={e[0]} onClick={function(){ setEditLM({key:e[0], memo:lm.memo||""}); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid " + C.inkLine, cursor:"pointer" }}>
                 <LandmarkImage item={lm} size={26}/>
-                <span style={{ fontSize:12, color:C.inkFaint, fontFamily:HAND }}>{lm.label}</span>
-                {lm.memo && <span style={{ fontSize:12, color:C.ink }}>— {lm.memo}</span>}
-                <span style={{ fontSize:12, color:C.inkLine, marginLeft:"auto", fontFamily:HAND }}>タップで編集</span>
+                <span style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND }}>{lm.label}</span>
+                {lm.memo && <span style={{ fontSize:14, color:C.ink }}>— {lm.memo}</span>}
+                <span style={{ fontSize:14, color:C.inkLine, marginLeft:"auto", fontFamily:HAND }}>タップで編集</span>
               </div>
             );
           })}
@@ -1003,14 +1107,14 @@ function FarmSetup({ farms, onComplete, onSkip }) {
           {/* ロゴ */}
           <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
             <span style={{ fontSize:20, fontWeight:"bold", letterSpacing:4, color:C.ink }}>ハタケボ</span>
-            <span style={{ fontSize:12, color:C.inkFaint, letterSpacing:2 }}>植え付け記録</span>
+            <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:2 }}>植え付け記録</span>
           </div>
           <div style={{ flex:1 }}/>
           {onSkip && step === 0 && (
-            <button onClick={onSkip} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:C.inkFaint, fontFamily:SERIF }}>とじる</button>
+            <button onClick={onSkip} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:C.inkFaint, fontFamily:SERIF }}>とじる</button>
           )}
           {step > 0 && step < SETUP_STEPS.length-1 && (
-            <span style={{ fontSize:12, color:C.inkFaint, fontFamily:SANS }}>
+            <span style={{ fontSize:14, color:C.inkFaint, fontFamily:SANS }}>
               {step} / {SETUP_STEPS.length-2}
             </span>
           )}
@@ -1037,20 +1141,20 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 boxShadow:"4px 4px 0 " + C.inkFaint }}>
                 <div style={{ position:"absolute", top:4, left:4, right:4, bottom:4, border:"1px solid " + C.inkFaint, pointerEvents:"none" }}/>
                 <div style={{ fontSize:32, fontWeight:"bold", letterSpacing:8, marginBottom:8 }}>ハタケボ</div>
-                <div style={{ fontSize:12, letterSpacing:6, color:C.inkFaint }}>植え付け記録</div>
+                <div style={{ fontSize:14, letterSpacing:6, color:C.inkFaint }}>植え付け記録</div>
                 <div style={{marginTop:16,display:"flex",justifyContent:"center",alignItems:"flex-end",gap:12}}><img src="data:image/png;base64,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" alt="ニンジン" style={{width:32,height:"auto"}}/><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFoAAABXCAYAAACENlLcAAAkX0lEQVR42u19e3xdVbXuN+Zc+5V32iQtLdjSFlrTWgpFeSgkPARfF/Fcdw7noIg/gYPIFeX4PB7PzvagVxQf4EEEH3AU8JwEX1fk4QGbiB4EEURogba0FEpLkzZJk51k773WnOP+sdZca669d9JSivben+EX0uzsrMeYY3zjG98YcwX4//yDmQl//djnB/X19ckDMBb19WVlNpuVfzXhPj5yuZyoNN7+/F62L27c2392+zyuPtaf/UMeqkbO5/OamenIY44465KPXjp823duK+3D2IQcxIbLN2hmdqZbps89/o3H/WtDKrP4sbrW36xduxaDg4P8FwvNQxEuAHDuutwbnt6+4XpKieMbqO7Jz3/oiyd1dHRMEgggxA3GoOBO+BNf/8R5O/a8+GkJubpJNlz2jd5v3hD8nP+SNyUORbi48n9feeyG7U/cV6DC8cOFIXfE3bPqSzdf9RYi4mx/VlQlOwKYWVyUv+i2jbs2/bBExdV16cxF3+j95g192az8SxsZAJxDydADGBAAvOli4R9LTrnRLbplB1KWVFnvLox8EMAd6LeNDOrp6RGPPMLi/E+e95/jYvJdrlfmw5uWPPGNT93wvQ3lp51sb58C/eUD95Dy6I6VHQwAcxpab0q4CRdgSUTC8zwUVemN19/+9dX9/f3KeH5PT1bc0X+H+u7d/3DrpJh8V6k0VWxM1PHcxrbPExEDgPn6V0NbH/09/SqbzcrPf/zqX7ekWv6jPp2RzFoxoLVQqc3bNr3beH62Lyv7+/vVP331k+cPTQ71TJemyoIonZapyXPf/j9/CQADvQPqQHj3q8G9DylDA0BnZyfncjmx9ujXf4ynxIsQQhIJTHsl7B4fOZeZxWDvoOpc38nr1q1Lb96x+fOFcoEBgpQOUjLz6zWL10xks5AH4s1ExK9GFBxyhs7n83oAA+KyCy4bOrzt8B/XJTPEWqPsuVxGufPfbv3aGhA4n8/rnz34kwuLorRIa6U1IBKJFCeF8ysiUkOdXS/LK3O5nEAO4rHHHlt45y/vfO0MXP6QNTTlcjlhf+7PL3WjW4NBp7/hlBsySJe0VlIwlCZPbnn+2XcEIS6HR3dd5OkygwmstEhoSUctXPIkAHxo5Yf23ysZtHPnTok89P+578cffO655w66XQ46FjEz9fb2ynw+rwHoWu/pynU5HSs7uL+nf0YM7cp1OYP5Qe/Cz5x/8x5v5MKy8kpJmUjNkXPW/fsXbj39Kzde3fXw1od/tWd6hAU5QkFRq2wau/isv1m+d+/P96xf38krV64kAOgPqEoW2XhOQD+G1g/RYH5QAeBPfvnj/7Jj+/Y3/uDaH55tiqZDkt5ls1lJRAqARyBo1uJbt163YvPmZ0VDaz2OXrqqdME5F2wazA96ZqG7cl1yoHdAobeXBgAxMDCAbgC9+UEAwMKW+TeP7ylcWGLXcV0XJS69kZmbLrvq0rcWURaChMfEOuEkZCZVv/7ssy8YmjHZ2tww7hzJf8hf9L/G3LH8oiWL/9aKdn3IeXRXV5czODjoMXPmC9++6j079+w4d/fo7iWaeYWnXQgiSJFQ0LShsa7pgaWLFt/3zxfnfqJ0baemVAq6WMxsx565uc9c/uSLxeFmEKmMk5InH33Cv/xpy9PnDReHO8GsPTDXkyNfP3fxTy89+c3XjRS9kR0PPvXMrhMWr9k2NJQZnxhnITS1NbdhXts8NDQ0YHzvOD325GM8Whg9abQ03kNpOqZVtNx7U+47b+/t7eWD6c0HxdCGChERX/PdL75p44vPXr97enT1ZKkAkIZW2pNCEIElmEGOhCOTSLKDjJP53aK2hT89tu6w769pyBwxNfziksLI6LF679jhpeL04lTKWVKYKOh1YmrOE82ULgsJYsZcneZp0lTgMiQRNAgt0x7eoBzMaWjCVtfl59X0S9zcdFhRElgpCEFwhIDjJCBIQCmNYmkaRZShiNGiGze/7fXnnPmed7/n+VwuR4eaoQkAA6CPfO7DN46Wxi4eLxUgHQeOEPBUCcIBJktTcLWGFBIANLPWWmuRSDgiIxJonVLTq0qcWVlWaBwbR8otQZVL0CUXiWQCv21vxN3tdSglHYABRyloCNZ+8Q0wodFTaCx5mGSlp5NScDqJsqeYhWBBBMEGB9j/jwQLIl0vHHTUtz9x01CxC9/sL9y4dm2idckS3dPfrw4JQwdJj1asWLTw0aeeuKzAk8tEJnFnUiQfPe6oFQmlhffY2E5XlyZOUmO7z3enxk7fMTXBbsIhgEHMYLCCZpasnbqSiwXT2lta9DC/5KGl5FFasZAMPNNaT7/oSGMi6QQr6xMKYgKDQQCE9l8L4ovBgCCQDspvIoImAhEgmFHnMtoKZb2qLOkNC5b+sam547vO61+/7ugzz90QatrZrDhYBn9FhiYivvvunyweHh6mCy64ZGvle3b3f/+EsY3r31wY2nHWjr273vRkeRIbW5K0M0lwHYlADQL7liPBQNrTaPQUmsoaDUojqYHxJGFLQwJFR/oCR+DFgVEBMDRzeDPRV38hBDMSmlGngXoFzC16WDqpsbjgoW3KgwMNp6kJI5m6MrV1/KJp+fLvrfnov9wJzzNNBNHT88oMftDp3X898khz630/e39hy7PvSUyMrK0vTACFAjzPg5dO4qX6FNY3CjxVR9iTduBK6V8GB+onUeCxAhR4Psg3qtE6iRnEBCVC3wYxQzKQcDVSWiOtNOo8oEExGhTQ6DHay4w5rkZTyUND2UNCB2ci0qyU1oDjZNKYaqjHeH3TA9yx8MtnX/udn8Nz0QfILLM+0KrxFRm6ry8rzUqPbfrDso23fP+C8aefPr+tNL0EhQmUtaeTgjQTCQYJsAKDUEw5eDHj4MlGiY31hLFkYHDyzUsROPheSwQK5Ae2uBczg4nADKS1RntRY8WkwoLJMho9RkZppBUjpTQcDQjFEKz9M/gABmGZgImZmLVSmpLJpJiuq8dU+7zfNJ9w8leOvfTKn4IZfdmsPBA4OWBDr8t1OaflBz1mbvzdpz/8Ybz04mfqhnZlaHISrDwFIUkLEmAG+QgReKX28VkITCYEttcLbK1z8HzKwa6UwFTSgZYiQF4GM4HIeDWBWPv/5kDtDwydUAotZYU1Ey7WjJXRNuVCKO0HC1PQGagwLfsWMDlVk/8ZRIeC0kDSkcX2eXCXHHnb/Cs++I9L56/etS6Xc07L571X1dC+0E5EgH7k2i+dNf3oQ9e1vPTicm98HEIIj4QQTCTCQwsGceCJFNwdARoc3ng5ITBUn8CTTQmsr3cwnJTQIkh0TGDB4aUSfGOEVmI/KRqYqXM9LJtwccJeF4snPUgvSABgEAsLuYNLIevY5lwcmYeZFZQCNzbIqSVLX0odd/y5x3/gow/lurqc/ODgfhv7ZdX0nMsJImISQt/7kUs/W7jv7nsbt25argsTnkgmmKR0fIjwDQAGoADWHH3Pxr0FiAU0BPYmJJ5NSzyXJExICowc3D6ZJOcbp85VWFzwsKDgIel6vgFJ+9o+AdPJBJ5qTmNgThKbGxx4giCYLZ8KDM+An44p/BGRWTTzAkMQSUo40pmadBue2jC/cM+99zx+w9cuzD/wgLeuq2u/K2u5/3jcJ1ddfrne8eij7WeXx26Yv/25j6RHhxVLCQiSxHZ0kBWbMe9ASDE0Q4HwfFMCA20JPNySwFDGQUlK+DbTIasg8ulbc9HF2j0uTtvtYVlBIeFplKFQJoYSImikaCghMJ4UGHOAOia0lAHHC2gg+0b2EhKTDvnYjQj/Taqj4N8crAMTSTDr5PjejCwWz33/+97z7Jtu/O4fH7nxksRNd/5BHxRD53I5cfnll+snH1o3f8e3b1jX/sJzZ/LEqCuEcIhBZNuYCTVNzhTrKDERdtQn8Ku2BJ5qSaOcSEAwIIjDbquAQCIw8LIJDyeOuDh2TGPudBFzSh6OKAHzS4yEAiYFUJQCEH6QaiEwkXKwRwIpCDQq32VdKbA3k8AzGYkpaMz1TGeXqnCUIpE65ItSSIU9u/Xo0NBZPeec++vuT//btr5sVvZv2MCvCKNzuZzozef5hf++b8Hmm75939wtm1YIXXZdRyakZlMhhCWij3sBtwWAIHlFbWg/QY0nHNw/18GjHXUoJRyAFXzU8bE27Wp0TLlYOqWwuATMn/LQ6HqQioOTMQQTdOC9zzRK/LE5gRcakignpJ8DCJAaaCt6WDSl0eACHmlMsIv2KcYJBWBO0YUSFDCbyii0UoFlKQUwQVLh8NeMN7z17W8+9vyLH+ZcTtAsZbszu0wLGhgYEGDGc5deeE/b1o0ryC177DgJqRDr4XOIfyaJsclVUQ4MEg8zsD0jsKlJopQIkhMRNDMayx4WTSksm/Bw5KSH9pJCWmkABGX8LsBRFcR5Y1lhzajC4SWNx0saTzUlMJwW8ISAJ4CX6hwMpzWSrkJzibFyL+H4KUZLyYUWgWMwz6oyUEAlfRgg0lqppp0vNO2+//5bmHktenrKpoh72dDR3dXlnDY46J24a+tNrZuffgu5JVc7MkFBhvYTlQm8ILuaao3IChkfNgwGlhzCo60OnmlJQgv/t4WncWTBxSmjLk4e8aGipawhTR4VgAhYNpFvHLZgyNGMJpdxWJHR5hLSHiA0IDQh4Wk0lxWWFBROHPVw3F6NpqLyPdmnQBZMoKq+hMkVocMAAiSglFdfLs57/MHB9LJbfnjvyg0bZoSQGaHDEPP/6v3U++oe+d0tjXv3eJ4UjlDW/Ar7tIUI0EzQBIjQt6PDM+vgegWIGSMZiR8tSGN9awoOEZJlheXjZXSNaSycdEHKhxGToqiirDbMgcHQQXITvr3ARFCCUJQCY0kH4wmBMgF1nkJHSaGprOAw+7oHI5QBzC0RASQEWAcwZzGQqognYuF5aqxtnkycenrXiVd+5oGZChoxE43L9vfr9XfcdlRq44Zv1o3t0YpISm1Ti4AbGFcFQ1hGoRgAWWtKhLIApiUAEsiUFY4Zd3HGiIfXTJQgtQYRQQTHk8FFEkfkjDmQ4qyFjoUpM+pdFwsni3jt3mmsHpvCURNFtE6XILSHIBjDRYMASJhApAqyxBH9sG6D/TxBLCQ1j4/RxJ8e+zIzJzBDc0HW7tlBHvn88/rcxsR3523f9jqtlQJJafQINp4VYC4FqhjZ2SOkdAh+7secIMZESuCJJokpSVg9VsZpox7mTZZCXUPYC8XW/WqKvR4uaAWbQUXmEOxzaf86RFQdmmuz0ZgrD84WfNSAAkGC3bLX4IjXDA3vHD79mvt/ty6Xc/59cFDPmgxNaf3QV656F/36V+d6xWkPjuMQfE/zNQeuSBUcVF5+mazD1wJKx0EBEiyMYIbUGodPlXHSXoWOQgnMGiTkzIp3pH5WgZ7Nd4XNg8OoY99ljQ9oK33bSTAsNgnQGnaBa78hfg0McpLEe0Z5z+OPf4SZrweRCqCca0IHAzSAQc3MyaknHs9lRnaDpPSdkY3GzkHY+R4CgVCgMdqvgJ+42GApMYg4vE8Cob7k4ZgJjfmTZSgGWDgx6xEojFqTUBlxNyeYaAmigOzETEAAZsQivGXWFhbHlA+OFlWHZWIF26Pod+MLIIkV1w/tXPzwl3vPIoD7++IzgqKiuyryefCDX/3CSfVjo8coz9VMJKtdKKqoA3kt9GRNEZRULLxPBxlIK8KKSY3lE2Ukg7UX2l9AmN65UaG4gsRWXAuFBYXPfwRFiwTmQFINdAyOFsbAAVfknEBCDIUm85pf1HIU1YETgIPoJeLG0rQYffqpD4CoCqpFxZgQA+DChvUfSo+PMkkZjyvDg82SBic3VjcGVcHrArYBhC9tElDnaawqaMyd8iCYo4vgCu2hongIoYjM+0z6NToKx9dCmGPpUDOhqtiw8oyd7JgtpzIwE+RO02QIEhP5lagsTk8hOTlxzhO/+NHSnv5+ZQ/AOxUdE/3ffbcsLP7w9regVCaWQhi+DGa/yJOWp80yDcvmCthUiBwYmiAZaHZ9juvzaBtso4gJ6YGV8c1p2U6EbBlXs2HbQR1KIX8nMq9FTEaHDoNAhwm81ni8ZXCYjlDoBhyKr8yAIKlap6eSux/67ZsBbBmwRhZCiw/09voQsf5P75vrTjUC2ovjOQHChJBN21DT4BTougBHjMS8TQcs2FbpjEcTQDpQ0QI1jSvWIjJ6cDFG6tQVLIKr6a95O7F9vGA5KI5OUQRFwMIWuyILe4JA42RxmsvPv3AKAB7O56uT4UCwlWFq544309QksxBEsVAMmAX5zb1Qt6UaRNZ0PywVTATVom1UVN20BjQHhzPn46Da5FBmDW9QUxTSZCUPs57hTfpJzyRWUYH2wnrFhzg/uRooEgFfF2QabBbwUJR/NCC4XCIqjJ+0devWdNYawBEGNvKA3vvC+lbs3buGXY988R6VSxziFNlZjmvqJGHBpcFQRlJiDroj8ZQmQGFomxykASiqwefYID8HmImICdWIMY5qqhniD5aUYKQvthpqtmbDMRWYOKbykadcTpeKi7b8/D+WE8AGpwUA9Pf3CADYeOddxzWUys3QWjGBuII6EBtvqE3i4wmmdtlqv6zIiufoWiN6RhFPr32uqLghjgni4QKbSlKDfT5tSQQ6pJ/Gs8kyeNRu0OQ7iDa/x5WrpQHWEAwSDNWiFalNm1YDwMDAQGTo9vVDBABjL2xbmSxPEZNmtpfM0BimaI0NWDPFsrdF/KoqtxBOyEpQlqew+UQUDpFtuAZQz6zaUI23GaVbE0eCvl191ohKc90CNsviuJ05CnVyHIhSiYTGSQAwYEPHQPBdnatOliUXEhJSmyqQqp3XGNeiPhTLyAHGUoSnFLGhWEjWwvdKvYSsRSfiADM5FLCIq7VkAiAp8k7jrRw4DgfAbrQSpmpIsRO4NrBEUQRQ5ZIwgzXDYYXynt0LiAjdtqG7A5wubNuWcpjBdnOHNZh1gK06cAsNoTlo3zOE1kHo+p8i6MdFCTF0aVjAEGC2hgoTV8DRrSRpFxsIig9UhC4TV4keEa5G8CIqvNxcn7bgha3IsnzKwm0LHhkWkgfmIpLlYglNmbq1Wuv60/zBT3IC/uwx0JBubDixtGMbhHSk38HwEzsbqha09kUlu7PLYo70gLD7bLoXVOGjhKAzHQlCDI0KmSfuqYyIvbKtpO1fT1/43ciwH6ntZM7xyrcSfipVHptis5VuBBHU9GRmyNaezL/XAyhOTUmHZKhqhXJilVJGqNUYpArjSyJIEhAcwZBNrwz9paDLwVwpw87Uw+N4ic/VVTpXaceGLQfchAGufJddENWCElvzAVu6T7zfSERwJwt6sL8/LCpCTWWgvx9uscTCqFwBZxYctaw4rLWD74KkwtbN2pNEUdveJ6Ex+oZKlS1q4kbRwpZu7GspyoR8jdbTrMNalrOIGtdR61iVS63J74SyBTGm4qWKYg2eh6H166u1juGgE2JWKuKzkRcKRLMQHGi7sdWKpa4IPuzsbbCwkgqGxRCigiViChzjmOHYCMVyc5VXV4a9QVRTiInq2Iw18oUOihW230uQTGERZKamKttgrDSGh4er9ej29nYI4QSFQ4A1bIovCjM3U2AsYeYhAi2DjNjkdz/YxF+sbUu+N8VIPwNaB8MqIuiLWUIOWQqmpVxG8xazODHVKF5i1JN8TlwpJUTEutqFqHYJQajg/JIrckOwGis7O+E4kkOEF35D1IhDFHiSMSoFyhlblRczwLoWObOYBnPMu5mjRTFKoIGksIljIoot/eGAJzp9jKZwbpqr7CyotqfP9qFDdS+APifJ7d2d1dDR3dFB6YbGpKeVxR8D8sMcK1bsToa9xETWhVOVlhd4MtVsoOhAQrOxl2t5pRF7ZjED1TgHxfpB8QPG5lGMvrwPDLfPpW2WIgiKGU5Do3PGaX8bJgNBRKYeLym39LRwBECsKTY2i8jDrFk4mqEsttEV1vxy5aXHuHIVHttDQvSyJn941p/UWCS2mgBEL2/yk+Naj5mCkJm6PSva2jwz3SJMPU5EZSWd7TKRBDS4yitMYzYYbQURSPgZXJpMTlEFKCpXgUyrueJmCFZjl6q8EdYcR/gzskOfYj8jqqZaVZFVo0tjS55M1dwudn77e7LzFwCtdTKVwpTiJ4hoeqCrSxIF1YKpx2VL6zYlZJBpOXbhFJaeZGnB0ftM618gKmjMpL4IRq44IEfaTPYLP4EyRQ2AypupaTC7cqv6Gm+4mlLb59DCLuij4QiyBS2qGTKVdNI+LyMSnMCEEjnItLVtqdI6uoOCXNU1POym0gzWIQXzOywU4aLtisw1RRxbByLDOcNeeW3toKotSbUNX+v1yrRkWo+VBR/vJ+6CKbr/ioipOjdFmo9PCBS8+nqIltZHfNt2W4YOHrfQdtTyx0aFozWRY8wmAUj2FS8N9oV5jbDpyTUHdC2/YWujRNi3I2uvSrVSZt8IV7GU6jGBuLeRRbVmHwKP/x5HBZmtaTDPeO5Yv5QACbAmckYgJ5uOPfb3vm17VewaGKBj33/pS7q5ZUgEzy3iAK9Ma94ej6msnKoEG6qlVcapH1vzc6HKR9U4XeXJtA/WwYCw+nlqxnZbnNKYHOSPR1DtzlHFkXS806FFIgE3lfzT6ne8e0suIBuhoYmI+7NZQUQTsqHhTpFOM3laAwxFDM+sNlcK69GJdSCQV8qnVR5EtWtlAoe5krlGW8zyomCP4ox8w8yZzMRTKj3ZbqSbk4e5pMrfOewY2V0YX5JmVok00D7/fgBAV5eo4tHZrL/zXy5a+qPJxmZSzAL+Xh9ouyHLHBUnbMYwOExCPAMYMvOslURc85hVhQiNWL1eFKeN+1vGmALJhh+Og4mmCknUvsoAQhQLOZrM6NSCI+4AgN7ubl1zSFUDtIM586e/e+cfF+547igF1hTMRYV7aoKuClkknS0TGN1DoXaWnimJmWZoONyyL/NwfBrB3k5ktAxNFCs9uKJlVoXPVqPVSMMxQY1rkfiQCmohBO06YsmTZ/zgjmMCClvdBWcAA11dciHRlGqde6uubwBp1sIueSvxkTkmCgnLE/AynoEWqmpCRJdU5TpUNUJg9h6SadAak8Q6JtH/I5xHlQAd08CtA4R3aNhXMKlEXNGW0Zq5vp4yhx32LSLigVyXnHFSaSBw9cZTT7l5KNM0JciRTEEQWopaONRu9YDMGFa0UbKWfEg1k1GYkywRiqqim6t7gMSxqTGumGUWiFpeouKcDBUMTXKItuH4MTEk24M4kbJoT8/aaKbANNbSPr7sskt/7HetuvWMhs7n87ovm5Xd51/8AhYt+aVOp0lorRjVc4AxbZriWVKYUdnKnakzkH5tYX1M47C4YzS4Y4qc6pECcwz/eBz7JCuJhhFXY8+K2YVo2mNcOWoasBIdBJ8gAEorp3WOcJYdfdO8I1e9tK6ry6ncz1JFMdd3djJrRallSz68q65hPKibOS7MxPt+JnStN8WTCzMwQyM2Tps4pqBW80dLfLLmRVSw6T7OhCuSWey72vAVDs5UTp1wtEU6VmD5Fa8m4dCO+uYtrznvb77IgOgeGNj3xH8+n9frcl2y60Mfe0EtPvpbqrFZaGilhYjmzUKBKRp8YZpF1KnQKWYVkImqWEv0u5EAz/YDSWn2Dkvt7pt/7TL4FBWdSsFkKen2UGvQOAiYhnZdrefOkVh29FWHd56wZ6CrS9TaMFRz4v+WgW0MQLzzyjsf3DpwX7apMNXOmnWYf0LxAzHx0ZZRa42HoaIYqawCw8HuiuRVK3PORACqtTrERg5Q0RmvzWj8BkeweyIoXipkKJLQzIod6exesOjhs6696cqVGzbgHXfdpWdkVTUckFduyNK8efMKvOjoiwsNzex4iqubmRSNtVrDJXEBCDWn9GslR57hK2YY4RI1PJGsWTtZ4z0RPMwWWPFWXmxxOeyeM2uNiY7DynNOOuVCIirNdtkzbn/r37CB1+W6nDOvun3rOaee2pwpTZ4svJLLQkqBOCcmWx8Nympt69mxubpqv49Jjma31Ay6MBFVrRlZrTZ7O57Yj35L1VA725FFsT0x9hSAVJ5y57Q5e5cuv/zUT/Xew9msXDXL4yVmrwwY1NeTFe19fVS46PzBBS9uO5mLBc8hdnxjiGDGJppCNy15XWPOgq3tx9XqfuT64T6Uv8BTcpmjOQgGxboSFIwskKs8Xd/oTLxuza2nfPWG96479VTntH086WBfi87rOzv5NCK18u8/8Pe7O+ZvTjiOIzQrj6Iutz30YRxbCorbcbYWFPuKoOT9MzLNIvzvq62FfXRmmDic/4hBRvA0MmjXFQ11zkuHL7r71K/f+N51p57qdA8O7vNBKft8jEQ+n9ecy9GSM87YNrJ6zek7m9s2ehCSiDwdDI1HrhB/XENl6U0zTA6FI7vGaKDZsbxCIp1xzsMeBdhndUpRpz3EZQbbqqX2POUkE6NLl286+7prP6CVou7ubk37IXPv1/M6KJ/X63I55+8+9tkXGt/6zvMmly53oeEIxYrC5y0geKAUB15h+ooUU8VqN02BSuWBUM1OaunUs3LzfRnZPl7Y6BDWkJCpPgmslacTCWdiWefGedn3n04NHTuRyxHt5/PxXhYImu23D1x7zdrRX9172+LC2HJ2S64nRUIyg8y0PkdzaaYuZzMFOot3ztbCqhSluNbg2z7xl6NFDB+Ihag+MNtVzT4Js5VAea7O1CemO1c+dcR5l5x1xIknbu/r65M9PT37/Wyll51t+rKQPf1Qt1999YL2J39///xd21d40xMuJ1IJoRgOa19SDJHEf9wDUzQmuy/vM95rPLlyMV4OJMSaXNZmoNhDAayawEiivsOwhqcYc9rlrvYFtxz3nVuvaCMa39cjIw6KoQHAPLxp6LnnDtt4zedubtiy6WweH9OQEgmGiCbUTKVKs1ZuB+Oj1qBjrODkihlBqo2kgoOZQqU9ksIZaWwGrzrmy93XfOsT8FwciJEP2NAAohMKiYErLvmc2Lzps83jI5Ce50GSo6zn5phwF/th6AP11tgIrw01NXDclNTCLkrY7xCR1iw9rXR9vTPc2r6dX7vyijPyX/pxDhC9/ozzn/+5d8xMvUSUB/Rvrv7C28rrH792zq4dy6gwChKkWAhptiUwUbQRsvIKDtDTKer/xg7EsSaCKZzYlrWrdh8TEbPWShE55ZY5KB5x5F2JU7uvOLnngs2PXHJJ4vibbnJfUcQdjLA1ULJ1dLRl02c/foXc+fw/te4dTaqpKS0Tkv0nYPjbvCjcjc6xLglm0R20pYGAK1pe9mQpRwb1dx4E8xzBYKYtfpGO+nzCY1UCO9TYiIm29hfSrzvu8yf/81U3wvPChxC8Ymg7WBhpPxDktzdft2Lsgd98rGFi4gP1I0MgtwSh4QkhhZYkiAmSjQpmVYYw+/W4euaffEUtpGJseC+H+jQq5vZs0SR8yKEInpyjWLNSuszaobpGjLa0FVPLlv1g7nsv+dSqVatG4D82/6A93vig1rjMTP09PcETagl//N71Z4889ofLSlu2nDnfK9bx9CSYtUqQAIGi0XRrexTbyl3Qngo3Zpp9i8SQLKBFxV4w8rc924VGqJIFUj9rz+8DkBBeug5jTS1TWHDErUvPPPtrR57z7qcrneagJetXgwHkcjmBfB75QFtad901K8Rzz37Q3fXS/2ianjwyMz4OFIsAtJYCWgWTfAQipqCxy/GHr/gwwmZ8OtpkzRUSgDabhyj4Yzdag8DK72YJkanDmJNCub5pY3rx4nvaTjr1hhWWgbN9ffrV+PMgr6pq09eXlejpR4+/IwLM3PzgV69+e3HrlnMxNnJaXWGsrb5UhHSL4LIL1loD0Gx0EhL+9hdtntDlS3tGmbN2sfnqhGYFAbDSAAmhQUKmU+BUCoVEEpP1DcPJ9vkDXkv7rad/9l/vIaJyaODOTqaD/BT0P5uhbQ/vHhgQtsLFPN72yDXXrxp+9pkuGhs9jYpTqxu111qnXXC5jAQD2itDKY0ECTBrlD2tKBgnYGiQI6SUEjoYPkmkUigTgFQGEyTgNTa5KpX5vZfO3Nu0+DUPrP7gpU80NS3cHSbxri6nu7tbv5oG/rMaOobh/T3C9nJzGXfd9Z/t7Rs2rRnf9uwRGvJEd2K0XZTdo1LgBdOjY1oS6lqbGzPa9f/GGDsSE8USyuXSSLqxiURD/XSp7P5eNDXvckTq4cSS1zy/YO0bnll6+tuehxsxsz5AIptFT3+/PnBieYgbulbibB8aooHBQZ2v8ac4mFkCaLj1uut4QX25dWnbwlXjI3tZphw0zWmm6ZK346Ftzzz7jnMuFC2LF7tENFnrHtd1dcnhjg5+tfD3kDb0jIbvHKLhDYMMZPFyM39fFhLIwj9GB6/v7Dzof+bj/3lDzyDEmwchoTeXo+4KWXd45QbO9vRrRMoeH6r38n8Bg97mSw5Z7ncAAAAASUVORK5CYII=" alt="トマト" style={{width:32,height:"auto"}}/><img src="data:image/png;base64,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" alt="ナス" style={{width:32,height:"auto"}}/></div>
               </div>
-              <p style={{ fontSize:13, color:C.inkFaint, lineHeight:2.4, letterSpacing:1 }}>
+              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:2.4, letterSpacing:1 }}>
                 畑のレイアウトを年ごとに記録し<br/>
-                連作障害を防ぐための帳簿です
+                畑で育てたもの、土に入れたものを残す帳簿です
               </p>
             </div>
             <RuledLine/>
-            {[["▷","畑の区画マップを作成"],["▷","年ごとの作付け記録"],["▷","連作障害の自動チェック"],["▷","畝の管理"]].map(function(item){
+            {[["▷","畑の区画マップを作成"],["▷","年ごとの作付け記録"],["▷","作付けと土づくりの振り返り"],["▷","畝の管理"]].map(function(item){
               return (
                 <div key={item[1]} style={{ display:"flex", gap:14, padding:"11px 0", borderBottom:"1px solid " + C.inkLine + "80" }}>
-                  <span style={{ color:C.inkFaint, fontSize:12, flexShrink:0, fontFamily:HAND }}>{item[0]}</span>
-                  <span style={{ fontSize:13, letterSpacing:1 }}>{item[1]}</span>
+                  <span style={{ color:C.inkFaint, fontSize:14, flexShrink:0, fontFamily:HAND }}>{item[0]}</span>
+                  <span style={{ fontSize:14, letterSpacing:1 }}>{item[1]}</span>
                 </div>
               );
             })}
@@ -1062,9 +1166,9 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {sn === "size" && (
           <div>
             <div style={{ marginBottom:28 }}>
-              <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第一記 —</div>
+              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第一記 —</div>
               <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>畑の大きさ</h2>
-              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.8 }}>実際の広さをメートルで入力してください</p>
+              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.8 }}>実際の広さをメートルで入力してください</p>
             </div>
 
             <SectionTitle>よく使われるサイズ</SectionTitle>
@@ -1075,8 +1179,8 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                     style={{ padding:"14px 10px", border:"1px solid " + C.inkBorder, borderRadius:2,
                       background:C.paper, cursor:"pointer", fontFamily:SERIF, textAlign:"left",
                       boxShadow:"2px 2px 0 " + C.inkLine }}>
-                    <div style={{ fontSize:13, letterSpacing:1, marginBottom:3 }}>{p.label}</div>
-                    <div style={{ fontSize:12, color:C.inkFaint }}>{p.widthM}m × {p.heightM}m</div>
+                    <div style={{ fontSize:14, letterSpacing:1, marginBottom:3 }}>{p.label}</div>
+                    <div style={{ fontSize:14, color:C.inkFaint }}>{p.widthM}m × {p.heightM}m</div>
                   </button>
                 );
               })}
@@ -1092,7 +1196,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 return (
                   <div style={{ marginBottom:18 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                      <span style={{ fontSize:12, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
+                      <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
                       <span style={{ fontSize:16, color:C.ink, fontFamily:SERIF, fontWeight:"bold" }}>{value.toFixed(2)} m</span>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -1117,9 +1221,9 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               );
             })()}
 
-            <div style={{ padding:"14px 16px", background:C.indigoPale, border:"1px solid "+C.indigo, marginBottom:20, fontSize:12, color:C.indigo, fontFamily:HAND, lineHeight:2, letterSpacing:1 }}>
+            <div style={{ padding:"14px 16px", background:C.indigoPale, border:"1px solid "+C.indigo, marginBottom:20, fontSize:14, color:C.indigo, fontFamily:HAND, lineHeight:2, letterSpacing:1 }}>
               {widthM.toFixed(2)}m × {heightM.toFixed(2)}m　＝　{(widthM*heightM).toFixed(1)} ㎡<br/>
-              <span style={{ fontSize:12, color:C.inkFaint }}>グリッド: {cols}列 × {rows}行（1マス = {CELL_CM}cm）</span>
+              <span style={{ fontSize:14, color:C.inkFaint }}>グリッド: {cols}列 × {rows}行（1マス = {CELL_CM}cm）</span>
             </div>
 
             <InkBtn onClick={function(){ setStep(2); }} primary={true}>次へ</InkBtn>
@@ -1130,9 +1234,9 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {sn === "shape" && (
           <div>
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記 —</div>
+              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記 —</div>
               <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>区画の形</h2>
-              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.8 }}>{rows*cols<=100?"使わない区画をタップして除外できます":"広い畑なので形の編集はスキップできます"}</p>
+              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.8 }}>{rows*cols<=100?"使わない区画をタップして除外できます":"広い畑なので形の編集はスキップできます"}</p>
             </div>
             {rows*cols <= 100 ? (
               <div>
@@ -1159,12 +1263,12 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                     })}
                   </div>
                 </div>
-                <div style={{ textAlign:"center", fontSize:12, color:C.inkFaint, marginBottom:16, letterSpacing:1 }}>{ac} 区画 有効</div>
+                <div style={{ textAlign:"center", fontSize:14, color:C.inkFaint, marginBottom:16, letterSpacing:1 }}>{ac} 区画 有効</div>
                 <OutlineBtn onClick={function(){ setGrid(makeGrid(rows,cols)); }}>すべて有効に戻す</OutlineBtn>
               </div>
             ) : (
               <div style={{ padding:"20px", background:C.paper2, border:"1px solid "+C.inkLine, textAlign:"center", marginBottom:16 }}>
-                <div style={{ fontSize:13, color:C.inkFaint, fontFamily:HAND, lineHeight:2 }}>
+                <div style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND, lineHeight:2 }}>
                   {cols}列 × {rows}行（{(widthM*heightM).toFixed(0)}㎡）の畑です<br/>
                   使わない区画の設定は後から畝を引かないことで対応できます
                 </div>
@@ -1179,9 +1283,9 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {sn === "landmarks" && (
           <div>
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記（補） —</div>
+              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記（補） —</div>
               <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>周囲の目印</h2>
-              <p style={{ fontSize:12, color:C.inkFaint, lineHeight:1.9 }}>方角と周りの目印を記録します（省略可）</p>
+              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.9 }}>方角と周りの目印を記録します（省略可）</p>
             </div>
 
             <SimpleLandmarks rows={rows} cols={cols} landmarks={landmarks} onChange={setLandmarks}/>
@@ -1197,20 +1301,20 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                     style={{ background:C.paper, border:"2px solid " + C.ink, padding:"28px 24px", width:"100%", maxWidth:340, boxShadow:"4px 4px 0 " + C.inkFaint }}>
                     <div style={{ textAlign:"center", marginBottom:20 }}>
                       <div style={{marginBottom:6}}><LandmarkImage item={lm} size={44}/></div>
-                      <div style={{ fontSize:12, color:C.inkFaint, fontFamily:HAND }}>{lm.label}</div>
+                      <div style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND }}>{lm.label}</div>
                     </div>
-                    <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>メモ（任意）</div>
+                    <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, marginBottom:6, fontFamily:HAND }}>メモ（任意）</div>
                     <input autoFocus value={editLM.memo||""} onChange={function(e){ setEditLM(function(p){ return Object.assign({},p,{memo:e.target.value.slice(0,20)}); }); }}
                       placeholder="例：大きなケヤキ"
                       style={{ width:"100%", padding:"10px 0 8px", fontSize:15, border:"none", borderBottom:"1.5px solid " + C.ink,
                         outline:"none", fontFamily:SERIF, background:"transparent", color:C.ink, boxSizing:"border-box", marginBottom:20 }}/>
                     <div style={{ display:"flex", gap:8 }}>
                       <button onClick={function(){ setLandmarks(function(p){ const n=Object.assign({},p); delete n[editLM.key]; return n; }); setEditLM(null); }}
-                        style={{ flex:1, padding:"10px", border:"1px solid " + C.inkBorder, background:"transparent", color:C.red, fontSize:12, cursor:"pointer", fontFamily:SERIF }}>削除</button>
+                        style={{ flex:1, padding:"10px", border:"1px solid " + C.inkBorder, background:"transparent", color:C.red, fontSize:14, cursor:"pointer", fontFamily:SERIF }}>削除</button>
                       <button onClick={function(){
                         setLandmarks(function(p){ return Object.assign({},p,{[editLM.key]:Object.assign({},p[editLM.key],{memo:editLM.memo||""})}); });
                         setEditLM(null);
-                      }} style={{ flex:2, padding:"10px", border:"2px solid " + C.ink, background:C.ink, color:C.paper, fontSize:12, cursor:"pointer", fontFamily:SERIF }}>保存</button>
+                      }} style={{ flex:2, padding:"10px", border:"2px solid " + C.ink, background:C.ink, color:C.paper, fontSize:14, cursor:"pointer", fontFamily:SERIF }}>保存</button>
                     </div>
                   </div>
                 </div>
@@ -1224,13 +1328,13 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {sn === "name" && (
           <div>
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第三記 —</div>
+              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第三記 —</div>
               <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>畑の名称</h2>
             </div>
 
             {/* 畑の名称 */}
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:12, color:C.inkFaint, letterSpacing:3, marginBottom:6, fontFamily:HAND }}>畑の名称</div>
+              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:6, fontFamily:HAND }}>畑の名称</div>
               <input value={name} onChange={function(e){ setName(e.target.value.slice(0,15)); }} placeholder="例：南の畑"
                 style={{ width:"100%", padding:"14px 0 10px", fontSize:18, borderRadius:0, outline:"none",
                   fontFamily:SERIF, boxSizing:"border-box", letterSpacing:2, color:C.ink,
@@ -1241,7 +1345,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                     <button key={n} onClick={function(){ setName(n); }}
                       style={{ padding:"5px 12px", border:"1px solid " + (name===n?C.ink:C.inkLine),
                         background:name===n?C.ink:"transparent", color:name===n?C.paper:C.inkFaint,
-                        fontSize:12, cursor:"pointer", fontFamily:SERIF, letterSpacing:1 }}>{n}</button>
+                        fontSize:14, cursor:"pointer", fontFamily:SERIF, letterSpacing:1 }}>{n}</button>
                   );
                 })}
               </div>
@@ -1265,8 +1369,8 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               <h2 style={{ fontSize:20, fontWeight:"normal", letterSpacing:4, marginBottom:10 }}>
                 {name||"畑"} を登録しました
               </h2>
-              <p style={{ fontSize:12, color:C.inkFaint, letterSpacing:1 }}>{cols}列×{rows}行　{ac}区画</p>
-              {Object.keys(landmarks).length > 0 && <p style={{ fontSize:12, color:C.inkFaint, marginTop:4, letterSpacing:1 }}>目印 {Object.keys(landmarks).length}件</p>}
+              <p style={{ fontSize:14, color:C.inkFaint, letterSpacing:1 }}>{cols}列×{rows}行　{ac}区画</p>
+              {Object.keys(landmarks).length > 0 && <p style={{ fontSize:14, color:C.inkFaint, marginTop:4, letterSpacing:1 }}>目印 {Object.keys(landmarks).length}件</p>}
             </div>
             <RuledLine mb={24}/>
             <OutlineBtn onClick={function(){ setStep(1); setWidthM(2); setHeightM(1.5); setGrid(makeGrid(6,8)); setName(""); setLandmarks({}); }}>
@@ -1300,10 +1404,16 @@ function farmCS(farm, mapZoom) {
   var maxH = Math.min(window.innerHeight * 0.52, 380);
   var csW = Math.floor(maxW / (farm.cols || 5));
   var csH = Math.floor(maxH / (farm.rows || 4));
-  var base = Math.max(8, Math.min(72, Math.min(csW, csH)));
-  return Math.max(8, Math.min(96, Math.round(base * (mapZoom || 1))));
+  var lm=farm.landmarks||{},keys=Object.keys(lm);
+  maxW=Math.max(80,maxW-keys.some(k=>k.startsWith("lft-"))*52-keys.some(k=>k.startsWith("rgt-"))*52);
+  maxH=Math.max(80,maxH-keys.some(k=>k.startsWith("top-"))*52-keys.some(k=>k.startsWith("bot-"))*52);
+  var base = Math.min(72,maxW/farm.cols,maxH/farm.rows);
+  return base * (mapZoom || 1);
 }
-function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange, mapZoom }) {
+function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange, mapZoom }) {
+  var wrapRef=useRef(null);
+  var [availableWidth,setAvailableWidth]=useState(null);
+  useEffect(function(){var el=wrapRef.current&&wrapRef.current.parentElement;if(!el)return;var ro=new ResizeObserver(function(items){setAvailableWidth(items[0].contentRect.width);});ro.observe(el);return ()=>ro.disconnect();},[]);
   var CS = farmCS(farm, mapZoom);
   var W = farm.cols * CS;
   var H = farm.rows * CS;
@@ -1325,6 +1435,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     for (var r2=0; r2<farm.rows; r2++) { if(lm["lft-"+r2]){padL=PAD;break;} }
     for (var r2=0; r2<farm.rows; r2++) { if(lm["rgt-"+r2]){padR=PAD;break;} }
   }
+  if(availableWidth){CS=Math.min(CS,Math.max(20,availableWidth-padL-padR-2)/farm.cols*(mapZoom||1));W=farm.cols*CS;H=farm.rows*CS;}
   var SVG_W = padL + W + padR;
   var SVG_H = padT + H + padB;
 
@@ -1342,6 +1453,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
     return Math.max(0.52, 1-Math.max(0, 1-Math.min(ex,ey))*0.44);
   }
   function onPD(e) {
+    if(!editable)return;
     setPress(true);
     lpStart.current={x:e.clientX, y:e.clientY};
     lpActive.current=false;
@@ -1391,7 +1503,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
   var LM_LABEL_FS = Math.min(PAD * 0.16, 9);
 
   return (
-    <div style={{transition:"transform 0.12s ease-out", transform:"scale("+zoom+")", transformOrigin:"50% 30%", display:"inline-block"}}>
+    <div ref={wrapRef} style={{transition:"transform 0.12s ease-out", transform:"scale("+zoom+")", transformOrigin:"50% 30%", display:"inline-block"}}>
       <svg ref={svgRef}
         viewBox={"0 0 "+SVG_W+" "+SVG_H} width={SVG_W} height={SVG_H}
         onPointerDown={onPD}
@@ -1399,7 +1511,7 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
         onPointerUp={onPU}
         onPointerCancel={function(){cancelLP();setPress(false);onZoomChange(1);}}
         onContextMenu={function(e){e.preventDefault();}}
-        style={{display:"block",maxWidth:"100%",cursor:s1?"crosshair":"default",touchAction:"none",userSelect:"none"}}>
+        style={{display:"block",cursor:s1?"crosshair":"default",touchAction:editable?"none":"pan-x pan-y",userSelect:"none"}}>
 
       {/* 背景（目印エリア含む） */}
       <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
@@ -1579,14 +1691,14 @@ function FarmField({ farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onT
 function PickerRow({ label, value, min, max, onChange, unit }) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,paddingBottom:14,borderBottom:"1px solid "+C.inkLine}}>
-      <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,width:72,flexShrink:0}}>{label}</span>
+      <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,width:72,flexShrink:0}}>{label}</span>
       <button onClick={function(){ if(value>min) onChange(value-1); }}
         style={{width:52,height:52,border:"1px solid "+C.inkBorder,background:C.paper,
           fontSize:24,color:value>min?C.ink:C.inkLine,cursor:value>min?"pointer":"default",
           display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:SERIF}}>－</button>
       <div style={{flex:1,textAlign:"center"}}>
         <span style={{fontSize:20,fontFamily:SERIF,letterSpacing:1,color:C.ink}}>{value}</span>
-        {unit && <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginLeft:2}}>{unit}</span>}
+        {unit && <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,marginLeft:2}}>{unit}</span>}
       </div>
       <button onClick={function(){ if(value<max) onChange(value+1); }}
         style={{width:52,height:52,border:"1px solid "+C.inkBorder,background:C.paper,
@@ -1693,13 +1805,13 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
       position:"fixed",bottom:0,left:0,right:0,zIndex:60,
       background:C.paper,borderTop:"2px solid "+C.ink,
       boxShadow:"0 -6px 24px rgba(28,20,8,0.18)",
-      maxHeight:"88vh",overflowY:"auto",maxWidth:680,margin:"0 auto"
+      maxHeight:"calc(88dvh / var(--ui-scale, 1))",overflowY:"auto",maxWidth:680,margin:"0 auto"
     }}>
       {/* ヘッダー */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid "+C.inkLine,background:C.paper2}}>
         <span style={{fontSize:15,fontFamily:SERIF,letterSpacing:3,color:C.ink}}>畝を引く</span>
         <button onClick={onCancel}
-          style={{background:"none",border:"1px solid "+C.inkBorder,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>
+          style={{background:"none",border:"1px solid "+C.inkBorder,padding:"6px 14px",fontSize:14,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>
           とじる
         </button>
       </div>
@@ -1707,7 +1819,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
       <div style={{padding:"16px 16px 32px"}}>
         {/* 向き */}
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝の向き</div>
+          <div style={{fontSize:14,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝の向き</div>
           <div style={{display:"flex",gap:8}}>
             {[{id:"H",label:"━ 横畝（左右に長い）"},{id:"V",label:"┃ 縦畝（上下に長い）"}].map(function(o){
               var isSel = pickerOri===o.id;
@@ -1721,7 +1833,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
                   }}
                   style={{flex:1,padding:"12px 4px",border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                     background:isSel?C.indigoPale:C.paper2,color:isSel?C.indigo:C.ink,
-                    fontSize:12,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,
+                    fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,
                     fontWeight:isSel?"bold":"normal"}}>
                   {o.label}
                 </button>
@@ -1734,7 +1846,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
         {/* おまかせ一括 */}
         {creationMode==="batch" && onBulkConfirm && Object.keys(farmRidges).length === 0 && (
           <div style={{marginBottom:20,border:"2px solid "+C.green,background:C.greenPale,padding:"14px 12px"}}>
-            <div style={{fontSize:12,color:C.green,fontFamily:SERIF,letterSpacing:2,marginBottom:10,fontWeight:"bold"}}>
+            <div style={{fontSize:14,color:C.green,fontFamily:SERIF,letterSpacing:2,marginBottom:10,fontWeight:"bold"}}>
               ⚡ おまかせでまとめて引く
             </div>
             <div style={{fontSize:14,color:C.inkFaint,lineHeight:1.8,marginBottom:10}}>
@@ -1798,7 +1910,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
             )}
           </svg>
           </div>
-          <div style={{fontSize:12,color:isInvalid?C.red:isZero?C.inkFaint:C.indigo,fontFamily:HAND,letterSpacing:1}}>
+          <div style={{fontSize:14,color:isInvalid?C.red:isZero?C.inkFaint:C.indigo,fontFamily:HAND,letterSpacing:1}}>
             {isInvalid ? "⚠ "+isInvalid : summaryText}
           </div>
         </div>
@@ -1806,7 +1918,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
         {/* 畝幅プリセット */}
         {RIDGE_W_PRESETS.length > 0 && (
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝幅</div>
+            <div style={{fontSize:14,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:8}}>畝幅</div>
             <div style={{display:"flex",gap:6}}>
               {RIDGE_W_PRESETS.map(function(p){
                 var isSel = Math.abs(effectiveRW-p.w) < 0.01;
@@ -1815,16 +1927,16 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
                     onClick={function(){ setPickerRidgeW(p.w); }}
                     style={{flex:1,padding:"10px 4px",border:"2px solid "+(isSel?C.indigo:C.inkBorder),
                       background:isSel?C.indigoPale:C.paper2,color:isSel?C.indigo:C.ink,
-                      fontSize:12,cursor:"pointer",fontFamily:SERIF,
+                      fontSize:14,cursor:"pointer",fontFamily:SERIF,
                       fontWeight:isSel?"bold":"normal",textAlign:"center"}}>
-                    <div style={{fontSize:12}}>{p.label}</div>
-                    <div style={{fontSize:12,color:isSel?C.indigo:C.inkFaint,marginTop:2}}>{p.cm}cm</div>
+                    <div style={{fontSize:14}}>{p.label}</div>
+                    <div style={{fontSize:14,color:isSel?C.indigo:C.inkFaint,marginTop:2}}>{p.cm}cm</div>
                   </button>
                 );
               })}
             </div>
             {pickerRidgeW && (
-              <div style={{fontSize:12,color:C.indigo,fontFamily:HAND,marginTop:8}}>
+              <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:8}}>
                 畝幅 {Math.round(pickerRidgeW * cellCm)}cm で引きます
               </div>
             )}
@@ -1840,10 +1952,10 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
 
         {/* 作物を先に選ぶ（任意） */}
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:10}}>
+          <div style={{fontSize:14,color:C.inkFaint,letterSpacing:2,fontFamily:HAND,marginBottom:10}}>
             作物を先に選ぶ（省略できます）
           </div>
-          <p style={{fontSize:12,color:C.inkFaint,marginBottom:10}}>{new Date().getMonth()+1}月の植え付け候補を先に表示しています。時期は地域・品種によって異なります。</p>
+          <p style={{fontSize:14,color:C.inkFaint,marginBottom:10}}>{new Date().getMonth()+1}月の植え付け候補を先に表示しています。時期は地域・品種によって異なります。</p>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {seasonalVegetables(VEGGIES).map(function(v){
               var isSel = pickerVid === v.id;
@@ -1855,7 +1967,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
                     border:"1.5px solid "+(isSel?C.indigo:C.inkBorder),
                     background:isSel?C.indigoPale:C.paper2,
                     color:isSel?C.indigo:C.ink,
-                    fontSize:12, cursor:"pointer", fontFamily:SERIF,
+                    fontSize:14, cursor:"pointer", fontFamily:SERIF,
                     display:"flex", alignItems:"center", gap:5,
                     fontWeight:isSel?"bold":"normal",
                     boxShadow:isSel?"inset 0 0 0 1px "+C.indigo:"none"
@@ -1867,7 +1979,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
             })}
           </div>
           {pickerVid && (
-            <div style={{marginTop:10,padding:"8px 12px",background:C.indigoPale,border:"1px solid "+C.indigo,fontSize:12,color:C.indigo,fontFamily:HAND,letterSpacing:1}}>
+            <div style={{marginTop:10,padding:"8px 12px",background:C.indigoPale,border:"1px solid "+C.indigo,fontSize:14,color:C.indigo,fontFamily:HAND,letterSpacing:1}}>
               ✓ {VM[pickerVid].name} を設定済みで畝を引きます
             </div>
           )}
@@ -1922,7 +2034,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [viewportWidth,setViewportWidth]=useState(window.innerWidth);
   useEffect(function(){function resize(){setViewportWidth(window.innerWidth);}window.addEventListener("resize",resize);return function(){window.removeEventListener("resize",resize);};},[]);
   const ledgerDesktop=viewportWidth/(uiScale||1)>800;
-  function selectLedgerRidge(rid){setPreviewRid(rid);setTab("plant");if(!ledgerDesktop)setSelRid(rid);}
+  function selectLedgerRidge(rid){setPreviewRid(rid);setTab("overview");setSelRid(rid);}
   const [tab, setTab]       = useState("plant");
   const [s1, setS1]         = useState(null);
   const [hov, setHov]       = useState(null);
@@ -1933,6 +2045,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [printSnap, setPrintSnap] = useState(null); /* null=通常印刷, snap=変遷印刷 */
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mainTab, setMainTab] = useState("map"); /* "map" | "history" */
+  const [editMode,setEditMode]=useState(false);
+  const [workDraft,setWorkDraft]=useState(null);
+  const [historyPlace,setHistoryPlace]=useState("");
+  useEffect(function(){setEditMode(false);setSelRid(null);setWorkDraft(null);setHistoryPlace("");setS1(null);setHov(null);setMapZoom(1);},[fid,year]);
   const [snapMsg, setSnapMsg] = useState(null);
   const [editFarm,setEditFarm]=useState(false);
   const [editBed,setEditBed]=useState(false);
@@ -1946,9 +2062,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     setToast({msg:msg, undo:undoFn||null, extra:extra||null});
     if (!undoFn) toastTimer.current = setTimeout(function(){ setToast(null); }, 7000);
   }
-  const [showGuide, setShowGuide] = useState(function(){
-    try { return !localStorage.getItem("hatakebo_guideSeen"); } catch(e){ return false; }
-  });
+  const [showGuide, setShowGuide] = useState(false);
   function closeGuide(){
     setShowGuide(false);
     try { localStorage.setItem("hatakebo_guideSeen", "1"); } catch(e){}
@@ -1972,19 +2086,27 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     return daysSince >= 30;
   })();
 
-  const farm       = farms.find(function(f){ return f.id===fid; }) || farms[0];
-  const farmRidges = (function(){
-    const all = ridges[fid] || {};
-    const res = {};
-    Object.keys(all).forEach(function(rid){
-      var r = all[rid];
-      var fromOk = !r.addedFrom || r.addedFrom <= year;
-      var delOk  = !r.deletedFrom || r.deletedFrom > year;
-      if (fromOk && delOk) res[rid] = r;
-    });
-    return res;
-  })();
+  const rawFarm = farms.find(function(f){ return f.id===fid; }) || farms[0];
+  const farm = geometryAt(rawFarm,year);
+  const farmRidges = bedsAt(ridges[fid],year);
   const farmPlant  = (plantings[fid]&&plantings[fid][year]) || {};
+  const timeline=landTimeline(rawFarm,ridges[fid]||{},plantings[fid]||{});
+  function openWork(rid,kind){closeSheet();setWorkDraft({rid:rid||null,kind:kind||"fertilizer",year});}
+  function saveWork(entry){
+    if(entry.kind==="plant"){
+      sp(entry.rid,entry.vid,entry.year,entry.month,entry.day,[entry.amount?"量："+entry.amount:"",entry.note].filter(Boolean).join("\n"));
+    }else{
+      var journal=(rawFarm.journal||[]).filter(e=>e.id!==entry.id).concat(entry);
+      onUpdateFarm(Object.assign({},rawFarm,{journal}));
+      showToast("作業の記録を保存しました",function(){});
+    }
+    setWorkDraft(null);
+  }
+  function removeWork(entry){onUpdateFarm(Object.assign({},rawFarm,{journal:(rawFarm.journal||[]).filter(e=>e.id!==entry.id)}));showToast("記録を削除しました",function(){});}
+  function preserveLayout(note){
+    var snap={id:"snap_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),ts:Date.now(),year,note,automatic:true,farm:Object.fromEntries(["id","name"].concat(FARM_GEOMETRY).map(k=>[k,farm[k]])),ridges:JSON.parse(JSON.stringify(farmRidges)),plantings:JSON.parse(JSON.stringify(farmPlant))};
+    setSnapshots(p=>({...p,[fid]:[snap].concat(p[fid]||[])}));
+  }
 
   function gp(rid){ var rec=farmPlant[rid];return typeof rec==="string"?{vid:rec}:rec||null; }
 
@@ -1992,30 +2114,33 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     var r=farmRidges[rid];if(!r||r.gl*(farm.cellCm||100)<60){alert("長さ60cm以上の畝で使えます");return;}
     if(!confirm("畝を長さ方向に半分ずつの2区画に分けます。両方に元の作付け履歴を引き継ぎます。分けた後に各区画の野菜を変更してください。"))return;
     var oldR=ridges,oldP=plantings,id="ridge_"+Date.now(),delta=r.gl/4;
-    var a={...r,gl:r.gl/2,name:r.name+" A"},b={...r,id,gl:r.gl/2,name:r.name+" B"};
+    preserveLayout("畝を2区画に分ける前の図");
+    var a={...r,gl:r.gl/2,name:r.name+" A"},b={...r,id,gl:r.gl/2,name:r.name+" B",addedFrom:year};delete b.versions;
     if(r.orientation==="H"){a.gx-=delta;b.gx+=delta;}else{a.gy-=delta;b.gy+=delta;}
-    setRidges(p=>({...p,[fid]:{...p[fid],[rid]:a,[id]:b}}));
-    setPlantings(p=>{var fd={...p[fid]};Object.keys(fd).forEach(y=>{if(fd[y][rid])fd[y]={...fd[y],[id]:JSON.parse(JSON.stringify(fd[y][rid]))};});return {...p,[fid]:fd};});
+    setRidges(p=>({...p,[fid]:{...p[fid],[rid]:geometryVersion(p[fid][rid],a,year,BED_GEOMETRY),[id]:{...b,parentRid:rid}}}));
+    setPlantings(p=>{var fd={...p[fid]};Object.keys(fd).forEach(y=>{if(Number(y)>=year&&fd[y][rid])fd[y]={...fd[y],[id]:JSON.parse(JSON.stringify(fd[y][rid]))};});return {...p,[fid]:fd};});
     closeSheet();showToast("2区画に分けました",function(){setRidges(oldR);setPlantings(oldP);});
   }
-  function sp(rid, vid, plantYear, month, day){
+  function sp(rid, vid, plantYear, month, day, note){
     const yr = plantYear || year;
     var before=plantings;showToast("植え付けを記録しました",function(){setPlantings(before);});
     setPlantings(function(prev){
       const fd=prev[fid]||{}, fy=fd[yr]||{};
-      var old=fy[rid], rec=typeof old==="string"?{vid:old}:old;
-      var past=rec&&rec.past?rec.past.slice():[];
-      if(rec&&rec.vid)past.push({vid:rec.vid,month:rec.month,day:rec.day});
-      return {...prev,[fid]:{...fd,[yr]:{...fy,[rid]:{vid,month:month||null,day:day||null,past}}}};
+      var bed=bedsAt(ridges[fid],yr)[rid];
+      var incoming={vid,month:month||null,day:day||null,note:note||"",place:bed&&bed.name,geometry:bed&&Object.fromEntries(BED_GEOMETRY.map(k=>[k,bed[k]]))};
+      return {...prev,[fid]:{...fd,[yr]:{...fy,[rid]:appendPlanting(fy[rid],incoming)}}};
     });
   }
 
   function cp(rid){
+    var now=new Date(),end={id:"work_"+Date.now(),kind:"end",rid,year,month:year===now.getFullYear()?now.getMonth()+1:null,day:year===now.getFullYear()?now.getDate():null,place:farmRidges[rid].name,name:(VM[extractVid(farmPlant[rid])]||{}).name||"",createdAt:Date.now()};
+    onUpdateFarm({...rawFarm,journal:(rawFarm.journal||[]).concat(end)});
     var before=plantings;showToast("栽培を終了しました。履歴は残っています",function(){setPlantings(before);});
     setPlantings(function(prev){
       const fd=prev[fid]||{}, fy=Object.assign({},fd[year]||{});
       var old=fy[rid],rec=typeof old==="string"?{vid:old}:old;
-      fy[rid]={vid:null,past:((rec&&rec.past)||[]).concat(rec&&rec.vid?[{vid:rec.vid,month:rec.month,day:rec.day}]:[])};
+      var previous=rec?{...rec}:null;if(previous)delete previous.past;
+      fy[rid]={vid:null,past:((rec&&rec.past)||[]).concat(rec&&rec.vid?[previous]:[])};
       return Object.assign({},prev,{[fid]:Object.assign({},fd,{[year]:fy})});
     });
   }
@@ -2048,6 +2173,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     return false;
   }
   function handleFieldTap(pt){
+    if(!editMode)return;
     pt = clampPt(pt);
     if (!s1) { setS1(pt); return; }
     const dx=Math.abs(pt.x-s1.x), dy=Math.abs(pt.y-s1.y);
@@ -2073,6 +2199,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
   /* ── グリッド選択ピッカー ── */
   function openRidgePicker() {
+    setEditMode(true);
     setPickerOri('H');
     setPickerA(Math.ceil(farm.rows / 2));
     setPickerStart(1);
@@ -2215,15 +2342,17 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   var pickerInvalid = pickerRidgePreview ? ridgePlacementError(farm,Object.assign({},pickerRidgePreview,{ridgeW:pickerRidgeW||60/(farm.cellCm||100)}),farmRidges) : "";
 
   function renameRidge(rid, name){
+    preserveLayout("畝の名前を変更する前の図");
     setRidges(function(prev){
       const fd=prev[fid]||{};
       const r=fd[rid];
       if (!r) return prev;
-      return Object.assign({},prev,{[fid]:Object.assign({},fd,{[rid]:Object.assign({},r,{name:name})})});
+      return Object.assign({},prev,{[fid]:Object.assign({},fd,{[rid]:geometryVersion(r,{...geometryAt(r,year),name:name||r.name},year,BED_GEOMETRY)})});
     });
   }
 
   function delRidge(rid){
+    preserveLayout("畝を削除する前の図");
     const ridge = farmRidges[rid];
     if (ridge) {
       /* plantings履歴をsoilに転記 */
@@ -2231,7 +2360,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       const recs = [];
       Object.keys(allPls).forEach(function(yr){
         var rec=allPls[yr]&&allPls[yr][rid];var list=typeof rec==="string"?[{vid:rec}]:rec?[rec].concat(rec.past||[]):[];
-        list.filter(r=>r.vid).forEach(r=>recs.push({gx:ridge.gx,gy:ridge.gy,gl:ridge.gl,ridgeW:ridge.ridgeW,orientation:ridge.orientation,year:parseInt(yr),vid:r.vid}));
+        list.filter(r=>r.vid).forEach(function(r){var at=r.geometry||geometryAt(ridges[fid][rid],Number(yr));recs.push({gx:at.gx,gy:at.gy,gl:at.gl,ridgeW:at.ridgeW,orientation:at.orientation,year:parseInt(yr),vid:r.vid});});
       });
       if (recs.length > 0) setSoil(function(prev){
         return Object.assign({},prev,{[fid]:(prev[fid]||[]).concat(recs)});
@@ -2241,7 +2370,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       const recCount = recs.length;
       setRidges(function(prev){
         const fd=Object.assign({},prev[fid]||{});
-        fd[rid]=Object.assign({},ridge,{deletedFrom:year});
+        fd[rid]=Object.assign({},fd[rid],{deletedFrom:year});
         return Object.assign({},prev,{[fid]:fd});
       });
       showToast("「"+ridge.name+"」を削除しました", function(){
@@ -2269,6 +2398,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       ts: Date.now(),
       year: year,
       note: note || "",
+      farm: Object.fromEntries(["id","name"].concat(FARM_GEOMETRY).map(k=>[k,farm[k]])),
       ridges: Object.assign({}, farmRidges),
       plantings: Object.assign({}, (plantings[fid]&&plantings[fid][year]) ? plantings[fid][year] : {})
     };
@@ -2286,6 +2416,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     if (snaps.length === 0) return false;
     var last = snaps[0];
     if (last.year !== year) return false;
+    if(!last.farm||JSON.stringify(FARM_GEOMETRY.map(k=>last.farm[k]))!==JSON.stringify(FARM_GEOMETRY.map(k=>farm[k])))return false;
     /* 畝の比較（id・位置・方向・名前） */
     var curRidgeIds = Object.keys(farmRidges).sort();
     var lastRidgeIds = Object.keys(last.ridges || {}).sort();
@@ -2334,7 +2465,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   };
 
   /* ── ボトムバーの高さ（畝モード時は高くなる） ── */
-  var bottomBarH = isTouchDevice ? 138 : (s1 ? 120 : 80);
+  var bottomBarH = 80;
 
   return (
     <div className={"ledger-app"+(ledgerDesktop?"":" ledger-compact")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
@@ -2343,7 +2474,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {/* ══ ヘッダー（シンプル） ══ */}
       <div className="ledger-header" style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
-        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの作付け台帳</div></div></header>
+        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの土地の記録帳</div></div></header>
 
         {/* 畑タブ行 */}
         <div className="ledger-farms" style={{display:"flex",alignItems:"stretch",overflowX:"auto",borderBottom:"1px solid "+C.inkLine}}>
@@ -2358,7 +2489,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             );
           })}
           <button onClick={function(e){e.stopPropagation();onAddFarm();}}
-            style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.indigo,fontFamily:SERIF,padding:"11px 16px",flexShrink:0,marginLeft:"auto",letterSpacing:1}}>
+            style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:C.indigo,fontFamily:SERIF,padding:"11px 16px",flexShrink:0,marginLeft:"auto",letterSpacing:1}}>
             ＋ 畑を追加
           </button>
         </div>
@@ -2368,7 +2499,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
           {/* マップ／変遷 セグメント */}
           <div className="ledger-navtabs" style={{display:"flex",border:"1px solid "+C.inkLine,borderRadius:3,overflow:"hidden",flexShrink:0}}>
-            {[{id:"map",label:"畑のようす"},{id:"history",label:"きろく帳"}].map(function(t){
+            {[{id:"map",label:"畑のようす"},{id:"history",label:"これまでの記録"}].map(function(t){
               const active=mainTab===t.id;
               return (
                 <button key={t.id} aria-current={active?"page":undefined}
@@ -2381,50 +2512,50 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           </div>
 
           {/* 年ナビ */}
-          <div style={{display:"flex",alignItems:"center",gap:2,marginLeft:"auto"}}>
+          {mainTab==="map"&&<div style={{display:"flex",alignItems:"center",gap:2,marginLeft:"auto"}}>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
               <button onClick={function(e){e.stopPropagation();setYear(function(y){return y-1;});}}
                 style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
-              <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>前の年</span>
+              <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>前の年</span>
             </div>
             <div style={{minWidth:72,textAlign:"center",padding:"0 4px"}}>
               <div style={{fontSize:17,letterSpacing:2,fontFamily:HAND,color:year<cy?C.red:C.ink,fontWeight:"bold"}}>{year}年</div>
               {year===cy ? (
-                <div style={{fontSize:12,color:C.green,fontFamily:HAND,letterSpacing:0,marginTop:1}}>今年</div>
+                <div style={{fontSize:14,color:C.green,fontFamily:HAND,letterSpacing:0,marginTop:1}}>今年</div>
               ) : year<cy ? (
                 <button onClick={function(e){e.stopPropagation();setYear(cy);}}
-                  style={{fontSize:12,color:C.indigo,background:"transparent",border:"none",cursor:"pointer",fontFamily:HAND,padding:0,textDecoration:"underline",marginTop:1,display:"block",width:"100%"}}>
+                  style={{fontSize:14,color:C.indigo,background:"transparent",border:"none",cursor:"pointer",fontFamily:HAND,padding:0,textDecoration:"underline",marginTop:1,display:"block",width:"100%"}}>
                   今年に戻る
                 </button>
               ) : (
-                <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>来年以降</div>
+                <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>来年以降</div>
               )}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
               <button onClick={function(e){e.stopPropagation();setYear(function(y){return y+1;});}}
                 style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>›</button>
-              <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>次の年</span>
+              <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>次の年</span>
             </div>
-          </div>
+          </div>}
 
           {/* … メニュー */}
           <div style={{position:"relative",flexShrink:0}}>
-            <button aria-label="その他の操作" onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
-              style={{background:menuOpen?C.ink:"none",color:menuOpen?C.paper:C.inkFaint,border:"1px solid "+(menuOpen?C.ink:C.inkBorder),width:32,height:32,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF,letterSpacing:0}}>
-              ⋯
+            <button aria-label="メニュー" onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
+              style={{background:menuOpen?C.ink:"none",color:menuOpen?C.paper:C.inkFaint,border:"1px solid "+(menuOpen?C.ink:C.inkBorder),minWidth:88,height:44,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF,letterSpacing:0}}>
+              メニュー
             </button>
             {menuOpen && (
               <ScrollableMenu onClose={function(){setMenuOpen(false);}} scale={uiScale}>
-                <button onClick={function(){setEditFarm(true);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>畑・目印を編集</button>
+                <button onClick={function(){setEditMode(true);setEditFarm(true);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>畑・目印を編集</button>
                 {canUndo&&<button onClick={function(){onUndo();setToast(null);setMenuOpen(false);}} style={{padding:14,fontSize:16,width:"100%"}}>直前の操作を戻す</button>}
                 <button onClick={function(e){e.stopPropagation();onShowFaq();setMenuOpen(false);}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>❓</span> よくある質問
                 </button>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid "+C.inkLine}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                     <span>🔍</span>
-                    <span style={{fontSize:13,color:C.ink}}>文字の大きさ</span>
+                    <span style={{fontSize:14,color:C.ink}}>文字の大きさ</span>
                   </div>
                   <div style={{display:"flex",gap:5}}>
                     {[{v:1.0,l:"標準"},{v:1.2,l:"大きめ"},{v:1.4,l:"特大"}].map(function(o){
@@ -2442,27 +2573,27 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   </div>
                 </div>
                 <button onClick={function(e){e.stopPropagation();setRenameVal(farm.name);setRenamingFarm(true);setMenuOpen(false);}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>✎</span> 畑名を変更
                 </button>
                 <button onClick={function(e){e.stopPropagation();setShowPrint(true);setPrintSnap(null);setMenuOpen(false);}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>🖨</span> 印刷する
                 </button>
                 <button onClick={function(e){e.stopPropagation();onExport();setLastBackup(new Date().toISOString().slice(0,10));setMenuOpen(false);}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:showBackupNudge?"#fffbe6":"transparent",cursor:"pointer",fontSize:13,color:showBackupNudge?"#7a5800":C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left",fontWeight:showBackupNudge?"bold":"normal"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:showBackupNudge?"#fffbe6":"transparent",cursor:"pointer",fontSize:14,color:showBackupNudge?"#7a5800":C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left",fontWeight:showBackupNudge?"bold":"normal"}}>
                   <span>💾</span>
                   <span style={{flex:1}}>バックアップ</span>
-                  {showBackupNudge && <span style={{fontSize:12,background:"#d4a800",color:"#fff",padding:"2px 6px",borderRadius:10}}>推奨</span>}
+                  {showBackupNudge && <span style={{fontSize:14,background:"#d4a800",color:"#fff",padding:"2px 6px",borderRadius:10}}>推奨</span>}
                 </button>
                 <details style={{borderBottom:"1px solid "+C.inkLine}}><summary style={{padding:"12px 16px",minHeight:44,fontSize:14,cursor:"pointer"}}>記録の引き継ぎ・復元</summary>
-                <label style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",cursor:"pointer",fontSize:13,color:C.ink,borderBottom:"1px solid "+C.inkLine}}>
+                <label style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",cursor:"pointer",fontSize:14,color:C.ink,borderBottom:"1px solid "+C.inkLine}}>
                   <span>📂</span> データを読込む
                   <input type="file" accept=".json" onChange={function(e){e.stopPropagation();onImport(e);setMenuOpen(false);}} style={{display:"none"}}/>
                 </label>
                 <button onClick={onRestoreImport} style={{padding:14,fontSize:14,width:"100%"}}>読込前の記録に戻す</button></details>
                 <button onClick={function(e){e.stopPropagation();setConfirmDelete(function(v){return !v;});setMenuOpen(false);closeSheet();}}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:C.red,textAlign:"left"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:C.red,textAlign:"left"}}>
                   <span>🗑</span> この畑を削除
                 </button>
               </ScrollableMenu>
@@ -2474,12 +2605,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {showBackupNudge && (
           <div className="ledger-backup" onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:"#fffbe6",borderTop:"1px solid #d4a800",borderBottom:"1px solid #d4a800"}}>
             <span style={{fontSize:16,flexShrink:0}}>💾</span>
-            <span style={{flex:1,fontSize:12,color:"#7a5800",fontFamily:HAND,letterSpacing:0.5,lineHeight:1.7}}>
-              大切なデータが失われる前に<strong>バックアップ</strong>を保存しましょう
+            <span style={{flex:1,fontSize:14,color:"#7a5800",fontFamily:HAND,letterSpacing:0.5,lineHeight:1.7}}>
+              記録の控えを、ファイルで手元に残せます
             </span>
             <button onClick={function(e){e.stopPropagation();onExport();setLastBackup(new Date().toISOString().slice(0,10));}}
-              style={{padding:"5px 12px",border:"1px solid #d4a800",background:"#d4a800",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,whiteSpace:"normal",flexWrap:"wrap"}}>
-              今すぐ保存
+              style={{padding:"5px 12px",border:"1px solid #d4a800",background:"#d4a800",color:"#fff",fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,whiteSpace:"normal",flexWrap:"wrap"}}>
+              控えを保存
             </button>
           </div>
         )}
@@ -2488,9 +2619,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {confirmDelete && farm && (
           <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",background:C.redPale,borderTop:"1px solid "+C.red}}>
             <span style={{flex:1,fontSize:14,color:C.red,fontFamily:HAND}}>「{farm.name}」と、この畑の記録を削除しますか？ 大切な記録は先にバックアップしてください。</span>
-            <button onClick={function(e){e.stopPropagation();setConfirmDelete(false);}} style={{padding:"6px 14px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
+            <button onClick={function(e){e.stopPropagation();setConfirmDelete(false);}} style={{padding:"6px 14px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:14,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
             <button onClick={function(e){e.stopPropagation();const rem=farms.filter(function(f){return f.id!==fid;});onDeleteFarm(fid);setConfirmDelete(false);if(rem.length>0)setFid(rem[0].id);}}
-              style={{padding:"6px 14px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>削除する</button>
+              style={{padding:"6px 14px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:14,cursor:"pointer",fontFamily:SERIF}}>削除する</button>
           </div>
         )}
 
@@ -2498,17 +2629,19 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {renamingFarm && farm && (
           <div onClick={function(e){e.stopPropagation();}} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",background:C.indigoPale,borderTop:"1px solid "+C.indigo}}>
             <input value={renameVal} onChange={function(e){setRenameVal(e.target.value);}} autoFocus
-              style={{flex:1,padding:"6px 10px",border:"1px solid "+C.indigo,background:C.paper,fontSize:13,fontFamily:SERIF,letterSpacing:1,outline:"none"}}/>
+              style={{flex:1,padding:"6px 10px",border:"1px solid "+C.indigo,background:C.paper,fontSize:14,fontFamily:SERIF,letterSpacing:1,outline:"none"}}/>
             <button onClick={function(e){e.stopPropagation();setRenamingFarm(false);}}
-              style={{padding:"6px 12px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
+              style={{padding:"6px 12px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:14,cursor:"pointer",fontFamily:SERIF,color:C.inkFaint}}>やめる</button>
             <button onClick={function(e){e.stopPropagation();if(!renameVal.trim())return;onRenameFarm(fid,renameVal.trim());setRenamingFarm(false);}}
-              style={{padding:"6px 12px",border:"1px solid "+C.indigo,background:C.indigo,color:C.paper,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>変更</button>
+              style={{padding:"6px 12px",border:"1px solid "+C.indigo,background:C.indigo,color:C.paper,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>変更</button>
           </div>
         )}
       </div>
 
       {/* ══ コンテンツエリア ══ */}
-      <div className="ledger-title"><small>{mainTab==="map"?"畑の名前":"きろく帳"}</small><h1>{farm.name}</h1></div>
+      <div className="ledger-title"><small>{mainTab==="map"?"畑の名前":"これまでの記録"}</small><h1>{farm.name}</h1></div>
+      {editMode&&<div className="journal-mode" onClick={e=>e.stopPropagation()}>畑を編集しています。畝を押すと寸法を変更できます。変更前の図は自動で残ります。</div>}
+      {year!==cy&&mainTab==="map"&&<div className="journal-mode">{year}年の配置を表示しています。<button onClick={e=>{e.stopPropagation();setYear(cy);}}>今年に戻る</button></div>}
       <div className="ledger-content" style={{padding:"20px 16px",paddingBottom:(bottomBarH+24)+"px",overflowX:"auto",touchAction:(s1||isPressing)?"none":"auto"}} onClick={function(e){e.stopPropagation();}}>
 
         {/* ── マップビュー ── */}
@@ -2520,16 +2653,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
               <span>畑の見取り図</span>
               <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
-              {ridgeCount > 0 && plantedN < ridgeCount && (
-                <span style={{fontSize:12,color:C.indigo,fontFamily:HAND,marginLeft:4,letterSpacing:1,fontWeight:"bold"}}>
-                  ▶ 残り{ridgeCount-plantedN}畝に野菜を設定しましょう
-                </span>
-              )}
-              {ridgeCount > 0 && plantedN === ridgeCount && (
-                <span style={{fontSize:12,color:C.green,fontFamily:HAND,marginLeft:4,letterSpacing:1}}>
-                  ✓ 全{ridgeCount}畝 設定済み
-                </span>
-              )}
+              <span>{ridgeCount}区画</span>
             </div>
 
             {/* SVGフィールド + ズームコントロール */}
@@ -2542,19 +2666,19 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 <div>
                   {isLarge && (
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                      <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>表示倍率</span>
+                      <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>表示倍率</span>
                       <button
                         onClick={function(e){e.stopPropagation();if(zIdx>0){var nz=ZOOM_STEPS[zIdx-1];setMapZoom(nz);}}}
                         disabled={zIdx<=0}
-                        style={{width:30,height:30,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx>0?"pointer":"default",color:zIdx>0?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>－</button>
-                      <span style={{fontSize:12,fontFamily:SERIF,minWidth:36,textAlign:"center",color:C.ink}}>{Math.round(mapZoom*100)}%</span>
+                        style={{width:44,height:44,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx>0?"pointer":"default",color:zIdx>0?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>－</button>
+                      <span style={{fontSize:14,fontFamily:SERIF,minWidth:36,textAlign:"center",color:C.ink}}>{Math.round(mapZoom*100)}%</span>
                       <button
                         onClick={function(e){e.stopPropagation();if(zIdx<ZOOM_STEPS.length-1){var nz=ZOOM_STEPS[zIdx+1];setMapZoom(nz);}}}
                         disabled={zIdx>=ZOOM_STEPS.length-1}
-                        style={{width:30,height:30,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx<ZOOM_STEPS.length-1?"pointer":"default",color:zIdx<ZOOM_STEPS.length-1?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>＋</button>
+                        style={{width:44,height:44,border:"1px solid "+C.inkBorder,background:C.paper2,fontSize:16,cursor:zIdx<ZOOM_STEPS.length-1?"pointer":"default",color:zIdx<ZOOM_STEPS.length-1?C.ink:C.inkLine,display:"flex",alignItems:"center",justifyContent:"center"}}>＋</button>
                       {mapZoom!==1.0&&<button
                         onClick={function(e){e.stopPropagation();setMapZoom(1.0);}}
-                        style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:HAND,color:C.inkFaint}}>全体</button>}
+                        style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:14,cursor:"pointer",fontFamily:HAND,color:C.inkFaint}}>全体</button>}
                     </div>
                   )}
                   <div className="ledger-fieldbox" style={{border:"2px solid "+C.ink,boxShadow:"4px 4px 0 "+C.inkLine,
@@ -2562,10 +2686,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                     maxHeight:isLarge?(typeof window!=="undefined"?Math.min(window.innerHeight*0.55,400)+"px":"380px"):"none",
                     position:"relative"}}>
               <FarmField
-                farm={farm} farmRidges={farmRidges} farmPlant={farmPlant}
+                farm={farm} farmRidges={farmRidges} farmPlant={farmPlant} editable={editMode}
                 s1={s1} hov={hov} zoom={zoom} mapZoom={mapZoom}
                 soil={soil} fid={fid} year={year}
-                onLongPressStart={function(pt){ setS1(clampPt(pt)); closeSheet(); }}
+                onLongPressStart={function(pt){ if(editMode){setS1(clampPt(pt)); closeSheet();} }}
                 onTap={handleFieldTap}
                 onMove={function(pt){ if(s1) setHov(clampPt(pt)); }}
                 onZoomChange={setZoom}
@@ -2584,17 +2708,17 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 <div style={{fontSize:28,marginBottom:8}}>🌱</div>
                 <div style={{fontSize:14,fontFamily:SERIF,letterSpacing:2,color:C.ink,marginBottom:6}}>まだ畝がありません</div>
                   <div>
-                    <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2,marginBottom:14}}>
-                      下の「畝を引く」ボタンを押して<br/>最初の畝を作りましょう
+                    <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2,marginBottom:14}}>
+                      「畝を作る」を押して<br/>最初の畝を作りましょう
                     </div>
                     <button onClick={function(e){e.stopPropagation();openRidgePicker();}}
                       style={{padding:"14px 32px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
                         fontSize:15,fontFamily:SERIF,letterSpacing:3,cursor:"pointer",
                         boxShadow:"3px 3px 0 "+C.inkFaint}}>
-                      ＋ 畝を引く
+                      ＋ 畝を作る
                     </button>
                   </div>
-                {!isTouchDevice&&<div style={{marginTop:10,fontSize:12,color:C.inkFaint}}>畑の上でドラッグして作ることもできます。</div>}
+                {editMode&&!isTouchDevice&&<div style={{marginTop:10,fontSize:14,color:C.inkFaint}}>編集中は、畑の上でドラッグして作ることもできます。</div>}
               </div>
             )}
 
@@ -2604,7 +2728,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 <SectionTitle>畝一覧</SectionTitle>
                 {Object.values(farmRidges).map(function(ridge){
                   const pl=gp(ridge.id);
-                  const vg=pl&&pl.vid?VM[pl.vid]:null;
+                  const vg=VM[extractVid(pl)]||null;
                   const warn=checkRot(fid,ridge.id,year,plantings,soil,farmRidges);
                   const isSel=selRid===ridge.id;
                   return (
@@ -2615,21 +2739,21 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                         {vg ? <VeggieStamp id={vg.id} size={32}/> : <span style={{fontSize:20,color:C.indigo,fontWeight:"bold"}}>＋</span>}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,letterSpacing:1,color:isSel?C.indigo:C.ink}}>{ridge.name}</div>
+                        <div style={{fontSize:14,letterSpacing:1,color:isSel?C.indigo:C.ink}}>{ridge.name}</div>
                         {vg ? (
-                          <div style={{fontSize:12,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?"　"+pl.month+"月植付":""}</div>
+                          <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?"　"+pl.month+"月植付":""}</div>
                         ) : (
-                          <div style={{fontSize:12,color:C.indigo,fontFamily:SERIF,marginTop:3,fontWeight:"bold",letterSpacing:1}}>
-                            野菜を設定する →
+                          <div style={{fontSize:14,color:C.indigo,fontFamily:SERIF,marginTop:3,fontWeight:"bold",letterSpacing:1}}>
+                            野菜の記録はまだありません
                           </div>
                         )}
                       </div>
                       {warn && (
-                        <div style={{flexShrink:0,padding:"3px 7px",border:"1px solid "+(warn==="danger"?C.red:C.orange),color:warn==="danger"?C.red:C.orange,fontSize:12,fontFamily:HAND}}>
+                        <div style={{flexShrink:0,padding:"3px 7px",border:"1px solid "+(warn==="danger"?C.red:C.orange),color:warn==="danger"?C.red:C.orange,fontSize:14,fontFamily:HAND}}>
                           {warn==="danger"?"連作":"注意"}
                         </div>
                       )}
-                      <span style={{fontSize:12,color:C.inkLine,flexShrink:0}}>›</span>
+                      <span style={{fontSize:14,color:C.inkLine,flexShrink:0}}>›</span>
                     </button>
                   );
                 })}
@@ -2637,10 +2761,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             )}
             </div>
             <aside className="ledger-aside" aria-label="選んだ畝の記録" aria-live="polite">
-              {previewRidge?<Fragment><small>{previewRidge.name}の記録</small><h2>{previewVeg?previewVeg.name:"野菜を選びましょう"}</h2>{previewVeg&&<VeggieStamp id={previewVeg.id} size={88}/>}
+              {previewRidge?<Fragment><small>{previewRidge.name}の記録</small><h2>{previewVeg?previewVeg.name:"野菜の記録はまだありません"}</h2>{previewVeg&&<VeggieStamp id={previewVeg.id} size={88}/>}
                 <dl><div><dt>植えた日</dt><dd>{previewPlant&&previewPlant.month?previewPlant.month+"月"+(previewPlant.day?previewPlant.day+"日":""):"未記入"}</dd></div><div><dt>畝の幅</dt><dd>{Number(((previewRidge.ridgeW||RWIDTH)*(farm.cellCm||100)).toFixed(1))}cm</dd></div><div><dt>畝の長さ</dt><dd>{Number((previewRidge.gl*(farm.cellCm||100)/100).toFixed(2))}m</dd></div></dl>
                 <button onClick={function(){setSelRid(previewRidge.id);setTab("plant");}}>野菜・記録を開く</button><p>畝や畝一覧を押すと、ここに記録が表示されます。</p>
-              </Fragment>:<Fragment><h2>最初の畝を作る</h2><p>「畝を引く」から、向き・幅・位置を選べます。</p><button onClick={openRidgePicker}>＋ 畝を引く</button></Fragment>}
+              </Fragment>:<Fragment><h2>最初の畝を作る</h2><p>「畝を引く」から、向き・幅・位置を選べます。</p><button onClick={openRidgePicker}>＋ 畝を作る</button></Fragment>}
             </aside>
           </div>
         )}
@@ -2648,18 +2772,22 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         {/* ── 変遷ビュー ── */}
         {farm && mainTab === "history" && (
           <div style={{maxWidth:560}}>
+            <label style={{display:"block",marginBottom:16}}>場所で絞り込む<select value={historyPlace} onChange={e=>setHistoryPlace(e.target.value)} style={{display:"block",width:"100%",padding:10}}><option value="">すべての場所・すべての年</option><option value="whole">畑全体</option>{Object.values(ridges[fid]||{}).map(r=><option key={r.id} value={r.id}>{r.name}{r.deletedFrom?"（以前の畝）":""}</option>)}</select></label>
+            <WorkTimeline entries={timeline.filter(e=>!historyPlace||(historyPlace==="whole"?!e.rid:entryAtBed(e,historyPlace,ridges[fid]||{})))} onEdit={setWorkDraft} onRemove={removeWork}/>
+            <details style={{marginTop:24}}><summary style={{padding:12,cursor:"pointer"}}>残しておいた畑の図（{(snapshots[fid]||[]).length}件）</summary>
+            <button onClick={()=>saveSnapshot()} disabled={isSameAsLastSnap} style={{padding:12,margin:"12px 0"}}>{isSameAsLastSnap?"この図は保存済み":"今の畑の図を残す"}</button>
             <div style={{marginBottom:20,padding:"14px 16px",background:C.paper2,border:"1px solid "+C.inkLine,borderRadius:3}}>
-              <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:4}}>きろく帳について</div>
-              <div style={{fontSize:12,color:C.ink,fontFamily:HAND,lineHeight:1.9}}>
-                下の「📸 記録する」ボタンを押すと、そのときの畑の状態が保存されます。
+              <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:4}}>これまでの記録について</div>
+              <div style={{fontSize:14,color:C.ink,fontFamily:HAND,lineHeight:1.9}}>
+                畑の図を残しておくと、以前の配置を見返せます。配置の変更前にも自動で図を残します。
               </div>
             </div>
 
             {(snapshots[fid]||[]).length === 0 ? (
-              <div style={{padding:"40px 16px",textAlign:"center",border:"1px dashed "+C.inkLine,color:C.inkFaint,fontSize:12,fontFamily:HAND,letterSpacing:1,lineHeight:2.5}}>
+              <div style={{padding:"40px 16px",textAlign:"center",border:"1px dashed "+C.inkLine,color:C.inkFaint,fontSize:14,fontFamily:HAND,letterSpacing:1,lineHeight:2.5}}>
                 まだ記録がありません<br/>
                 <span style={{fontSize:22}}>📸</span><br/>
-                下の「記録する」ボタンを押して<br/>今の状態を保存しましょう
+                「今の畑の図を残す」で、配置を残せます。
               </div>
             ) : (
               <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -2673,38 +2801,38 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                       <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderBottom:"1px solid "+C.inkLine,background:C.paper}}>
                         <div style={{flex:1}}>
                           <div style={{fontSize:14,letterSpacing:1,fontFamily:HAND}}>{dateStr}　{timeStr}</div>
-                          <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,marginTop:2}}>
-                            {snap.year}年の記録　畝{ridgeList.length}本
+                          <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,marginTop:2}}>
+                            {snap.year}年の図 · {snap.note||"手動で保存"} · {ridgeList.length}区画
                           </div>
                         </div>
                         <button onClick={function(e){e.stopPropagation();setPrintSnap(snap);setShowPrint(true);}}
-                          style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:SERIF,display:"flex",alignItems:"center",gap:4}}>
+                          style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,display:"flex",alignItems:"center",gap:4}}>
                           <span>🖨</span> 印刷
                         </button>
                         {confirmSnapId===snap.id ? (
                           <div style={{display:"flex",gap:4,alignItems:"center"}}>
                             <button onClick={function(e){e.stopPropagation();setConfirmSnapId(null);}}
-                              style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
+                              style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:14,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
                             <button onClick={function(e){e.stopPropagation();delSnapshot(snap.id);setConfirmSnapId(null);}}
-                              style={{padding:"4px 8px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold"}}>削除</button>
+                              style={{padding:"4px 8px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:14,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold"}}>削除</button>
                           </div>
                         ) : (
                           <button onClick={function(e){e.stopPropagation();setConfirmSnapId(snap.id);}}
-                            style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>
+                            style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>
                             削除
                           </button>
                         )}
                       </div>
                       <div style={{padding:"12px 14px",overflowX:"auto"}}>
-                        <SnapMiniMap farm={farm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/>
+                        <SnapMiniMap farm={snap.farm||farm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/>
                       </div>
                       {ridgeList.length > 0 && (
                         <div style={{padding:"0 14px 12px",display:"flex",flexWrap:"wrap",gap:5}}>
                           {ridgeList.map(function(ridge){
                             const pl=snap.plantings&&snap.plantings[ridge.id];
-                            const vg=pl&&pl.vid?VM[pl.vid]:null;
+                            const vg=VM[extractVid(pl)]||null;
                             return (
-                              <div key={ridge.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",border:"1px solid "+C.inkLine,fontSize:12,fontFamily:HAND,borderRadius:2,background:C.paper}}>
+                              <div key={ridge.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",border:"1px solid "+C.inkLine,fontSize:14,fontFamily:HAND,borderRadius:2,background:C.paper}}>
                                 {vg&&<VegetableImage id={vg.id} size={24}/>}
                                 <span style={{color:C.inkFaint}}>{ridge.name}</span>
                                 {vg?<span style={{color:C.ink}}>{vg.name}</span>:<span style={{color:C.inkLine}}>未設定</span>}
@@ -2718,104 +2846,26 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 })}
               </div>
             )}
+            </details>
           </div>
         )}
       </div>
 
-      {/* ══ フローティングボトムバー ══ */}
-      {mainTab === "map" && (
-        <div className="ledger-bottom" onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
-
-          {/* 畝引き中の案内（マウス用のみ表示） */}
-          {s1 && !isTouchDevice && (
-            <div style={{padding:"10px 20px",background:C.indigoPale,borderBottom:"1px solid "+C.inkLine,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:24,height:24,borderRadius:"50%",background:C.indigo,color:C.paper,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:"bold",flexShrink:0}}>2</div>
-              <span style={{fontSize:13,color:C.indigo,fontFamily:HAND,letterSpacing:1,flex:1}}>
-                そのままドラッグして終点でクリック
-              </span>
-              <button onClick={function(e){e.stopPropagation();setS1(null);setHov(null);setZoom(1);}}
-                style={{padding:"5px 14px",border:"1px solid "+C.indigo,background:"transparent",color:C.indigo,fontSize:12,cursor:"pointer",fontFamily:SERIF,flexShrink:0}}>
-                やり直す
-              </button>
-            </div>
-          )}
-
-          {/* メインボタン行 */}
-          {isTouchDevice ? (
-            /* ── タッチ用：畝を引く（大）＋ 記録する（小） ── */
-            <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
-              <button onClick={function(e){e.stopPropagation();openRidgePicker();}}
-                style={{width:"100%",padding:"16px 0",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
-                  fontSize:16,fontFamily:SERIF,letterSpacing:3,cursor:"pointer",
-                  display:"flex",alignItems:"center",justifyContent:"center",gap:10,
-                  boxShadow:"3px 3px 0 "+C.inkFaint}}>
-                <span style={{fontSize:20}}>＋</span>
-                <span>畝を引く</span>
-              </button>
-              <button
-                onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
-                disabled={isSameAsLastSnap}
-                style={{
-                  width:"100%", padding:"11px 0",
-                  border:"1px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.inkBorder),
-                  background:snapMsg?C.greenPale:"transparent",
-                  color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink,
-                  fontSize:13, cursor:isSameAsLastSnap?"default":"pointer", fontFamily:SERIF, letterSpacing:2,
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                  transition:"all .25s", opacity:isSameAsLastSnap?0.45:1,
-                }}>
-                <span style={{fontSize:15}}>📸</span>
-                <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし（記録済み）" : "この状態を記録する"}</span>
-              </button>
-            </div>
-          ) : (
-            /* ── マウス用：ヒント＋記録するを横並び ── */
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px"}}>
-              <button onClick={function(e){e.stopPropagation();openRidgePicker();}} style={{flex:1,padding:"14px 8px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,fontSize:15,fontFamily:SERIF,letterSpacing:2,cursor:"pointer",boxShadow:"2px 2px 0 "+C.inkLine,borderRadius:3}}>
-                ＋ 畝を引く
-                <span style={{display:"block",fontSize:12,letterSpacing:0,marginTop:4}}>向き・畝幅・位置を選択</span>
-              </button>
-              <div style={{width:1,height:36,background:C.inkLine}}/>
-              <button
-                onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
-                disabled={isSameAsLastSnap}
-                style={{
-                  flex:1, padding:"14px 0",
-                  border:"2px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.inkBorder),
-                  background:snapMsg?C.greenPale:"transparent",
-                  color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink,
-                  fontSize:14, cursor:isSameAsLastSnap?"default":"pointer", fontFamily:SERIF, letterSpacing:2,
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                  boxShadow:"2px 2px 0 "+C.inkLine,
-                  borderRadius:3, transition:"all .25s",
-                  opacity:isSameAsLastSnap?0.45:1,
-                }}>
-                <span style={{fontSize:18}}>📸</span>
-                <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし" : "記録する"}</span>
-              </button>
-            </div>
-          )}
+      <div className="ledger-bottom" onClick={e=>e.stopPropagation()}>
+        <div className="journal-toolbar">
+          {mainTab==="map"&&editMode?<><button className="journal-primary" onClick={openRidgePicker}>＋ 畝を作る</button><button onClick={()=>setEditFarm(true)}>畑の形・目印</button><button onClick={()=>{setEditMode(false);setS1(null);setHov(null);}}>編集を終える</button></>:<>
+          <button className="journal-primary" onClick={()=>openWork(null)}>＋ 作業を記録</button>
+          {mainTab==="map"&&<button onClick={()=>{closeSheet();setEditMode(true);}}>畑を編集</button>}
+          </>}
         </div>
-      )}
+      </div>
 
-      {/* 変遷タブ用ボトムバー */}
-      {mainTab === "history" && (
-        <div className="ledger-bottom" onClick={function(e){e.stopPropagation();}} style={{position:"fixed",bottom:0,left:0,right:0,zIndex:30,background:C.paper,borderTop:"2px solid "+C.ink,padding:"12px 16px",boxShadow:"0 -4px 20px rgba(28,20,8,0.12)"}}>
-          <button onClick={function(e){e.stopPropagation();if(!isSameAsLastSnap)saveSnapshot();}}
-            disabled={isSameAsLastSnap}
-            style={{width:"100%",padding:"14px 0",border:"2px solid "+(snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.ink),background:snapMsg?C.greenPale:isSameAsLastSnap?"transparent":C.ink,color:snapMsg?C.green:isSameAsLastSnap?C.inkLine:C.paper,fontSize:14,cursor:isSameAsLastSnap?"default":"pointer",fontFamily:SERIF,letterSpacing:2,display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderRadius:3,transition:"all .25s",opacity:isSameAsLastSnap?0.45:1}}>
-            <span style={{fontSize:18}}>📸</span>
-            <span>{snapMsg ? "記録しました！" : isSameAsLastSnap ? "変化なし（記録済み）" : "今の状態を記録する"}</span>
-          </button>
-        </div>
-      )}
-
-      {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=farm;onUpdateFarm(f);setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
-      {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:next}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
-      <div className="ledger-status" style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"この端末に自動保存済み"}</div><OfflineNotice/><button onClick={function(e){e.stopPropagation();onShowFaq();}} style={{marginTop:8,border:0,background:"transparent",color:C.ink,fontSize:14}}>よくある質問</button></div>
+      {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=rawFarm;preserveLayout("畑の形・目印を変更する前の図");onUpdateFarm(geometryVersion(rawFarm,f,year,FARM_GEOMETRY));setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
+      {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;preserveLayout("畝の寸法・位置を変更する前の図");setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:geometryVersion(p[fid][old.id],next,year,BED_GEOMETRY)}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
+      <div className="ledger-status" style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"保存しました（この端末）"}</div><OfflineNotice/><button onClick={function(e){e.stopPropagation();onShowFaq();}} style={{marginTop:8,border:0,background:"transparent",color:C.ink,fontSize:14}}>よくある質問</button></div>
       {/* 畝ボトムシート */}
-      {toast && (
-        <div className="ledger-toast" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:80,
+      {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && (
+        <div className="ledger-toast" role="status" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:80,
           background:C.ink,color:C.paper,padding:"14px 18px",borderRadius:4,
           boxShadow:"0 4px 16px rgba(28,20,8,0.35)",display:"flex",alignItems:"center",gap:14,
           fontSize:14,fontFamily:SERIF,letterSpacing:1,maxWidth:"90vw",whiteSpace:"nowrap"}}>
@@ -2823,14 +2873,14 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           {toast.extra && (
             <button onClick={function(){var fn=toast.extra.fn;setToast(null);clearTimeout(toastTimer.current);fn();}}
               style={{border:"2px solid "+C.paper,background:C.paper,color:C.ink,
-                padding:"8px 14px",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,fontWeight:"bold"}}>
+                padding:"8px 14px",fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,fontWeight:"bold"}}>
               {toast.extra.label}
             </button>
           )}
           {toast.undo && canUndo && (
             <button onClick={function(){onUndo();setToast(null);clearTimeout(toastTimer.current);}}
               style={{border:"1px solid "+C.paper,background:"transparent",color:C.paper,
-                padding:"8px 14px",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0}}>
+                padding:"8px 14px",fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0}}>
               もとに戻す
             </button>
           )}
@@ -2855,8 +2905,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         />
       )}
 
+      {workDraft&&<WorkForm farm={rawFarm} beds={ridges[fid]||{}} initial={workDraft} onSave={saveWork} onClose={()=>setWorkDraft(null)}/> }
       {selRid && selRidgeObj && (
-        <RidgeSheet
+        <RidgeSheet key={selRid}
+          editable={editMode} entries={timeline.filter(e=>entryAtBed(e,selRid,ridges[fid]||{}))} onRecord={kind=>openWork(selRid,kind)} onEditEntry={e=>{closeSheet();setWorkDraft(e);}} onRemoveEntry={removeWork}
           ridge={selRidgeObj} year={year} farmId={fid} cellCm={farm&&farm.cellCm} plantings={plantings}
           soil={soil} farmRidges={farmRidges}
           planting={gp(selRid)} history={gh(selRid)}
@@ -2905,9 +2957,9 @@ const FAQ_DATA = [
       {
         "q": "ドラッグせずに畝を作りたいです",
         "a": [
-          "パソコンでもスマートフォンでも、画面下の「畝を引く」ボタンから作れます。ドラッグ操作は必要ありません。",
-          "「1本ずつ置く」で縦・横の向きと畝幅を選び、位置と長さを入力します。位置は図を押して選ぶこともできます。最後に図を確認して「この畝を引く」を押してください。",
-          "畝がまだないときは「まとめて置く」も選べます。幅・本数・長さ・通路を指定すると、まとめて配置できます。本数を減らしても畝の幅は変わりません。"
+          "最初の畝は「畝を作る」から作れます。すでに畝がある場合は「畑を編集」→「畝を作る」を選んでください。パソコンでもスマートフォンでも、同じ手順です。",
+          "「1本ずつ置く」で向き・幅・長さ・位置を選び、図を確認して確定します。畝がまだないときは「まとめて置く」で本数や通路を指定することもできます。",
+          "配置を直し終えたら「編集を終える」を押してください。普段の画面では畝を押して記録を開けるので、図を見ているときに新しい畝ができることはありません。"
         ]
       },
       {
@@ -2920,9 +2972,9 @@ const FAQ_DATA = [
       {
         "q": "作った畑や畝を直したり、目印を付けたりできますか？",
         "a": [
-          "はい。畑の大きさ・形・目印は「⋯」→「畑・目印を編集」から変更できます。「田中さんの家」「入口」など、目印に名前を付けると地図の向きが分かりやすくなります。畑の名前は「⋯」→「畑名を変更」で直せます。",
-          "畝は、その畝を押して記録を開き、「この畝を編集」→「畝の大きさ・位置を編集」を選びます。右側に畝の記録が表示される画面では、先に「野菜・記録を開く」を押してください。作付け履歴を残したまま、幅・長さ・向き・位置を変更できます。畝の名前は、畝名の横の編集から変更してください。",
-          "畑を小さくして畝がはみ出すときは、先に畝の位置や長さを直してください。畝の配置は各年で共通なので、以前の配置も見返したいときは、変更前に「記録する」で残しておきましょう。"
+          "「畑を編集」から変更できます。「畑の形・目印」では大きさや形を直したり、「入口」「田中さんの家」などの目印を付けたりできます。畑名は「メニュー」→「畑名を変更」で直せます。",
+          "畝を直すときは、編集中にその畝を押し、「この畝を編集」→「畝の大きさ・位置を編集」を選びます。変更は表示中の年から反映します。過去の年の配置は残り、後の年に別の配置を保存済みなら、その配置も残ります。",
+          "変更前の図は自動で「これまでの記録」→「残しておいた畑の図」に残ります。同じ年に何度も配置を変えた場合も、ここで見返せます。以前の版ですでに上書きされた配置までは復元できません。"
         ]
       }
     ]
@@ -2933,39 +2985,56 @@ const FAQ_DATA = [
       {
         "q": "育てている野菜を記録したいです。植えた日を忘れていても大丈夫ですか？",
         "a": [
-          "植えた日が分からなくても記録できます。畝を押して記録を開き、野菜を選んで「植え付ける」で確定してください。右側に畝の記録が表示される画面では、「野菜・記録を開く」から進みます。月・日は分かる範囲だけ選べば大丈夫です。",
-          "すでに育てている野菜から、少しずつ記録していきましょう。前の年の作付けを入力したいときは、画面上部で年を切り替えてから畝を選びます。"
+          "畝を押して「野菜を植えた」を選びます。野菜と日付を選んで「記録を残す」を押してください。「作業を記録」で場所と「野菜を植えた」を選ぶ方法もあります。",
+          "日付は最初に今日が入ります。以前に植えたものは日付を変更してください。月日を忘れた場合は「月日が分からない」を選び、年だけでも残せます。",
+          "休ませている畝は、野菜を登録しなくても大丈夫です。分かるところから少しずつ記録していきましょう。"
         ]
       },
       {
         "q": "植えたい野菜が見つかりません",
         "a": [
-          "季節を絞り込んでいるときは、野菜選択の「全て」を押してみてください。ハタケボには42種類の野菜があり、最初はすべて表示しています。",
-          "今の月や季節に植え付け候補となる野菜が、先に並びます。季節外でも、育てている野菜を選んで構いません。並び順は端末の現在の月を基準にした目安なので、お住まいの地域や種袋・苗の案内も参考にしてください。",
-          "一覧にない野菜は、現在は追加登録できません。よろしければ「お問い合わせ」から、記録したい野菜を教えてください。"
+          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると42種類すべてが表示されます。",
+          "今の月や季節の植え付け候補から並びますが、季節外の野菜も選べます。時期は地域や品種によって違うので、種袋や苗の案内も参考にしてください。",
+          "一覧にない野菜は、「メモを残す」で名前を残せます。野菜の一覧への追加のご要望は、お問い合わせからお知らせください。"
         ]
       },
       {
         "q": "収穫が終わった畝に、次の野菜を植えたいです",
         "a": [
-          "その畝を押して次の野菜を選ぶと、「前の野菜を履歴に残して植え替える」で登録できます。同じ年の植え替えでも、前の野菜の記録は残ります。",
-          "しばらく畝を休ませるなら「栽培を終了する」を選んでください。地図の野菜を空欄にして、履歴は残せます。",
-          "以前に何を植えたかは、畝を押して「記録」を開くと確認できます。過去の年の畑全体を見たいときは、画面上部の年を切り替えてください。"
+          "畝を押して「野菜を植えた」から、次の野菜を記録します。前の野菜は履歴に残るので、同じ年に植え替えても振り返れます。",
+          "しばらく畝を休ませるときは、畝の「栽培を終える」を開き、「栽培を終了する」を押してください。野菜の履歴を残して地図を空欄にします。",
+          "以前の作付けや肥料・緑肥の記録は「これまでの記録」に年をまたいで並びます。畝を押して開くと、その畝と畑全体の作業を確認できます。"
         ]
       },
       {
         "q": "1本の畝で、違う野菜を一緒に育てたいです",
         "a": [
-          "畝を押して「この畝を編集」→「2区画に分ける」を選ぶと、長さ方向に半分ずつのA・B区画になります。それぞれに別の野菜を登録できます。長さ60cm以上の畝で使えます。",
-          "元の作付け履歴は両方の区画に引き継ぎます。分割は過去の年の地図にも反映されるので、元の配置も残したいときは、先に「記録する」を押しておきましょう。"
+          "「畑を編集」を押し、畝を選んで「2区画に分ける」を押します。長さ60cm以上の畝を、半分ずつのA・B区画に分けられます。",
+          "分けた年より前の図と作付けはそのまま残ります。分けた年以降の作付けは両区画に引き継ぎ、それぞれ別の野菜を記録できます。新しい区画でも、元の畝に残した作業を確認できます。",
+          "分ける直前の図も自動で残します。「これまでの記録」→「残しておいた畑の図」から確認してください。"
         ]
       },
       {
         "q": "連作の注意が出ました。この場所には植えないほうがよいですか？",
         "a": [
-          "注意表示は、次に植える場所を考えるための目安です。「この場所では育たない」「病気になっている」という意味ではありません。まず、その畝の「記録」で、以前の野菜を見返してみてください。",
-          "登録された過去2年までの履歴を見て、同じ科の野菜が2年続くと橙、3年続くと赤で知らせます。違う名前の野菜でも、同じ科なら注意の対象になります。",
-          "記録されていない作付けや、実際の土・病害虫の状態までは分かりません。注意が出ていなくても、これまでの栽培の様子と合わせて、場所を変えるか検討してください。"
+          "「前年と同じ科です」「同じ科が3年続いています」は、登録した作付けを振り返るための表示です。土が悪い、病気が起きている、という診断ではありません。",
+          "「これまでの記録」で、以前に何を植えたか確認してみてください。同じ科かどうかは、登録された過去2年までの作付けをもとにしています。",
+          "記録のない作付けや実際の土の状態までは分かりません。表示の有無だけで判断せず、これまでの栽培の様子と合わせて場所を考えてください。"
+        ]
+      },
+      {
+        "q": "肥料や堆肥、緑肥を記録できますか？",
+        "a": [
+          "「作業を記録」で場所と作業を選びます。畑全体への堆肥入れなら、畝を作る前でも「畑全体」に残せます。",
+          "肥料・堆肥は名前を書かなくても記録できます。「量・メモを追加」を開けば、「ひと袋」「ひと握り」など分かる範囲の量も残せます。",
+          "緑肥は「緑肥をまいた」「緑肥を刈った」「緑肥を土に混ぜた」を、その都度記録できます。同じ場所と緑肥名で残すと、育てた流れを振り返りやすくなります。"
+        ]
+      },
+      {
+        "q": "作業の記録を間違えたときは、どう直せばよいですか？",
+        "a": [
+          "「これまでの記録」で該当する作業の「訂正」を押すと、名前・量・日付・場所・メモを直せます。重ねて新しい記録を作る必要はありません。不要な作業は「削除」で取り消せます。",
+          "野菜の植え付けを直後に間違えた場合は、「メニュー」→「直前の操作を戻す」で戻してから選び直してください。過去の作付けの訂正は、現在この作業の「訂正」ボタンには対応していません。"
         ]
       }
     ]
@@ -2983,17 +3052,17 @@ const FAQ_DATA = [
         ]
       },
       {
-        "q": "入力した記録は、そのまま閉じても残りますか？「記録する」も必要ですか？",
+        "q": "入力した記録は、そのまま閉じても残りますか？",
         "a": [
-          "畑や野菜を変更すると、自動で保存します。画面の「この端末に自動保存済み」を確認できれば、保存のために「記録する」を押す必要はありません。同じ端末・同じブラウザで、いつものハタケボを開いてください。",
-          "「記録する」は、その時点の畝と野菜の配置を「きろく帳」に残すためのボタンです。植え替えや畝の配置変更の前に押しておくと、後から見比べられます。",
-          "自動保存ときろく帳は、どちらも同じ端末内の記録です。端末の故障や機種変更に備えて、時々「バックアップ」で記録の控えも取っておきましょう。"
+          "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。「保存しました（この端末）」を確認できれば、そのまま閉じて大丈夫です。入力途中の内容はまだ保存されていません。",
+          "「今の畑の図を残す」は、そのときの配置を後で見返すためのボタンです。通常の保存のために押す必要はありません。図は「これまでの記録」→「残しておいた畑の図」から残せます。",
+          "作付け・作業・畑の図は同じ端末内に保存されます。端末の故障や機種変更に備え、「バックアップ」で控えも残しておくと安心です。"
         ]
       },
       {
         "q": "大切な記録をなくさないよう、控えを残したいです",
         "a": [
-          "「⋯」→「バックアップ」を押すと、畑と記録をまとめたファイルが保存されます。このファイルが記録の控えになります。中身を開いたり編集したりする必要はありません。",
+          "「メニュー」→「バックアップ」を押すと、畑と記録をまとめたファイルが保存されます。このファイルが記録の控えになります。中身を開いたり編集したりする必要はありません。",
           "保存先は、端末の「ダウンロード」などで確認できます。ファイル名は「hatakebo_backup_日付.json」です。見つからないときは、ブラウザのダウンロード一覧も見てみてください。",
           "大きな変更や機種変更の前には、ぜひ控えを取っておきましょう。パソコンや外部の保存先にもコピーしておくと、元の端末が使えなくなったときにも役立ちます。"
         ]
@@ -3005,20 +3074,20 @@ const FAQ_DATA = [
           {
             "type": "ol",
             "items": [
-              "今までの端末で「⋯」→「バックアップ」を押す",
+              "今までの端末で「メニュー」→「バックアップ」を押す",
               "保存されたファイルを、使いたい端末へコピーする",
-              "その端末でハタケボを開き、「⋯」の「記録の引き継ぎ・復元」を押して項目を開き、「データを読込む」からファイルを選ぶ",
+              "その端末でハタケボを開き、「メニュー」の「記録の引き継ぎ・復元」を押して項目を開き、「データを読込む」からファイルを選ぶ",
               "置き換えの確認内容を読んで、読み込みを進める"
             ]
           },
           "読み込み先にすでに記録がある場合は、先にそちらもバックアップしてください。読み込みは2つの記録を合わせる操作ではなく、ファイルの内容への置き換えです。",
-          "間違えて読み込んだときは「⋯」→「記録の引き継ぎ・復元」→「読込前の記録に戻す」で、直前の1回分を戻せます。スマホとパソコンは自動では同期しないため、片方で変更した記録は、改めてファイルで渡してください。"
+          "間違えて読み込んだときは「メニュー」→「記録の引き継ぎ・復元」→「読込前の記録に戻す」で、直前の1回分を戻せます。スマホとパソコンは自動では同期しないため、片方で変更した記録は、改めてファイルで渡してください。"
         ]
       },
       {
         "q": "畑の図を紙に印刷して持っていきたいです",
         "a": [
-          "「⋯」→「印刷する」で畑の図と作付け一覧を確認し、プレビュー下部の「印刷する」を押してください。「きろく帳」に残した配置も印刷できます。",
+          "「メニュー」→「印刷する」で畑の図と作付け一覧を確認し、プレビュー下部の「印刷する」を押してください。「これまでの記録」に残した配置も印刷できます。",
           "畑の図は、縦横の比率を保って用紙に収まる大きさに調整します。横には畑の寸法・面積・畝や区画の数を載せます。面積は登録した形から計算し、使わないマスは含みません。野菜の名前などは、図の下の畝一覧でも確認できます。",
           "ブラウザの印刷画面で保存先に「PDF」が選べる場合は、紙に印刷せずファイルとして残せます。畝が多い場合は、一覧が次のページに続きます。",
           "印刷用のページが開かないときは、このサイトのポップアップを許可してお試しください。アプリ内で開いている場合は、普段お使いのChromeやEdgeなどから開く方法もあります。"
@@ -3027,8 +3096,8 @@ const FAQ_DATA = [
       {
         "q": "文字や畑の図を、もう少し大きく見たいです",
         "a": [
-          "「⋯」メニューの「文字の大きさ」で「大きめ」または「特大」を選んでください。選んだ大きさは、次に同じブラウザで使うときも引き継ぎます。",
-          "畑の図には、別に表示倍率の調整もあります。見たい場所を大きくして確認してください。「⋯」の項目が下に隠れているときは、メニューの中を上下にスクロールできます。"
+          "「メニュー」メニューの「文字の大きさ」で「大きめ」または「特大」を選んでください。選んだ大きさは、次に同じブラウザで使うときも引き継ぎます。",
+          "畑の図には、別に表示倍率の調整もあります。見たい場所を大きくして確認してください。「メニュー」の項目が下に隠れているときは、メニューの中を上下にスクロールできます。"
         ]
       }
     ]
@@ -3039,7 +3108,7 @@ const FAQ_DATA = [
       {
         "q": "操作を間違えました。元に戻せますか？",
         "a": [
-          "畑や野菜の記録を変更した後は、「⋯」→「直前の操作を戻す」で、新しい変更から順に戻せます。案内に「もとに戻す」が出ているときは、そこからも取り消せます。戻せる変更があるときに表示されます。",
+          "畑や野菜の記録を変更した後は、「メニュー」→「直前の操作を戻す」で、新しい変更から順に戻せます。案内に「もとに戻す」が出ているときは、そこからも取り消せます。戻せる変更があるときに表示されます。",
           "最近の変更は5回分まで同じ端末・同じブラウザに残るので、ページを開き直した後にも戻せます。畑をすべて削除してしまった場合も、最初の畑を登録する画面に戻すためのボタンが表示されます。",
           "野菜を選び間違えたときは、取り消してから選び直してください。別の野菜で登録し直すと「植え替え」として前の野菜が履歴に残るためです。",
           "空き容量が少ないと、残せる取り消し履歴が少なくなることがあります。もっと前の記録や端末の故障に備えるには、「バックアップ」で控えを残しておくと安心です。"
@@ -3049,7 +3118,7 @@ const FAQ_DATA = [
         "q": "改善されたはずの画面が、前のままです",
         "a": [
           "インターネットにつながる場所でハタケボを開き、しばらくお待ちください。新しい版は自動で読み込みます。作業中の画面が急に切り替わらないよう、今開いている画面はそのままにしています。",
-          "「この端末に自動保存済み」を確認してから、ハタケボを開いているタブをすべて閉じ、いつものアドレスから開き直してみてください。複数のタブで開いていると、前の版が使われ続けることがあります。",
+          "「保存しました（この端末）」を確認してから、ハタケボを開いているタブをすべて閉じ、いつものアドレスから開き直してみてください。複数のタブで開いていると、前の版が使われ続けることがあります。",
           "更新のためにブラウザのデータを消す必要はありません。記録まで消えることがあるので、消さずにお試しください。変わらない場合は、電波のある場所からお問い合わせください。"
         ]
       },
@@ -3064,7 +3133,7 @@ const FAQ_DATA = [
       {
         "q": "「データを保存できません」と出ました。どうすればよいですか？",
         "a": [
-          "まず画面を閉じずに、「⋯」→「バックアップ」で今の記録をファイルに残してください。保存先にファイルがあることを確認してから、次の操作へ進みましょう。",
+          "まず画面を閉じずに、「メニュー」→「バックアップ」で今の記録をファイルに残してください。保存先にファイルがあることを確認してから、次の操作へ進みましょう。",
           "端末の空き容量が少ない場合や、ブラウザが保存を制限している場合に起こることがあります。空き容量やブラウザの設定を確認してください。プライベートモードで使っていた場合は、通常の画面で開いて控えを読み込めます。",
           "原因が分からないときは、お問い合わせください。記録の控えが取れるまでは、ブラウザのデータを消さないようにしてください。"
         ]
@@ -3087,21 +3156,21 @@ function FaqBlock({ item }) {
     <div style={{border:"1px solid "+C.inkLine,background:C.paper2,marginBottom:8,borderRadius:2,overflow:"hidden"}}>
       <button aria-expanded={open} onClick={function(e){e.stopPropagation();setOpen(function(v){return !v;});}}
         style={{width:"100%",textAlign:"left",background:open?C.indigoPale:"transparent",border:"none",cursor:"pointer",padding:"15px 16px",display:"flex",alignItems:"flex-start",gap:12,fontFamily:SERIF,transition:"background .15s"}}>
-        <div style={{flexShrink:0,width:24,height:24,borderRadius:"50%",background:C.indigo,color:C.paper,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:HAND,marginTop:1}}>Q</div>
+        <div style={{flexShrink:0,width:24,height:24,borderRadius:"50%",background:C.indigo,color:C.paper,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:HAND,marginTop:1}}>Q</div>
         <span style={{flex:1,fontSize:14,letterSpacing:"0.06em",color:C.ink,lineHeight:1.7,fontWeight:500}}>{item.q}</span>
-        <span style={{flexShrink:0,fontSize:12,color:C.inkFaint,transition:"transform .2s",display:"inline-block",transform:open?"rotate(180deg)":"rotate(0deg)",marginTop:4}}>▼</span>
+        <span style={{flexShrink:0,fontSize:14,color:C.inkFaint,transition:"transform .2s",display:"inline-block",transform:open?"rotate(180deg)":"rotate(0deg)",marginTop:4}}>▼</span>
       </button>
       {open && (
         <div style={{padding:"14px 18px 18px",borderTop:"1px solid "+C.inkLine,fontFamily:SANS,fontSize:16,color:C.ink,lineHeight:1.9}}>
           {item.a.map(function(block, i){
             if (typeof block === "string") return <p key={i} style={{marginBottom:10}}>{block}</p>;
             if (block.type === "note") return (
-              <div key={i} style={{display:"flex",gap:8,padding:"10px 12px",background:C.greenPale,borderLeft:"3px solid "+C.green,marginTop:8,fontSize:12,color:C.green,lineHeight:1.8}}>
+              <div key={i} style={{display:"flex",gap:8,padding:"10px 12px",background:C.greenPale,borderLeft:"3px solid "+C.green,marginTop:8,fontSize:14,color:C.green,lineHeight:1.8}}>
                 {"💡 "+block.text}
               </div>
             );
             if (block.type === "warn") return (
-              <div key={i} style={{display:"flex",gap:8,padding:"10px 12px",background:"#fdf2e0",borderLeft:"3px solid #c06000",marginTop:8,fontSize:12,color:"#7a4000",lineHeight:1.8}}>
+              <div key={i} style={{display:"flex",gap:8,padding:"10px 12px",background:"#fdf2e0",borderLeft:"3px solid #c06000",marginTop:8,fontSize:14,color:"#7a4000",lineHeight:1.8}}>
                 {"⚠️ "+block.text}
               </div>
             );
@@ -3143,7 +3212,7 @@ function FAQScreen({ onClose }) {
           </button>
           <div>
             <div style={{fontSize:16,letterSpacing:3,fontWeight:"bold"}}>よくある質問</div>
-            <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,fontFamily:HAND}}>ハタケボ 畑の帳簿</div>
+            <div style={{fontSize:14,color:C.inkFaint,letterSpacing:2,fontFamily:HAND}}>ハタケボ 畑の帳簿</div>
           </div>
         </div>
       </div>
@@ -3159,7 +3228,7 @@ function FAQScreen({ onClose }) {
         {results.map(function(cat, ci){
           return (
             <div key={cat.cat} style={{marginBottom:40}}>
-              <div style={{fontSize:13,fontWeight:"bold",letterSpacing:3,color:C.indigo,marginBottom:14,padding:"8px 0 8px 12px",borderLeft:"3px solid "+C.indigo,fontFamily:HAND}}>
+              <div style={{fontSize:14,fontWeight:"bold",letterSpacing:3,color:C.indigo,marginBottom:14,padding:"8px 0 8px 12px",borderLeft:"3px solid "+C.indigo,fontFamily:HAND}}>
                 {cat.cat}
               </div>
               {cat.items.map(function(item, ii){
@@ -3177,16 +3246,16 @@ function FAQScreen({ onClose }) {
           var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdlE3jPEoKjx_ILFNv6nvAr2SWC1GheFMEGl7f71iV2-_cVMA/viewform?usp=dialog";
           return (
             <div style={{marginBottom:24}}>
-              <div style={{fontSize:13,color:C.ink,fontFamily:SERIF,letterSpacing:2,marginBottom:6}}>
+              <div style={{fontSize:14,color:C.ink,fontFamily:SERIF,letterSpacing:2,marginBottom:6}}>
                 お問い合わせ・ご要望
               </div>
-              <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:14,lineHeight:1.9}}>
+              <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:14,lineHeight:1.9}}>
                 不具合・使い方のご質問はもちろん、<br/>
                 「この野菜を追加してほしい」「こんな機能があると便利」<br/>
                 といったご要望もお気軽にどうぞ。
               </div>
               <a href={FORM_URL} target="_blank" rel="noopener noreferrer"
-                style={{display:"inline-flex",alignItems:"center",gap:8,padding:"12px 28px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,fontSize:13,fontFamily:SERIF,letterSpacing:2,textDecoration:"none",boxShadow:"3px 3px 0 "+C.inkFaint}}>
+                style={{display:"inline-flex",alignItems:"center",gap:8,padding:"12px 28px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,fontSize:14,fontFamily:SERIF,letterSpacing:2,textDecoration:"none",boxShadow:"3px 3px 0 "+C.inkFaint}}>
                 <span>✉</span>
                 <span>お問い合わせ</span>
               </a>
@@ -3194,11 +3263,11 @@ function FAQScreen({ onClose }) {
           );
         })()}
         {/* ▲▲▲ */}
-        <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>
+        <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>
           ハタケボ — 畑の帳簿
         </div>
         <a href="./disclaimer.html" target="_blank" rel="noopener noreferrer"
-          style={{display:"inline-block",marginTop:10,fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,textDecoration:"underline"}}>
+          style={{display:"inline-block",marginTop:10,fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,textDecoration:"underline"}}>
           免責事項
         </a>
       </div>
@@ -3264,7 +3333,7 @@ function SnapMiniMap({ farm, ridges, plantings }) {
           rr={x:padL+(ridge.gx-RWm/2)*miniCS,y:padT+(ridge.gy-ridge.gl/2)*miniCS,w:RWm*miniCS,h:ridge.gl*miniCS};
         }
         var pl=plantings[ridge.id];
-        var vg=pl&&pl.vid?VM[pl.vid]:null;
+        var vg=VM[extractVid(pl)]||null;
         var cx=rr.x+rr.w/2, cy=rr.y+rr.h/2;
         return (
           <g key={ridge.id}>
@@ -3290,7 +3359,9 @@ function SnapMiniMap({ farm, ridges, plantings }) {
 /* ══════════════════════════════════════
    畝ボトムシート
 ══════════════════════════════════════ */
-function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onEdit, onSplit, onRename, onSelect, onClear, onDelete, onClose }) {
+function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, ridge, year, farmId, cellCm, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onEdit, onSplit, onRename, onSelect, onClear, onDelete, onClose }) {
+  const sheetRef=useRef(null);
+  useEffect(function(){var old=document.activeElement;sheetRef.current.focus();return function(){if(old&&old.isConnected)old.focus();};},[]);
   var cm = cellCm || 100;
   function ridgeSizeLabel(r) {
     var lenCm = Math.round(r.gl * cm);
@@ -3316,8 +3387,8 @@ function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, 
   });
 
   return (
-    <div onClick={function(e){e.stopPropagation();}}
-      style={{position:"fixed",bottom:0,left:0,right:0,zIndex:40,background:C.paper,borderTop:"3px solid "+C.ink,borderRadius:"14px 14px 0 0",boxShadow:"0 -8px 40px rgba(28,20,8,0.18)",maxHeight:"78vh",display:"flex",flexDirection:"column",fontFamily:SERIF,backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,"+C.inkLine+"28 27px,"+C.inkLine+"28 28px)"}}>
+    <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={ridge.name+"の記録"} onKeyDown={function(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(sheetRef.current.querySelectorAll('button:not([disabled]),input,summary')).filter(n=>n.getClientRects().length),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===sheetRef.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===sheetRef.current)){e.preventDefault();first.focus();}}}} onClick={function(e){e.stopPropagation();}}
+      style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:720,zIndex:40,background:C.paper,border:"2px solid "+C.ink,borderRadius:"14px 14px 0 0",boxShadow:"0 -8px 40px rgba(28,20,8,0.18)",maxHeight:"calc(85dvh / var(--ui-scale, 1))",overflowY:"auto",display:"flex",flexDirection:"column",fontFamily:SANS}}>
 
       <div style={{padding:"12px 24px 0"}}>
         <div style={{width:36,height:3,background:C.inkLine,borderRadius:2,margin:"0 auto 14px"}}/>
@@ -3338,41 +3409,41 @@ function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, 
                   <input autoFocus value={nameVal} onChange={function(e){setNameVal(e.target.value.slice(0,12));}}
                     style={{fontSize:15,border:"none",borderBottom:"1.5px solid "+C.ink,outline:"none",fontFamily:SERIF,background:"transparent",color:C.ink,width:120,padding:"2px 0"}}/>
                   <button onClick={function(){onRename(nameVal);setEditName(false);}}
-                    style={{padding:"3px 10px",border:"1px solid "+C.ink,background:C.ink,color:C.paper,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>保存</button>
+                    style={{padding:"3px 10px",border:"1px solid "+C.ink,background:C.ink,color:C.paper,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>保存</button>
                 </div>
               ) : (
                 <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={function(){setEditName(true);}}>
                   <div style={{fontSize:16,letterSpacing:2,fontFamily:HAND}}>{ridge.name}</div>
-                  <span style={{fontSize:12,color:C.inkLine}}>✎</span>
+                  <span style={{fontSize:14,color:C.inkLine}}>✎</span>
                 </div>
               )}
-              <div style={{fontSize:12,color:C.inkFaint,marginTop:3,fontFamily:HAND}}>
-                {vg ? vg.name+"（"+vg.family+"）" : "未設定"}
+              <div style={{fontSize:14,color:C.inkFaint,marginTop:3,fontFamily:HAND}}>
+                {vg ? vg.name+"（"+vg.family+"）" : "野菜の記録なし"}
               </div>
-              <div style={{fontSize:12,color:C.inkLine,marginTop:2,fontFamily:HAND}}>{ridgeSizeLabel(ridge)}</div>
+              <div style={{fontSize:14,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>{ridgeSizeLabel(ridge)}</div>
               {vg && planting && planting.month && (
-                <div style={{fontSize:12,color:C.indigo,marginTop:2,fontFamily:HAND,letterSpacing:1}}>
+                <div style={{fontSize:14,color:C.indigo,marginTop:2,fontFamily:HAND,letterSpacing:1}}>
                   {year}年{planting.month}月{planting.day?planting.day+"日":""}植付
                 </div>
               )}
             </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-            <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.inkFaint,lineHeight:1}}>×</button>
+            <button aria-label="畝の記録を閉じる" onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:C.ink,lineHeight:1}}>閉じる</button>
           </div>
         </div>
 
-        <details style={{marginBottom:12}}><summary style={{minHeight:44,padding:"10px 0",fontSize:14,cursor:"pointer",color:C.inkFaint}}>この畝を編集</summary><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={onEdit} style={{minHeight:44,fontSize:16}}>畝の大きさ・位置を編集</button><button onClick={onSplit} style={{minHeight:44,fontSize:16}}>2区画に分ける</button></div></details>
+        {editable&&<details open style={{marginBottom:12}}><summary style={{minHeight:44,padding:"10px 0",fontSize:14,cursor:"pointer",color:C.inkFaint}}>この畝を編集</summary><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={onEdit} style={{minHeight:44,fontSize:16}}>畝の大きさ・位置を編集</button><button onClick={onSplit} style={{minHeight:44,fontSize:16}}>2区画に分ける</button></div></details>}
         {/* 連作警告 */}
         {warning && (
           <div style={{display:"flex",gap:10,alignItems:"center",padding:"9px 14px",marginBottom:10,borderLeft:"4px solid "+(warning==="danger"?C.red:C.orange),background:warning==="danger"?C.redPale:C.orangePale}}>
-            <Hanko text={warning==="danger"?"危":"注"} color={warning==="danger"?C.red:C.orange}/>
+            <Hanko text="歴" color={warning==="danger"?C.red:C.orange}/>
             <div>
-              <div style={{fontSize:12,fontWeight:"bold",color:warning==="danger"?C.red:C.orange,fontFamily:HAND,letterSpacing:1}}>
-                {warning==="danger"?"連作障害 危険":"連作障害 注意"}
+              <div style={{fontSize:14,fontWeight:"bold",color:warning==="danger"?C.red:C.orange,fontFamily:HAND,letterSpacing:1}}>
+                {warning==="danger"?"同じ科が3年続いています":"前年と同じ科です"}
               </div>
-              <div style={{fontSize:12,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>
-                {warning==="danger"?"3年以上同じ科が連続しています":"前年と同じ科の野菜です"}
+              <div style={{fontSize:14,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>
+                {"登録された作付け履歴による表示です。土や病気の状態を示すものではありません。"}
               </div>
             </div>
           </div>
@@ -3381,10 +3452,10 @@ function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, 
 
       {/* タブ */}
       <div style={{display:"flex",borderBottom:"2px solid "+C.ink,padding:"0 24px"}}>
-        {[{id:"plant",label:"作物を設定"},{id:"history",label:"記録"}].map(function(t){
+        {[{id:"overview",label:"今のようす"},{id:"history",label:"これまでの記録"}].map(function(t){
           return (
             <button key={t.id} onClick={function(){onTabChange(t.id);}}
-              style={{padding:"8px 0",marginRight:24,border:"none",background:"none",cursor:"pointer",fontFamily:SERIF,fontSize:12,letterSpacing:2,color:tab===t.id?C.ink:C.inkFaint,borderBottom:tab===t.id?"3px solid "+C.ink:"3px solid transparent"}}>
+              style={{padding:"8px 0",marginRight:24,border:"none",background:"none",cursor:"pointer",fontFamily:SERIF,fontSize:14,letterSpacing:2,color:tab===t.id?C.ink:C.inkFaint,borderBottom:tab===t.id?"3px solid "+C.ink:"3px solid transparent"}}>
               {t.label}
             </button>
           );
@@ -3393,174 +3464,16 @@ function RidgeSheet({ ridge, year, farmId, cellCm, plantings, soil, farmRidges, 
 
       <div style={{overflowY:"auto",flex:1,padding:"14px 24px 24px"}}>
 
-        {/* 作物設定タブ */}
-        {tab === "plant" && (
-          <div>
-            <SectionTitle>{year}年の作物を選ぶ</SectionTitle>
-            <p style={{fontSize:12,color:C.inkFaint,marginBottom:10}}>現在の{new Date().getMonth()+1}月 → 今の季節 → その他の順に表示します。植え付け時期は地域・品種によって異なります。</p>
+        {tab!=="history"&&<div className="work-overview">
+          <h3>{year}年の記録</h3><p>{vg?vg.name+"を記録しています。":"野菜の記録はまだありません。休ませている畝も、そのまま残せます。"}</p>
+          <div className="journal-actions"><button className="journal-primary" onClick={()=>onRecord("plant")}>野菜を植えた</button><button onClick={()=>onRecord("fertilizer")}>作業を記録</button></div>
+          {vg&&<details style={{marginTop:16}}><summary>栽培を終える</summary><p>前の野菜を履歴に残し、地図を空欄にします。</p><button onClick={onClear}>栽培を終了する</button></details>}
+          <h3 style={{marginTop:24}}>最近の記録</h3><WorkTimeline entries={entries||[]} limit={3}/>
+          {!!(entries||[]).length&&<button onClick={()=>onTabChange("history")}>これまでの記録をすべて見る</button>}
+          {editable&&<details style={{marginTop:24}}><summary>この畝を削除</summary><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></details>}
+        </div>}
+        {tab==="history"&&<div><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
 
-            {/* 季節フィルター */}
-            {(function(){
-              var curM = new Date().getMonth()+1;
-              var seasons = [
-                { id:"all",  label:"全て",  months:[] },
-                { id:"haru", label:"🌸 春", months:[3,4,5] },
-                { id:"natsu",label:"☀️ 夏", months:[6,7,8] },
-                { id:"aki",  label:"🍂 秋", months:[9,10,11] },
-                { id:"fuyu", label:"❄️ 冬", months:[12,1,2] },
-              ];
-              var curSeas = seasons.find(function(s){ return s.months.includes(curM); }) || seasons[0];
-              return (
-                <div style={{marginBottom:12}}>
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:6}}>
-                    {seasons.map(function(s){
-                      var isCur = s.id === seasFilter;
-                      var isNow = s.id === curSeas.id && s.id !== "all";
-                      return (
-                        <button key={s.id} onClick={function(){setSeasFilter(s.id);}}
-                          style={{padding:"4px 10px",border:"1px solid "+(isCur?C.indigo:C.inkLine),background:isCur?C.indigo:"transparent",color:isCur?C.paper:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:HAND,borderRadius:2,position:"relative"}}>
-                          {s.label}
-                          {isNow&&<span style={{position:"absolute",top:-4,right:-4,width:7,height:7,borderRadius:"50%",background:C.green}}/>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {seasFilter!=="all" && (
-                    <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>
-                      {(function(){
-                        var s=seasons.find(function(s){return s.id===seasFilter;});
-                        return s?s.months.join("・")+"月が植え付け適期の野菜を表示":"";
-                      })()}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:10,marginBottom:16}}>
-              {(function(){
-                var curM = new Date().getMonth()+1;
-                var seasMonths = {haru:[3,4,5],natsu:[6,7,8],aki:[9,10,11],fuyu:[12,1,2]};
-                var filterMs = seasFilter==="all" ? null : seasMonths[seasFilter];
-                return seasonalVegetables(VEGGIES,curM).filter(function(v){
-                  if(!filterMs) return true;
-                  return v.plantMonths && v.plantMonths.some(function(m){ return filterMs.includes(m); });
-                }).map(function(v){
-                  var wP=checkPrev(farmId,ridge.id,v.id,year,plantings,soil,farmRidges);
-                  var isCur=planting&&planting.vid===v.id;
-                  var isPend=pendingVid===v.id;
-                  var isNowMonth = v.plantMonths && v.plantMonths.includes(curM);
-                  return (
-                    <button key={v.id} onClick={function(){setPendingVid(isPend?null:v.id);}}
-                      style={{border:"1.5px solid "+(isPend?C.indigo:isCur?C.ink:C.inkLine),background:isPend?C.indigoPale:isCur?C.paper2:"transparent",padding:"8px 4px 6px",cursor:"pointer",fontFamily:SERIF,display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative",minHeight:80,boxShadow:isPend?"0 0 0 2px "+C.indigo:isCur?"2px 2px 0 "+C.inkFaint:"none"}}>
-                      <VeggieStamp id={v.id} size={42}/>
-                      <span style={{fontSize:16,color:isPend?C.indigo:isCur?C.ink:C.inkFaint,textAlign:"center",lineHeight:1.3,letterSpacing:.5,fontFamily:HAND}}>{v.name}</span>
-                      <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>{v.family}</span>
-                      {wP && <span style={{position:"absolute",top:2,right:2,width:14,height:14,border:"2px solid "+(wP==="danger"?C.red:C.orange),color:wP==="danger"?C.red:C.orange,borderRadius:"50%",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"bold",background:wP==="danger"?C.redPale:C.orangePale}}>!</span>}
-                      {isCur&&!isPend&&<span style={{position:"absolute",top:2,left:2,background:C.ink,color:C.paper,padding:"1px 3px",fontSize:12,fontFamily:HAND}}>記入済</span>}
-                      {isPend&&<span style={{position:"absolute",top:2,left:2,background:C.indigo,color:C.paper,padding:"1px 3px",fontSize:12,fontFamily:HAND}}>選択中</span>}
-                      {!isCur&&!isPend&&isNowMonth&&<span style={{position:"absolute",bottom:2,left:2,width:5,height:5,borderRadius:"50%",background:C.green}}/>}
-                    </button>
-                  );
-                });
-              })()}
-            </div>
-
-            {/* 植え付け日入力 */}
-            {pendingVid && (
-              <div style={{marginBottom:16,padding:"14px 14px 12px",background:C.paper2,border:"2px solid "+C.indigo,borderRadius:2}}>
-                <div style={{fontSize:12,color:C.indigo,letterSpacing:3,marginBottom:12,fontFamily:HAND,display:"flex",alignItems:"center",gap:6}}>
-                  <VegetableImage id={pendingVid} size={28}/>
-                  {VM[pendingVid]&&VM[pendingVid].name}　植え付け日
-                </div>
-                <div style={{marginBottom:10}}>
-                  <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,marginBottom:5,fontFamily:HAND}}>月（任意）</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {Array.from({length:12},function(_,i){var m=i+1;return(
-                      <button key={m} onClick={function(){setSelMonth(selMonth===m?null:m);if(selMonth!==m)setSelDay(null);}}
-                        style={{width:44,height:44,border:"1px solid "+(selMonth===m?C.indigo:C.inkLine),background:selMonth===m?C.indigo:"transparent",color:selMonth===m?C.paper:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:HAND}}>{m}</button>
-                    );})}
-                  </div>
-                </div>
-                {selMonth && (
-                  <div style={{marginBottom:12}}>
-                    <div style={{fontSize:12,color:C.inkFaint,letterSpacing:2,marginBottom:5,fontFamily:HAND}}>日（任意）</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                      {Array.from({length:daysInMonth(year,selMonth)},function(_,i){var d=i+1;return(
-                        <button key={d} onClick={function(){setSelDay(selDay===d?null:d);}}
-                          style={{width:44,height:44,border:"1px solid "+(selDay===d?C.indigo:C.inkLine),background:selDay===d?C.indigo:"transparent",color:selDay===d?C.paper:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:HAND}}>{d}</button>
-                      );})}
-                    </div>
-                  </div>
-                )}
-                <div style={{fontSize:12,color:C.indigo,fontFamily:HAND,letterSpacing:1,marginBottom:12,paddingTop:8,borderTop:"1px solid "+C.inkLine}}>
-                  {year}年{selMonth?selMonth+"月":"　月未選択"}{selMonth&&selDay?selDay+"日":""}
-                </div>
-                <button onClick={function(){onSelect(pendingVid,year,selMonth,selDay);}}
-                  style={{width:"100%",padding:"12px",border:"2px solid "+C.indigo,background:C.indigo,color:C.paper,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:2,boxShadow:"3px 3px 0 "+C.inkFaint}}>
-                  {planting&&planting.vid?"前の野菜を履歴に残して植え替える":"植え付ける"}
-                </button>
-              </div>
-            )}
-
-            {/* 栽培を終了するボタン */}
-            {planting&&planting.vid&&!cfmClear && (
-              <button onClick={function(){setCfmClear(true);}}
-                style={{width:"100%",marginTop:8,padding:"11px",background:"transparent",color:C.red,border:"1px solid "+C.red,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
-                栽培を終了する
-              </button>
-            )}
-            {planting&&planting.vid&&cfmClear && (
-              <div style={{marginTop:8,border:"1px solid "+C.inkBorder,padding:"10px 14px",display:"flex",gap:8,alignItems:"center"}}>
-                <span style={{fontSize:12,flex:1,fontFamily:HAND}}>履歴を残して栽培を終了？</span>
-                <button onClick={function(){setCfmClear(false);}} style={{padding:"6px 10px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
-                <button onClick={onClear} style={{padding:"6px 10px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:SERIF}}>削除</button>
-              </div>
-            )}
-
-            {/* 畝を削除（下部・目立つ位置） */}
-            <div style={{marginTop:24,paddingTop:16,borderTop:"1px dashed "+C.inkLine}}>
-              {!cfmDel ? (
-                <button onClick={function(){setCfmDel(true);}}
-                  style={{width:"100%",padding:"13px",background:"transparent",color:C.inkFaint,border:"1px solid "+C.inkLine,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                  <span style={{fontSize:15}}>🗑</span>
-                  <span>この畝を削除する…</span>
-                </button>
-              ) : (
-                <div style={{border:"2px solid "+C.red,background:C.redPale,padding:"14px 16px"}}>
-                  <div style={{fontSize:13,color:C.red,fontFamily:SERIF,letterSpacing:1,marginBottom:10,textAlign:"center"}}>
-                    本当に削除しますか？
-                  </div>
-                  <div style={{fontSize:12,color:C.red,fontFamily:HAND,lineHeight:1.8,marginBottom:14,textAlign:"center"}}>
-                    表示中の年以降、畝を非表示にします。<br/>過去の記録は残り、直前の操作はメニューから戻せます。
-                  </div>
-                  <div style={{display:"flex",gap:8}}>
-                    <button onClick={function(){setCfmDel(false);}}
-                      style={{flex:1,padding:"12px",border:"1px solid "+C.inkBorder,background:C.paper,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
-                      やめる
-                    </button>
-                    <button onClick={onDelete}
-                      style={{flex:1,padding:"12px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:2,fontWeight:"bold"}}>
-                      削除する
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 記録タブ */}
-        {tab === "history" && (
-          <div>
-            <SectionTitle>{ridge.name}　作付け歴</SectionTitle>
-            {planting&&planting.vid&&<HistRow year={year} month={planting.month} day={planting.day} veggieId={planting.vid} isCurrent={true}/>}
-            {history.length>0
-              ? history.map(function(h){return <HistRow key={h.key||h.year} year={h.year} month={h.month} day={h.day} veggieId={h.veggieId} isCurrent={false}/>;})
-              : <div style={{color:C.inkFaint,fontSize:12,padding:"16px 0",fontFamily:HAND,letterSpacing:1}}>過去の記録はありません</div>}
-            {(planting&&planting.vid||history.length>0)&&<RotSummary year={year} veggieId={planting&&planting.vid} history={history}/>}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -3572,8 +3485,8 @@ function HistRow({ year, month, day, veggieId, isCurrent }) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 0",borderBottom:"1px solid "+C.inkLine}}>
       <div style={{width:72,flexShrink:0}}>
-        <div style={{fontSize:13,color:isCurrent?C.indigo:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>{dateStr}</div>
-        {isCurrent && <span style={{fontSize:12,background:C.indigo,color:"#fff",padding:"1px 4px",fontFamily:HAND}}>本年</span>}
+        <div style={{fontSize:14,color:isCurrent?C.indigo:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>{dateStr}</div>
+        {isCurrent && <span style={{fontSize:14,background:C.indigo,color:"#fff",padding:"1px 4px",fontFamily:HAND}}>本年</span>}
       </div>
       {v ? (
         <Fragment>
@@ -3582,11 +3495,11 @@ function HistRow({ year, month, day, veggieId, isCurrent }) {
           </div>
           <div>
             <div style={{fontSize:14,letterSpacing:1}}>{v.name}</div>
-            <div style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>{v.family}</div>
+            <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND}}>{v.family}</div>
           </div>
         </Fragment>
       ) : (
-        <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>— 記録なし</span>
+        <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND}}>— 記録なし</span>
       )}
     </div>
   );
@@ -3602,10 +3515,10 @@ function RotSummary({ year, veggieId, history }) {
   if(entries.length<2) return null;
   return (
     <div style={{marginTop:16,padding:"14px 16px",borderLeft:"4px solid "+(maxC>=3?C.red:maxC>=2?C.orange:C.green),background:maxC>=3?C.redPale:maxC>=2?C.orangePale:C.greenPale}}>
-      <div style={{fontSize:12,color:C.inkFaint,letterSpacing:3,marginBottom:6,fontFamily:HAND}}>連作チェック</div>
-      {maxC>=3&&<div style={{fontSize:13,color:C.red,fontFamily:HAND,letterSpacing:.5}}>同じ科が{maxC}年連続。土の休養が必要です。</div>}
-      {maxC===2&&<div style={{fontSize:13,color:C.orange,fontFamily:HAND,letterSpacing:.5}}>2年連続。来年は別の科をお勧めします。</div>}
-      {maxC<2&&<div style={{fontSize:13,color:C.green,fontFamily:HAND,letterSpacing:.5}}>連作の問題はありません。</div>}
+      <div style={{fontSize:14,color:C.inkFaint,letterSpacing:3,marginBottom:6,fontFamily:HAND}}>連作チェック</div>
+      {maxC>=3&&<div style={{fontSize:14,color:C.red,fontFamily:HAND,letterSpacing:.5}}>同じ科が{maxC}年連続。土の休養が必要です。</div>}
+      {maxC===2&&<div style={{fontSize:14,color:C.orange,fontFamily:HAND,letterSpacing:.5}}>2年連続。来年は別の科をお勧めします。</div>}
+      {maxC<2&&<div style={{fontSize:14,color:C.green,fontFamily:HAND,letterSpacing:.5}}>登録された履歴では、同じ科の連続は見つかりません。</div>}
     </div>
   );
 }
@@ -3625,7 +3538,8 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
 
   /* snapOverride があれば固定、なければ年選択 */
   var isSnap = !!snapOverride;
-  var activeRidges = isSnap ? (snapOverride.ridges || {}) : Object.fromEntries(Object.entries(ridges[farm.id] || {}).filter(function(entry){var r=entry[1];return (!r.addedFrom||r.addedFrom<=year)&&(!r.deletedFrom||r.deletedFrom>year);}));
+  farm=isSnap&&snapOverride.farm?snapOverride.farm:geometryAt(farms.find(f=>f.id===farm.id)||farm,selYear);
+  var activeRidges = isSnap ? (snapOverride.ridges || {}) : bedsAt(ridges[farm.id],selYear);
   var activePlantings = isSnap ? (snapOverride.plantings || {}) : ((plantings[farm.id] && plantings[farm.id][selYear]) || {});
   var activeYear = isSnap ? snapOverride.year : selYear;
 
@@ -3701,7 +3615,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     });
     /* 畝 */
     ridgeList.forEach(function(ridge){
-      var pl = yp[ridge.id], vid = pl&&pl.vid, vg = vid?VM[vid]:null;
+      var pl = yp[ridge.id], vid = extractVid(pl), vg = vid?VM[vid]:null;
       var rr;
       var RW2=ridge.ridgeW||RWIDTH;
       if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2, y:padT+(ridge.gy-RW2/2)*CS2, w:ridge.gl*CS2, h:RW2*CS2};
@@ -3754,14 +3668,14 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
 
     /* 畝テーブルHTML */
     var tableRows = ridgeList.map(function(ridge){
-      var pl=yp[ridge.id], vid=pl&&pl.vid, vg=vid?VM[vid]:null;
+      var pl=yp[ridge.id], vid=extractVid(pl), vg=vid?VM[vid]:null;
       var warn = checkRot(fid, ridge.id, activeYear, plantings, soil, activeRidges);
-      var warnTd = warn==="danger" ? '<td class="wd">連作注意</td>' : warn==="caution" ? '<td class="wc">要注意</td>' : '<td>—</td>';
+      var warnTd = warn==="danger" ? '<td class="wd">同じ科が連続</td>' : warn==="caution" ? '<td class="wc">前年と同じ科</td>' : '<td>—</td>';
       return '<tr><td>'+ridge.name+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+vg.name:'—')+'</td><td>'+(vg?vg.family:'')+'</td><td>'+(pl&&pl.month?pl.month+'月'+(pl.day?pl.day+'日':''):'—')+'</td>'+warnTd+'</tr>';
     }).join('');
 
     var titleRight = isSnap
-      ? ('ハタケボ 作付け帳　　'+activeYear+'年　　きろく帳：'+snapDateStr)
+      ? ('ハタケボ 作付け帳　　'+activeYear+'年　　これまでの記録：'+snapDateStr)
       : ('ハタケボ 作付け帳　　'+activeYear+'年　　印刷日：'+new Date().toLocaleDateString('ja-JP'));
 
     var w = window.open('','_blank','width=900,height=700');
@@ -3797,7 +3711,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       w.document.write('<p class="section-title">畝一覧</p>');
       w.document.write('<table><thead><tr><th>畝名</th><th>作物</th><th>科</th><th>植付日</th><th>連作</th></tr></thead><tbody>'+tableRows+'</tbody></table>');
     }
-    w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — きろく帳':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
+    w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — これまでの記録':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
     w.document.write('</div></body></html>');
     w.document.close();
     setTimeout(function(){
@@ -3845,7 +3759,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
           if(c===farm.cols-1||!farm.grid[r][c+1]) ls.push(<line key={"r"+r+c} x1={x2} y1={y1} x2={x2} y2={y2} stroke={C.ink} strokeWidth={1.5}/>);
         }); return ls; }).flat().filter(Boolean)}
         {ridgeList.map(function(ridge){
-          var pl=yp[ridge.id],vid=pl&&pl.vid,vg=vid?VM[vid]:null;
+          var pl=yp[ridge.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
           var rr;
           var RW2=ridge.ridgeW||RWIDTH;
           if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2,y:padT+(ridge.gy-RW2/2)*CS2,w:ridge.gl*CS2,h:RW2*CS2};
@@ -3883,18 +3797,18 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
   return (
     <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,20,8,0.55)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"24px 16px"}}
       onClick={onClose}>
-      <div style={{background:C.paper,border:"2px solid "+C.ink,width:"100%",maxWidth:680,boxShadow:"6px 6px 0 "+C.inkFaint,display:"flex",flexDirection:"column",maxHeight:"92vh"}}
+      <div style={{background:C.paper,border:"2px solid "+C.ink,width:"100%",maxWidth:680,boxShadow:"6px 6px 0 "+C.inkFaint,display:"flex",flexDirection:"column",maxHeight:"calc(92dvh / var(--ui-scale, 1))"}}
         onClick={function(e){e.stopPropagation();}}>
 
         {/* ヘッダー */}
         <div style={{padding:"16px 20px",borderBottom:"2px solid "+C.ink,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:12,color:C.inkFaint,letterSpacing:3,fontFamily:HAND}}>
-              {isSnap ? "きろく帳 — 印刷プレビュー" : "印刷プレビュー"}
+            <div style={{fontSize:14,color:C.inkFaint,letterSpacing:3,fontFamily:HAND}}>
+              {isSnap ? "これまでの記録 — 印刷プレビュー" : "印刷プレビュー"}
             </div>
             <div style={{fontSize:17,letterSpacing:3,marginTop:2}}>{farm.name}</div>
             {isSnap && (
-              <div style={{fontSize:12,color:C.indigo,fontFamily:HAND,marginTop:3,letterSpacing:1}}>
+              <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:3,letterSpacing:1}}>
                 {snapDateStr}　{activeYear}年
               </div>
             )}
@@ -3906,7 +3820,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
                 var sel = selYear === y;
                 return (
                   <button key={y} onClick={function(){setSelYear(y);}}
-                    style={{padding:"5px 12px",border:"1px solid "+(sel?C.ink:C.inkLine),background:sel?C.ink:"transparent",color:sel?C.paper:C.inkFaint,fontSize:12,cursor:"pointer",fontFamily:SERIF}}>
+                    style={{padding:"5px 12px",border:"1px solid "+(sel?C.ink:C.inkLine),background:sel?C.ink:"transparent",color:sel?C.paper:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>
                     {y}年
                   </button>
                 );
@@ -3920,7 +3834,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
         <div style={{flex:1,overflowY:"auto",padding:"20px 20px 0"}}>
 
           <div style={{marginBottom:10}}>
-            <span style={{fontSize:12,color:C.inkFaint,fontFamily:HAND}}>{activeYear}年の作付け</span>
+            <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND}}>{activeYear}年の作付け</span>
           </div>
 
           {/* 畑の図 */}
@@ -3931,26 +3845,26 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
               <div>幅 × 奥行き<br/>{fieldInfo.width}m × {fieldInfo.height}m</div>
               <div style={{marginTop:8}}>畑の面積　{fieldInfo.area}㎡</div>
               <div>畝・区画の数　{ridgeList.length}</div>
-              <p style={{fontSize:12,color:C.inkFaint,marginTop:12}}>面積は登録した形から計算しています。使わないマスは含みません。</p>
-              <p style={{fontSize:12,color:C.inkFaint,marginTop:8}}>図は用紙に合わせて縮尺を調整しています。</p>
+              <p style={{fontSize:14,color:C.inkFaint,marginTop:12}}>面積は登録した形から計算しています。使わないマスは含みません。</p>
+              <p style={{fontSize:14,color:C.inkFaint,marginTop:8}}>図は用紙に合わせて縮尺を調整しています。</p>
             </aside>
           </div>
 
           {/* 畝一覧テーブル */}
           {ridgeList.length > 0 && (
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:12,letterSpacing:3,color:C.inkFaint,fontFamily:HAND,marginBottom:8,borderBottom:"1px solid "+C.inkLine,paddingBottom:4}}>畝一覧</div>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:HAND}}>
+              <div style={{fontSize:14,letterSpacing:3,color:C.inkFaint,fontFamily:HAND,marginBottom:8,borderBottom:"1px solid "+C.inkLine,paddingBottom:4}}>畝一覧</div>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:14,fontFamily:HAND}}>
                 <thead>
                   <tr>
                     {["畝名","作物","科","植付日","連作"].map(function(h){
-                      return <th key={h} style={{textAlign:"left",padding:"5px 8px",borderBottom:"1px solid "+C.ink,fontSize:12,color:C.inkFaint,letterSpacing:1,fontWeight:"normal"}}>{h}</th>;
+                      return <th key={h} style={{textAlign:"left",padding:"5px 8px",borderBottom:"1px solid "+C.ink,fontSize:14,color:C.inkFaint,letterSpacing:1,fontWeight:"normal"}}>{h}</th>;
                     })}
                   </tr>
                 </thead>
                 <tbody>
                   {ridgeList.map(function(ridge){
-                    var pl=yp[ridge.id],vid=pl&&pl.vid,vg=vid?VM[vid]:null;
+                    var pl=yp[ridge.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
                     var warn=checkRot(fid,ridge.id,activeYear,plantings,soil,activeRidges);
                     return (
                       <tr key={ridge.id}>
@@ -3959,7 +3873,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:C.inkFaint}}>{vg?vg.family:""}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{pl&&pl.month?pl.month+"月"+(pl.day?pl.day+"日":""):"—"}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:warn==="danger"?C.red:warn==="caution"?C.orange:"",fontWeight:warn?"bold":"normal"}}>
-                          {warn==="danger"?"連作注意":warn==="caution"?"要注意":"—"}
+                          {warn==="danger"?"同じ科が連続":warn==="caution"?"前年と同じ科":"—"}
                         </td>
                       </tr>
                     );
@@ -3973,7 +3887,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
         {/* フッターボタン */}
         <div style={{borderTop:"1px solid "+C.inkLine,display:"flex",gap:10,padding:"14px 20px",flexShrink:0}}>
           <button onClick={onClose}
-            style={{flex:1,padding:"12px",border:"1px solid "+C.inkBorder,background:"transparent",color:C.inkFaint,fontSize:13,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
+            style={{flex:1,padding:"12px",border:"1px solid "+C.inkBorder,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
             とじる
           </button>
           <button onClick={doPrint}

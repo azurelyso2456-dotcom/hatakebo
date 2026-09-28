@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ハタケボ — 家庭菜園の作付け管理アプリ</title>
+  <title>ハタケボ（はたけぼ）｜畑と土づくりの記録帳</title>
 
   <!-- SEO -->
-  <meta name="description" content="ハタケボは、家庭菜園の畑と作付けをかんたんに記録できる無料のウェブアプリです。畝の配置図を描いて野菜を記録。連作チェック・変遷記録・印刷機能つき。登録不要・オフライン対応・スマホ・PC対応。" />
+  <meta name="description" content="ハタケボは、畑の配置・野菜・肥料・堆肥・緑肥を手軽に残せる無料の土地の記録帳です。スマホ・パソコンに対応。登録不要で、事前に準備すれば電波のない畑でも使えます。" />
   <meta name="keywords" content="家庭菜園,作付け管理,畑,畝,連作,野菜,記録,アプリ,無料,スマホ,トマト,ナス,キュウリ,プランター,菜園,畑管理,作付け計画,連作障害,野菜作り,家庭菜園アプリ" />
   <link rel="canonical" href="https://azurelyso2456-dotcom.github.io/hatakebo/" />
   <meta name="google-site-verification" content="rvysCMHASRGyhqXXSHaHyxltqIwu-SId5oOSZz9CHAQ" />
@@ -15,14 +15,14 @@
 
   <!-- OGP（SNSシェア時の表示） -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="ハタケボ — 家庭菜園の作付け管理アプリ（無料）" />
-  <meta property="og:description" content="畑の畝を図で描いて、野菜の作付けを記録できる無料アプリ。連作チェック・変遷記録・印刷機能つき。登録不要・オフライン対応。" />
+  <meta property="og:title" content="ハタケボ（はたけぼ）｜畑と土づくりの記録帳" />
+  <meta property="og:description" content="畑の畝を図で描いて、野菜の作付けを記録できる無料アプリ。肥料・堆肥・緑肥の記録と、印刷機能つき。登録不要・オフライン対応。" />
   <meta property="og:url" content="https://azurelyso2456-dotcom.github.io/hatakebo/" />
   <meta property="og:site_name" content="ハタケボ" />
   <meta property="og:locale" content="ja_JP" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="ハタケボ — 家庭菜園の作付け管理アプリ（無料）" />
-  <meta name="twitter:description" content="畑の畝を図で描いて、野菜の作付けを記録できる無料アプリ。連作チェック・変遷記録・印刷機能つき。登録不要・オフライン対応。" />
+  <meta name="twitter:title" content="ハタケボ（はたけぼ）｜畑と土づくりの記録帳" />
+  <meta name="twitter:description" content="畑の畝を図で描いて、野菜の作付けを記録できる無料アプリ。肥料・堆肥・緑肥の記録と、印刷機能つき。登録不要・オフライン対応。" />
 
   <!-- 構造化データ（Googleリッチリザルト用） -->
   <script type="application/ld+json">
@@ -30,7 +30,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "ハタケボ",
-    "alternateName": ["畑の帳簿", "家庭菜園管理アプリ"],
+    "alternateName": ["はたけぼ", "畑の帳簿"],
     "description": "家庭菜園の畑と作付けをかんたんに記録できる無料のウェブアプリ。畝の配置図を描いて野菜を記録し、連作チェック・変遷記録・印刷ができます。登録不要・オフライン対応。",
     "url": "https://azurelyso2456-dotcom.github.io/hatakebo/",
     "applicationCategory": "LifestyleApplication",
@@ -44,7 +44,8 @@
       "野菜の作付け記録（42種類）",
       "季節ごとの植え付け適期サジェスト",
       "連作チェック機能",
-      "変遷記録・スナップショット",
+      "肥料・堆肥・緑肥の作業記録",
+      "年をまたいだ履歴と畑の図の保存",
       "印刷・PDF保存",
       "オフライン対応",
       "無料・登録不要",
@@ -64,11 +65,14 @@
   </script>
   <script crossorigin src="vendor/react-18.3.1.min.js"></script>
   <script crossorigin src="vendor/react-dom-18.3.1.min.js"></script>
-  <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #f4edd8; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }</style>
+  <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #faf8f1; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } input,textarea { user-select:text; } button,input,select,textarea { font-family:'Yu Gothic','Meiryo',sans-serif; } button:focus-visible,summary:focus-visible { outline:3px solid #8a5010; outline-offset:3px; }</style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
 </head>
 <body>
   <div id="root"></div>
+  <footer aria-label="ハタケボについて" style="max-width:1200px;margin:0 auto;padding:20px 24px 32px;border-top:1px solid #c9cbbd;color:#596559;font:14px/1.8 'Yu Gothic','Meiryo',sans-serif;user-select:text">
+    <p>ハタケボ（はたけぼ） — 畑で育てたもの、土に入れたものを残す、無料の土地の記録帳です。</p>
+  </footer>
   <script src="vegetables.js"></script>
   <script src="landmarks.js"></script>
   <script src="hatakebo.runtime.js"></script>
