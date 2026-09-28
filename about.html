@@ -11,57 +11,66 @@
   <meta property="og:title" content="家庭菜園・市民農園の土地の記録帳 ハタケボ">
   <meta property="og:description" content="畑のレイアウト、作付け、土づくりを手軽に記録。無料・会員登録不要のWebアプリです。">
   <meta property="og:url" content="https://azurelyso2456-dotcom.github.io/hatakebo/about.html">
-  <style>
-    *{box-sizing:border-box}body{margin:0;color:#20372e;background:#faf8f1 repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px);font:17px/1.85 'Yu Gothic','Meiryo',sans-serif}main,header,footer{max-width:860px;margin:16px auto;padding:24px;background:#faf8f1;border:1px solid #c9cbbd}header{display:flex;align-items:center;justify-content:space-between;gap:16px}a{color:#304f43;text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:3px solid #8a5010;outline-offset:4px}.brand{font-size:24px;font-weight:bold;text-decoration:none}h1{font-size:clamp(26px,4vw,38px);line-height:1.5;margin:8px 0 16px}h2{font-size:23px;line-height:1.5;margin:0 0 12px}h3{font-size:19px;margin:20px 0 4px}p{margin:8px 0 16px}section+section{border-top:1px solid #c9cbbd;margin-top:32px;padding-top:24px}.label{font-size:15px;color:#46564b}.button{display:inline-block;padding:12px 24px;background:#304f43;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold}li{margin-bottom:8px}ul,ol{padding-left:1.5em}details{border-top:1px solid #c9cbbd;padding:12px 0}summary{cursor:pointer;font-weight:bold;min-height:44px;padding:8px 0}details p{margin:8px 0}.note{font-size:15px;color:#46564b}footer{font-size:15px}footer a{display:inline-block;padding:8px 0;margin-right:20px}@media(max-width:600px){main,header,footer{margin:12px 8px;padding:20px 16px}header{flex-wrap:wrap}h2{font-size:21px}}
-  </style>
+  <link rel="stylesheet" href="about.css">
 </head>
 <body>
-<header><a class="brand" href="./">ハタケボ</a><a href="./">記録帳を開く</a></header>
-<main>
-  <section>
-    <p class="label">家庭菜園・市民農園の、わたしの土地の記録帳</p>
-    <h1>畑の配置と作付けを、<br>かんたんに記録。</h1>
-    <p>「去年、ここに何を植えたかな？」<br>「この畝に、堆肥を入れたのはいつ？」</p>
-    <p>ハタケボは、畑で育てたものと、土に入れたものを残す無料のWebアプリです。家庭菜園や市民農園の小さな畑を、自分の記録帳として使えます。</p>
+<a class="skip" href="#main">本文へ進む</a>
+<header><a class="brand" href="./">ハタケボ</a><a class="header-link" href="./">記録帳を開く</a></header>
+<main id="main">
+  <section class="hero">
+    <div class="hero-grid"><div class="hero-copy">
+    <p class="label">家庭菜園・市民農園の土地の記録帳</p>
+    <h1><span>ここに、</span><span>なに植えたっけ？</span></h1>
+    <p class="intro">畑の記録に、必要なことだけ。</p>
+    <p class="hero-description">畑の配置、植えた野菜、土づくり。<br>残したいことを、かんたんに記録して見返せる。<br>初めての方にもわかりやすく、機能と操作を絞った、あなたの畑専用の記録帳です。</p>
+    <ul class="benefits"><li>無料</li><li>会員登録不要</li><li>インストール不要</li></ul>
     <a class="button" href="./">無料でハタケボを使う</a>
-    <p class="note">会員登録・インストール不要。スマートフォンでもパソコンでも使えます。</p>
+    <p class="note">スマートフォンでも、パソコンでも。</p>
+    </div><figure class="preview"><img src="garden-notebook-simple.webp" width="1000" height="1000" alt="3本の畝を描いた開いた記録帳と、一本の鉛筆の水彩イラスト。"><figcaption>育てたものを、思い出せるかたちに。<br>※記録帳をイメージしたイラストです</figcaption></figure></div>
   </section>
-  <section>
-    <h2>畑の配置から、土づくりの記録まで</h2>
-    <figure style="margin:16px 0 24px"><img src="app-example.png" width="375" height="812" loading="lazy" alt="ハタケボの画面例。5m×4mの畑にトマトの畝を配置した見取り図。" style="display:block;max-width:100%;height:auto;border:1px solid #c9cbbd"><figcaption class="note">画面例：確認用の畑。畑と畝を土色の図で表示します。</figcaption></figure>
+  <section class="intro-band"><h2>覚えておかなくても、<br>畑のことが、わかる。</h2><p>去年のトマト。春に入れた堆肥。<br>畑で重ねた小さな仕事を、次の季節に手渡す。<br>ハタケボは、そんな日々のための道具です。</p></section>
+  <section class="features">
+    <p class="section-label"><span>01</span> 畑で役立つ、4つのこと</p>
+    <h2>畑のことを、ひとつの記録帳に。</h2>
+    <div class="feature-grid"><article class="feature"><span class="feature-number" aria-hidden="true">01</span>
     <h3>畝の幅を決めて、レイアウトを考える</h3>
     <p>畑の大きさや形を登録し、畝の向き・幅・位置を指定できます。通路も考えながら、どこに野菜を植えるかを図で整理。周囲の目印には名前を付けられます。</p>
-    <h3>どこに何を植えたか、残しておく</h3>
+    </article><article class="feature"><span class="feature-number" aria-hidden="true">02</span><h3>どこに何を植えたか、残しておく</h3>
     <p>畝ごとに野菜と植え付け日を記録できます。年を切り替えれば以前の作付けを振り返れるので、次の作付け計画を考えるときにも役立ちます。</p>
-    <h3>肥料・堆肥・緑肥も、同じ記録帳に</h3>
+    </article><article class="feature"><span class="feature-number" aria-hidden="true">03</span><h3>肥料・堆肥・緑肥も、同じ記録帳に</h3>
     <p>野菜だけでなく、土に入れたものや作業も日付とともに残せます。畝ごと、または畑全体の記録として整理し、追肥や土づくりの履歴を見返せます。</p>
-    <h3>畑の図を紙でも持ち歩く</h3>
-    <p>畑の図と作付け一覧を印刷できます。畑の大きさ・面積も併記するため、紙の記録として残したり、農園で相談するときにも使えます。</p>
+    </article><article class="feature"><span class="feature-number" aria-hidden="true">04</span><h3>畑の図を紙でも持ち歩く</h3>
+    <p>畑の図と作付け一覧を印刷できます。畑の大きさ・面積も併記するため、紙の記録として残したり、農園で相談するときにも使えます。</p></article></div>
   </section>
+  <section class="screen-section"><figure class="screen-frame"><img src="app-example.png" width="375" height="812" loading="lazy" alt="実際のハタケボの画面。5m×4mの畑にトマトを記録した例。"><figcaption>実際の画面例（確認用の畑）</figcaption></figure><div class="screen-copy"><p class="section-label"><span>02</span> ひと目でわかる、畑の見取り図</p><h2>あなたの畑が、<br>そのまま記録の入口に。</h2><p>「どの畝だったかな？」と迷ったら、図を見て確認。畝を選ぶと、植えた野菜や作業の記録を見返せます。</p><p>スマートフォンでもパソコンでも、同じ記録の仕方。文字を大きくする設定も用意しています。</p><a class="text-link" href="./">自分の畑を作ってみる ↗</a></div></section>
   <section>
+    <p class="section-label"><span>03</span> はじめの一歩</p>
     <h2>使い始めるときは、この3つから</h2>
-    <ol>
+    <ol class="steps">
       <li><strong>畑を登録する。</strong>名前と大きさを決め、自分の畑の形に合わせます。</li>
       <li><strong>畝を作る。</strong>向きや幅を選び、図の中に配置します。</li>
       <li><strong>野菜や作業を記録する。</strong>全部を一度に埋める必要はありません。今日の作業から少しずつ残せます。</li>
     </ol>
-    <p>天気予報や交流掲示板などを詰め込まず、土地の記録に集中した道具です。大がかりな農業管理システムより、自分の畑のことを手軽に残したい方に向いています。</p>
+    <p>記録するのは、残しておきたいことだけ。誰かに見せるためではなく、次に畑に立つ自分のための記録帳です。</p>
   </section>
-  <section>
-    <h2>電波のない畑でも、いつもの記録を</h2>
+  <section class="outdoors">
+    <div><p class="section-label"><span>04</span> 畑へ持っていく前に</p>
+    <h2>電波のない畑でも、いつもの記録を。</h2>
+    </div><div>
     <p>出かける前に、通信できる場所でハタケボを開き、画面に「電波のない場所でも使えます」と表示されることを確認してください。準備ができれば、同じ端末・同じブラウザーで、畑の閲覧や記録ができます。</p>
     <p>記録は使っているブラウザー内に保存されます。別の端末への自動同期はありません。端末の故障やブラウザーのデータ消去に備え、メニューからバックアップを保存しておくと安心です。</p>
+    </div>
   </section>
-  <section>
-    <h2>初めての方からよくある質問</h2>
+  <section class="faq">
+    <div><p class="section-label">使う前に、知っておきたいこと</p><h2>よくある質問</h2></div><div>
     <details><summary>本当に無料ですか？</summary><p>はい。畑の配置、野菜や作業の記録、印刷などを無料で使えます。会員登録も必要ありません。</p></details>
     <details><summary>パソコンでも畝を作れますか？</summary><p>はい。スマートフォンと同じように、畝の向き・幅・位置を指定できます。ドラッグ操作だけで作る必要はありません。</p></details>
     <details><summary>連作障害を防げますか？</summary><p>記録した作物の科や過去の作付けをもとに、連作を考えるための注意を表示します。病害の発生を予測したり、防止を保証するものではありません。畑の状態や地域の栽培情報と合わせて参考にしてください。</p></details>
     <details><summary>スマホを買い替えても記録を使えますか？</summary><p>古い端末でバックアップを保存し、新しい端末のハタケボで読み込むことで引き継げます。ブラウザーのデータを消す前や、買い替え前に保存してください。</p></details>
     <details><summary>使い方に迷ったら？</summary><p>アプリ内の「よくある質問」で、畝の作成、作業の記録、印刷やバックアップなどを確認できます。</p></details>
+    </div>
   </section>
-  <section><h2>まずは、自分の畑をひとつ。</h2><p>今年の記録が、来年の畑を考える手がかりになります。</p><a class="button" href="./">ハタケボを開く</a></section>
 </main>
-<footer><a href="./">ハタケボを使う</a><a href="disclaimer.html">免責事項・ご利用について</a></footer>
+<footer><a class="footer-brand" href="./">ハタケボ</a><span>わたしの土地の記録帳</span><a href="disclaimer.html">免責事項・ご利用について</a></footer>
 </body>
 </html>

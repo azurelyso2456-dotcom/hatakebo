@@ -1,9 +1,9 @@
 /* The release builder updates VERSION when any cached file changes. */
-const VERSION = 'a0c5027fc9b5e678';
+const VERSION = '9988a8f1f541f802';
 const BASE = new URL('./',self.location.href);
 const PREFIX = 'hatakebo-offline:'+BASE.pathname+':';
 const CACHE = PREFIX+VERSION;
-const FILES = ['index.html','hatakebo.runtime.js','vegetables.js','landmarks.js','disclaimer.html','about.html','app-example.png','offline.js','vendor/react-18.3.1.min.js','vendor/react-dom-18.3.1.min.js'];
+const FILES = ['index.html','hatakebo.runtime.js','vegetables.js','landmarks.js','disclaimer.html','about.html','about.css','garden-notebook-simple.webp','app-example.png','offline.js','vendor/react-18.3.1.min.js','vendor/react-dom-18.3.1.min.js'];
 const URLS = FILES.map(file=>new URL(file,BASE).href);
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
