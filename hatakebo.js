@@ -43,10 +43,11 @@ function LedgerStyle(){return <style>{`
   .journal-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.journal-toolbar button{padding:10px 16px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink}}.journal-toolbar .journal-primary{background:${C.indigo};color:white}.journal-mode{padding:12px;background:${C.paper2};border:1px solid ${C.inkLine};margin-bottom:16px}
   .ledger-app .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-app .ledger-aside{display:none}.ledger-app .ledger-map{padding-right:0}.ledger-app .ledger-content{user-select:text}.ledger-app .ledger-bottom{position:sticky!important;bottom:0!important;z-index:30;padding:10px 0!important;background:${C.paper};border-top:1px solid ${C.inkLine}!important}
   .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
-  .ledger-header{position:relative!important;border-bottom:0!important;background:transparent!important}
-  .ledger-brand{display:flex;align-items:center;gap:12px;padding:16px 0 12px;border-bottom:1px solid ${C.inkLine}}
+  .ledger-header{position:relative!important;background:${C.paper}!important;border:1px solid ${C.inkLine}!important;padding:0 16px 8px;margin:12px 0}
+  .ledger-brand{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid ${C.inkLine}}
+  .ledger-brand-copy{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;min-width:0}
   .ledger-seal{display:none}
-  .ledger-logo{font:700 24px/1.25 ${SANS};letter-spacing:1px}.ledger-tagline{font:14px/1.5 ${SANS};color:${C.inkFaint};margin-top:2px}
+  .ledger-logo{font:700 24px/1.25 ${SANS};letter-spacing:1px}.ledger-tagline{font:14px/1.5 ${SANS};color:${C.inkFaint};margin:0}
   .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
   .ledger-navrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:start!important;gap:16px!important;padding:12px 0 8px!important}
   .ledger-navtabs{border:0!important;gap:16px;min-width:0}.ledger-navtabs button{height:44px;background:transparent!important;color:${C.ink}!important;border-bottom:2px solid transparent!important;padding:8px 0!important;font-size:16px!important;white-space:nowrap}
@@ -59,9 +60,9 @@ function LedgerStyle(){return <style>{`
   .ledger-yearnav .year-caption{display:block;margin-top:4px;font:14px/1.5 ${SANS};color:${C.inkFaint};white-space:nowrap}
   .ledger-yearnav button.year-caption{width:100%;padding:0;border:0;background:transparent;color:${C.indigo};text-decoration:underline;cursor:pointer}
   .ledger-menu-wrap{position:relative;grid-column:3;align-self:start}.ledger-menu-button{width:96px;font-size:16px!important}
-  .ledger-title{padding:0 0 12px}.ledger-title h1{font:600 28px/1.4 ${SANS};overflow-wrap:anywhere;margin-top:2px}.ledger-title small{display:block;font:14px/1.5 ${SANS};color:${C.inkFaint}}
+  .ledger-title{padding:0;border-bottom:1px solid ${C.inkBorder}}.ledger-title h1{font:600 28px/1.2 ${SANS};overflow-wrap:anywhere;margin:4px 0 0}.ledger-title small{display:block;font:14px/1.5 ${SANS};color:${C.inkFaint}}
   .ledger-content{padding:0 0 12px!important;overflow:visible!important}
-  .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:1px solid ${C.inkBorder};align-items:start}
+  .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;align-items:start}
   .ledger-map{min-width:0;padding:12px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
   .ledger-maphead span{color:${C.inkFaint}!important;font-size:14px!important}
   .ledger-fieldbox{width:100%;max-width:624px!important;border:0!important;box-shadow:none!important;margin:10px auto;max-height:520px!important}
@@ -86,7 +87,7 @@ function LedgerStyle(){return <style>{`
   .ledger-compact .ledger-navrow{grid-template-columns:minmax(0,1fr) 96px;gap:16px!important}.ledger-compact .ledger-navtabs{grid-column:1 / -1;width:100%}.ledger-compact .ledger-menu-wrap{grid-column:2}.ledger-compact .ledger-yearnav{gap:4px;grid-template-columns:44px minmax(64px,1fr) 44px}
   .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr) 80px;gap:12px 8px!important}.ledger-tight .ledger-menu-button{width:80px;min-width:80px!important}.ledger-tight .ledger-yearnav{grid-template-columns:44px minmax(0,1fr) 44px;gap:0}.ledger-tight .year-number{font-size:16px}.ledger-tight .year-caption{white-space:normal}.ledger-tight .ledger-navtabs{gap:12px}.ledger-tight .ledger-navtabs button{font-size:15px!important}
   .ledger-narrow .ledger-navrow{grid-template-columns:minmax(0,1fr)}.ledger-narrow .ledger-menu-wrap{grid-column:1}.ledger-narrow .ledger-menu-button{width:100%}.ledger-narrow .ledger-yearnav{grid-column:1}.ledger-narrow .ledger-navtabs{flex-wrap:wrap}
-  @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
+  @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-fieldbox{max-height:440px!important}}
   .faq-screen{position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
   .faq-header{position:sticky;top:0;z-index:10;background:${C.paper};border-bottom:1px solid ${C.inkLine}}
   .faq-header-inner{max-width:760px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:12px}.faq-header h1{font:600 22px/1.4 ${SANS}}
@@ -101,6 +102,14 @@ function LedgerStyle(){return <style>{`
   .faq-screen button:focus-visible,.faq-screen input:focus-visible,.faq-screen select:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
   .faq-footer{max-width:760px;margin:auto;padding:24px 16px;border-top:1px solid ${C.inkLine};text-align:left;background:${C.paper}}
   .faq-footer a{box-shadow:none!important;font-family:${SANS}!important;letter-spacing:0!important;min-height:44px;align-items:center}.faq-footer a[href*="google.com"]{font-size:16px!important;border-width:1px!important;padding:10px 20px!important}
+  /* The ruling belongs to the gutters, never beneath reading surfaces. */
+  .ledger-paper-section{background:${C.paper};border:1px solid ${C.inkLine};padding:16px;margin-bottom:12px;min-width:0}
+  .ledger-status{background:${C.paper};padding:12px 16px!important;border:1px solid ${C.inkLine};margin:12px 0}
+  .ledger-app .ledger-bottom{padding:10px 16px!important;border:1px solid ${C.inkLine}!important}
+  .ledger-backup{background:${C.paper}!important;padding:12px 16px!important}
+  .faq-content,.faq-footer{background:${C.paper};border:1px solid ${C.inkLine};width:calc(100% - 24px);margin:12px auto;padding:16px}
+  .setup-paper{background:${C.paper};border:1px solid ${C.inkLine};max-width:520px;width:calc(100% - 24px);margin:16px auto;padding:24px 20px}
+  @media(max-width:800px){.ledger-app{padding:0 8px!important}.ledger-header{padding:0 12px 4px}.ledger-paper-section{padding:12px}.ledger-status{padding:8px 12px!important}.ledger-app .ledger-bottom{padding:10px 12px!important}.setup-paper{padding:20px 16px}}
 `}</style>}
 
 /* ══════════════════════════════════════
@@ -619,7 +628,7 @@ function HatakeApp() {
         <LedgerStyle/>
         {undoCount>0&&<button onClick={undoChange} style={{minHeight:44,fontSize:16,margin:12}}>直前の操作を戻す</button>}
         <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
-        <OfflineNotice/>
+        <div style={{background:C.paper,padding:"8px 16px"}}><OfflineNotice/></div>
       </div>
     );
   }
@@ -1167,7 +1176,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         )}
       </div>
 
-      <div style={{ maxWidth:520, margin:"0 auto", padding:"36px 24px 80px" }}>
+      <div className="setup-paper">
 
         {/* ━━ 表紙 ━━ */}
         {sn === "welcome" && (
@@ -2513,7 +2522,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {/* ══ ヘッダー（シンプル） ══ */}
       <div className="ledger-header" style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
-        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの土地の記録帳</div></div></header>
+        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div className="ledger-brand-copy"><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの土地の記録帳</div></div></header>
 
         {/* 畑タブ行 */}
         <div className="ledger-farms" style={{display:"flex",alignItems:"stretch",overflowX:"auto",borderBottom:"1px solid "+C.inkLine}}>
@@ -2658,6 +2667,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       </div>
 
       {/* ══ コンテンツエリア ══ */}
+      <div className="ledger-paper-section">
       <div className="ledger-title"><small>{mainTab==="map"?"畑の名前":"これまでの記録"}</small><h1>{farm.name}</h1></div>
       {editMode&&<div className="journal-mode" onClick={e=>e.stopPropagation()}>畑を編集しています。畝を押すと寸法を変更できます。変更前の図は自動で残ります。</div>}
       {year!==cy&&mainTab==="map"&&<div className="journal-mode">{year}年の配置を表示しています。<button onClick={e=>{e.stopPropagation();setYear(cy);}}>今年に戻る</button></div>}
@@ -2865,6 +2875,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         )}
       </div>
 
+      </div>
       <div className="ledger-bottom" onClick={e=>e.stopPropagation()}>
         {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && <div className="action-notice">
           <span role="status">{saveError&&toast.undo?"この端末に保存できていません。バックアップで記録を残してください。":toast.msg}</span>
