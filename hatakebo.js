@@ -28,8 +28,8 @@ const SANS   = "'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif";
 const HAND   = SANS;
 
 function LedgerStyle(){return <style>{`
-  .ledger-app{max-width:920px;min-height:0!important;margin:auto;border-left:4px solid ${C.indigo};padding:0 24px!important;background-image:none!important;font-family:${SANS}!important}
-  .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important}
+  .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;background-image:none!important;font-family:${SANS}!important}
+  .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important;font-family:${SANS}!important;line-height:1.5}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
   .ledger-app button{min-width:44px;font-size:16px}.ledger-app input,.ledger-app select,.ledger-app textarea{font:16px/1.5 ${SANS};min-height:44px;max-width:100%;color:${C.ink}}
   .ledger-app{font-size:16px;line-height:1.7}.ledger-list>button div{font-size:16px!important;color:${C.ink}!important}
@@ -41,13 +41,21 @@ function LedgerStyle(){return <style>{`
   .ledger-app .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-app .ledger-aside{display:none}.ledger-app .ledger-map{padding-right:0}.ledger-app .ledger-content{user-select:text}.ledger-app .ledger-bottom{position:sticky!important;bottom:0!important;z-index:30;padding:10px 0!important;background:${C.paper};border-top:1px solid ${C.inkLine}!important}
   .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
   .ledger-header{position:relative!important;border-bottom:0!important;background:${C.paper}!important}
-  .ledger-brand{display:flex;align-items:center;gap:12px;padding:16px 0 12px;border-bottom:1px solid ${C.ink}}
-  .ledger-seal{writing-mode:vertical-rl;border:1px solid ${C.indigo};padding:4px 7px;font:20px/1.2 ${SERIF};letter-spacing:2px}
-  .ledger-logo{font:600 28px/1.4 ${SANS};letter-spacing:2px}.ledger-tagline{font-size:14px;color:${C.inkFaint}}
+  .ledger-brand{display:flex;align-items:center;gap:12px;padding:24px 0 16px;border-bottom:1px solid ${C.inkLine}}
+  .ledger-seal{display:none}
+  .ledger-logo{font:700 24px/1.5 ${SANS};letter-spacing:1px}.ledger-tagline{font-size:14px;color:${C.inkFaint};margin-top:4px}
   .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
-  .ledger-navrow{flex-wrap:wrap;padding:10px 0!important}.ledger-navtabs{border:0!important;gap:12px}.ledger-navtabs button{background:transparent!important;color:${C.ink}!important;border-bottom:3px solid transparent!important;padding:8px!important}
-  .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important;background:${C.indigoPale}!important;font-weight:700}
-  .ledger-title{padding:4px 0 14px}.ledger-title h1{font:600 28px/1.5 ${SANS};overflow-wrap:anywhere}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
+  .ledger-navrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:start!important;gap:16px!important;padding:16px 0!important}
+  .ledger-navtabs{border:0!important;gap:16px;min-width:0}.ledger-navtabs button{height:44px;background:transparent!important;color:${C.ink}!important;border-bottom:2px solid transparent!important;padding:8px 0!important;font-size:16px!important;white-space:nowrap}
+  .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important;font-weight:700}
+  .ledger-yearnav{display:grid;grid-template-columns:44px minmax(80px,1fr) 44px;gap:8px;align-items:start}
+  .ledger-yearnav>div{text-align:center;min-width:0}
+  .ledger-yearnav .year-arrow,.ledger-menu-button{height:44px!important;min-height:44px;box-sizing:border-box;padding:0!important;border:1px solid ${C.inkBorder};background:transparent;color:${C.ink};display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .ledger-yearnav .year-arrow{width:44px;font-size:24px!important;line-height:1}.ledger-yearnav .year-number{height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .ledger-yearnav .year-caption{display:block;margin-top:4px;font:14px/1.5 ${SANS};color:${C.inkFaint};white-space:nowrap}
+  .ledger-yearnav button.year-caption{width:100%;padding:0;border:0;background:transparent;color:${C.indigo};text-decoration:underline;cursor:pointer}
+  .ledger-menu-wrap{position:relative;grid-column:3;align-self:start}.ledger-menu-button{width:96px;font-size:16px!important}
+  .ledger-title{padding:8px 0 16px}.ledger-title h1{font:600 28px/1.5 ${SANS};overflow-wrap:anywhere;margin-top:4px}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
   .ledger-content{padding:0 0 12px!important;overflow:visible!important}
   .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:1px solid ${C.inkBorder};align-items:start}
   .ledger-map{min-width:0;padding:12px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
@@ -62,13 +70,16 @@ function LedgerStyle(){return <style>{`
   .ledger-bottom{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;border-top:0!important;box-shadow:none!important}
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
   .ledger-status{border-top:1px solid ${C.inkLine};padding:12px 0!important;font:14px/1.8 ${SANS}}
-  .ledger-bottom .journal-toolbar{margin:0}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
   .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
   .ledger-app button[aria-pressed=true]{font-weight:700}.ledger-app button:disabled{cursor:not-allowed}
   .ledger-backup{background:transparent!important;border:0!important;border-bottom:1px solid ${C.inkLine}!important;padding:12px 0!important;flex-wrap:wrap}
   .ledger-toast{position:static!important;transform:none!important;margin:12px 0;white-space:normal!important;flex-wrap:wrap;max-width:100%!important}
   .ledger-compact .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-compact .ledger-aside{display:none}.ledger-compact .ledger-map{padding-right:0}
-  @media(max-width:800px){.ledger-app{border-left-width:6px;padding:0 14px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:27px}.ledger-navrow{gap:8px!important}.ledger-navtabs{width:100%}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
+  .ledger-compact .ledger-navrow{grid-template-columns:minmax(0,1fr) 96px;gap:16px!important}.ledger-compact .ledger-navtabs{grid-column:1 / -1;width:100%}.ledger-compact .ledger-menu-wrap{grid-column:2}.ledger-compact .ledger-yearnav{gap:4px;grid-template-columns:44px minmax(64px,1fr) 44px}
+  .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr) 80px;gap:12px 8px!important}.ledger-tight .ledger-menu-button{width:80px;min-width:80px!important}.ledger-tight .ledger-yearnav{grid-template-columns:44px minmax(0,1fr) 44px;gap:0}.ledger-tight .year-number{font-size:16px}.ledger-tight .year-caption{white-space:normal}.ledger-tight .ledger-navtabs{gap:12px}.ledger-tight .ledger-navtabs button{font-size:15px!important}
+  .ledger-narrow .ledger-navrow{grid-template-columns:minmax(0,1fr)}.ledger-narrow .ledger-menu-wrap{grid-column:1}.ledger-narrow .ledger-menu-button{width:100%}.ledger-narrow .ledger-yearnav{grid-column:1}.ledger-narrow .ledger-navtabs{flex-wrap:wrap}
+  @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
 `}</style>}
 
 /* ══════════════════════════════════════
@@ -2471,7 +2482,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   var bottomBarH = 80;
 
   return (
-    <div className={"ledger-app"+(ledgerDesktop?"":" ledger-compact")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
+    <div className={"ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
       onClick={function(){ closeSheet(); if(s1){setS1(null);setHov(null);} setMenuOpen(false); }}>
       <LedgerStyle/>
 
@@ -2515,35 +2526,15 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           </div>
 
           {/* 年ナビ */}
-          {mainTab==="map"&&<div style={{display:"flex",alignItems:"center",gap:2,marginLeft:"auto"}}>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-              <button onClick={function(e){e.stopPropagation();setYear(function(y){return y-1;});}}
-                style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>‹</button>
-              <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>前の年</span>
-            </div>
-            <div style={{minWidth:72,textAlign:"center",padding:"0 4px"}}>
-              <div style={{fontSize:17,letterSpacing:2,fontFamily:HAND,color:year<cy?C.red:C.ink,fontWeight:"bold"}}>{year}年</div>
-              {year===cy ? (
-                <div style={{fontSize:14,color:C.green,fontFamily:HAND,letterSpacing:0,marginTop:1}}>今年</div>
-              ) : year<cy ? (
-                <button onClick={function(e){e.stopPropagation();setYear(cy);}}
-                  style={{fontSize:14,color:C.indigo,background:"transparent",border:"none",cursor:"pointer",fontFamily:HAND,padding:0,textDecoration:"underline",marginTop:1,display:"block",width:"100%"}}>
-                  今年に戻る
-                </button>
-              ) : (
-                <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:1}}>来年以降</div>
-              )}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-              <button onClick={function(e){e.stopPropagation();setYear(function(y){return y+1;});}}
-                style={{background:"none",border:"1px solid "+C.inkBorder,width:44,height:44,cursor:"pointer",fontSize:18,color:C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF}}>›</button>
-              <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:0,marginTop:2}}>次の年</span>
-            </div>
+          {mainTab==="map"&&<div className="ledger-yearnav" aria-label="表示する年">
+            <div><button className="year-arrow" aria-label="前の年" onClick={function(e){e.stopPropagation();setYear(y=>y-1);}}>‹</button><span className="year-caption" aria-hidden="true">前の年</span></div>
+            <div><div className="year-number">{year}年</div>{year===cy?<span className="year-caption">今年</span>:<button className="year-caption" onClick={function(e){e.stopPropagation();setYear(cy);}}>今年に戻る</button>}</div>
+            <div><button className="year-arrow" aria-label="次の年" onClick={function(e){e.stopPropagation();setYear(y=>y+1);}}>›</button><span className="year-caption" aria-hidden="true">次の年</span></div>
           </div>}
 
           {/* … メニュー */}
-          <div style={{position:"relative",flexShrink:0}}>
-            <button aria-label="メニュー" onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
+          <div className="ledger-menu-wrap">
+            <button className="ledger-menu-button" aria-label="メニュー" aria-expanded={menuOpen} onClick={function(e){e.stopPropagation();setMenuOpen(function(v){return !v;});closeSheet();}}
               style={{background:menuOpen?C.ink:"none",color:menuOpen?C.paper:C.inkFaint,border:"1px solid "+(menuOpen?C.ink:C.inkBorder),minWidth:88,height:44,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:SERIF,letterSpacing:0}}>
               メニュー
             </button>
