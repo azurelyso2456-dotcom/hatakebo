@@ -56,26 +56,35 @@
   </script>
 
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJKX7Y947N"></script>
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-EJKX7Y947N');
+    // Keep optional analytics out of the critical loading path and slow connections.
+    window.addEventListener('load', function () {
+      var connection = navigator.connection;
+      if (!navigator.onLine || (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType) || connection.downlink <= 1))) return;
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ window.dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-EJKX7Y947N');
+      var tag = document.createElement('script');
+      tag.async = true;
+      tag.src = 'https://www.googletagmanager.com/gtag/js?id=G-EJKX7Y947N';
+      document.head.appendChild(tag);
+    }, { once: true });
   </script>
-  <script crossorigin src="vendor/react-18.3.1.min.js"></script>
-  <script crossorigin src="vendor/react-dom-18.3.1.min.js"></script>
+  <script defer crossorigin src="vendor/react-18.3.1.min.js"></script>
+  <script defer crossorigin src="vendor/react-dom-18.3.1.min.js"></script>
   <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #faf8f1; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } input,textarea { user-select:text; } button,input,select,textarea { font-family:'Yu Gothic','Meiryo',sans-serif; } button:focus-visible,summary:focus-visible { outline:3px solid #8a5010; outline-offset:3px; }</style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
 </head>
 <body>
-  <div id="root"></div>
-  <footer aria-label="ハタケボについて" style="max-width:1200px;margin:0 auto;padding:20px 24px 32px;border-top:1px solid #c9cbbd;color:#596559;font:14px/1.8 'Yu Gothic','Meiryo',sans-serif;user-select:text">
+  <div id="root"><p role="status" style="max-width:920px;margin:24px auto;padding:16px;color:#20372e;font:16px/1.8 'Yu Gothic','Meiryo',sans-serif">ハタケボを開いています。<br>初めてのときは、イラストなどを読み込みます。</p></div>
+  <noscript>ハタケボを使うには、ブラウザーの JavaScript を有効にしてください。</noscript>
+  <footer aria-label="ハタケボについて" style="max-width:920px;margin:0 auto;padding:16px 24px 24px;border-top:1px solid #c9cbbd;color:#46564b;font:14px/1.8 'Yu Gothic','Meiryo',sans-serif;user-select:text">
     <p>ハタケボ（はたけぼ） — 畑で育てたもの、土に入れたものを残す、無料の土地の記録帳です。</p>
   </footer>
-  <script src="vegetables.js"></script>
-  <script src="landmarks.js"></script>
-  <script src="hatakebo.runtime.js"></script>
-  <script src="offline.js"></script>
+  <script defer src="vegetables.js"></script>
+  <script defer src="landmarks.js"></script>
+  <script defer src="hatakebo.runtime.js"></script>
+  <script defer src="offline.js"></script>
 </body>
 </html>

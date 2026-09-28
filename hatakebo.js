@@ -9,10 +9,10 @@
 const C = {
   paper:    "#faf8f1",   /* 台帳の紙 */
   paper2:   "#efeee5",   /* 補助面 */
-  ink:      "#293f38",   /* 墨緑 */
-  inkFaint: "#596559",   /* 補助文字 */
+  ink:      "#20372e",   /* 墨緑 */
+  inkFaint: "#46564b",   /* 補助文字も十分な濃さに */
   inkLine:  "#c9cbbd",   /* 罫線 */
-  inkBorder:"#929d8d",   /* 枠線 */
+  inkBorder:"#707c6e",   /* 操作枠を背景から区別 */
   indigo:   "#304f43",   /* 操作用の深緑（既存トークン名を維持） */
   indigoPale:"#e3eadc",  /* 選択面 */
   red:      "#8a2020",   /* 朱印 */
@@ -28,7 +28,7 @@ const SANS   = "'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif";
 const HAND   = SANS;
 
 function LedgerStyle(){return <style>{`
-  .ledger-app{max-width:1200px;margin:auto;border-left:10px solid ${C.indigo};padding:0 30px!important;background-image:none!important;font-family:${SANS}!important}
+  .ledger-app{max-width:920px;min-height:0!important;margin:auto;border-left:4px solid ${C.indigo};padding:0 24px!important;background-image:none!important;font-family:${SANS}!important}
   .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
   .ledger-app button{min-width:44px;font-size:16px}.ledger-app input,.ledger-app select,.ledger-app textarea{font:16px/1.5 ${SANS};min-height:44px;max-width:100%;color:${C.ink}}
@@ -41,18 +41,18 @@ function LedgerStyle(){return <style>{`
   .ledger-app .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-app .ledger-aside{display:none}.ledger-app .ledger-map{padding-right:0}.ledger-app .ledger-content{user-select:text}.ledger-app .ledger-bottom{position:sticky!important;bottom:0!important;z-index:30;padding:10px 0!important;background:${C.paper};border-top:1px solid ${C.inkLine}!important}
   .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
   .ledger-header{position:relative!important;border-bottom:0!important;background:${C.paper}!important}
-  .ledger-brand{display:flex;align-items:center;gap:14px;padding:22px 0 16px;border-bottom:1px solid ${C.ink}}
+  .ledger-brand{display:flex;align-items:center;gap:12px;padding:16px 0 12px;border-bottom:1px solid ${C.ink}}
   .ledger-seal{writing-mode:vertical-rl;border:1px solid ${C.indigo};padding:4px 7px;font:20px/1.2 ${SERIF};letter-spacing:2px}
-  .ledger-logo{font:500 28px/1.4 ${SERIF};letter-spacing:3px}.ledger-tagline{font-size:13px;color:${C.inkFaint}}
+  .ledger-logo{font:600 28px/1.4 ${SANS};letter-spacing:2px}.ledger-tagline{font-size:14px;color:${C.inkFaint}}
   .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
-  .ledger-navrow{flex-wrap:wrap;padding:18px 0!important}.ledger-navtabs{border:0!important;gap:18px}.ledger-navtabs button{background:transparent!important;color:${C.ink}!important;border-bottom:2px solid transparent!important;padding:8px 0!important}
-  .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important}
-  .ledger-title{padding:8px 0 22px}.ledger-title h1{font:500 32px/1.4 ${SERIF};overflow-wrap:anywhere}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
-  .ledger-content{padding:0 0 28px!important;overflow:visible!important}
-  .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:3px double ${C.ink};border-bottom:1px solid ${C.ink};align-items:start}
-  .ledger-map{min-width:0;padding:18px 24px 22px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
+  .ledger-navrow{flex-wrap:wrap;padding:10px 0!important}.ledger-navtabs{border:0!important;gap:12px}.ledger-navtabs button{background:transparent!important;color:${C.ink}!important;border-bottom:3px solid transparent!important;padding:8px!important}
+  .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important;background:${C.indigoPale}!important;font-weight:700}
+  .ledger-title{padding:4px 0 14px}.ledger-title h1{font:600 28px/1.5 ${SANS};overflow-wrap:anywhere}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
+  .ledger-content{padding:0 0 12px!important;overflow:visible!important}
+  .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:1px solid ${C.inkBorder};align-items:start}
+  .ledger-map{min-width:0;padding:12px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
   .ledger-maphead span{color:${C.inkFaint}!important;font-size:14px!important}
-  .ledger-fieldbox{border:1px solid ${C.inkBorder}!important;box-shadow:none!important;margin:12px 0;max-height:520px!important}
+  .ledger-fieldbox{width:100%;max-width:624px!important;border:0!important;box-shadow:none!important;margin:10px auto;max-height:520px!important}
   .ledger-fieldbox>div{display:block!important;width:max-content;min-width:0;margin:auto}.ledger-aside{min-width:0;border-left:1px solid ${C.inkLine};padding:22px;font-size:16px;align-self:stretch}
   .ledger-aside h2{font:500 24px/1.5 ${SERIF};margin:12px 0;overflow-wrap:anywhere}.ledger-aside small{font-size:14px;color:${C.inkFaint}}
   .ledger-aside dl{margin:16px 0}.ledger-aside dl>div{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid ${C.inkLine};flex-wrap:wrap}
@@ -61,7 +61,10 @@ function LedgerStyle(){return <style>{`
   .ledger-list{max-width:none!important}.ledger-list>button{width:100%;text-align:left;font-family:${SANS};border-width:0 0 1px!important;margin:0!important;background:transparent!important;border-radius:0!important}
   .ledger-bottom{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;border-top:0!important;box-shadow:none!important}
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
-  .ledger-status{border-top:1px solid ${C.inkLine};padding:16px 0 22px!important;font:14px/1.8 ${SANS}}
+  .ledger-status{border-top:1px solid ${C.inkLine};padding:12px 0!important;font:14px/1.8 ${SANS}}
+  .ledger-bottom .journal-toolbar{margin:0}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
+  .ledger-app button[aria-pressed=true]{font-weight:700}.ledger-app button:disabled{cursor:not-allowed}
   .ledger-backup{background:transparent!important;border:0!important;border-bottom:1px solid ${C.inkLine}!important;padding:12px 0!important;flex-wrap:wrap}
   .ledger-toast{position:static!important;transform:none!important;margin:12px 0;white-space:normal!important;flex-wrap:wrap;max-width:100%!important}
   .ledger-compact .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-compact .ledger-aside{display:none}.ledger-compact .ledger-map{padding-right:0}
@@ -987,7 +990,7 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
           border:"1px solid " + (lm?C.inkBorder:C.inkLine),
           background:lm?C.paper2:"transparent",
           fontSize:lm?14:10, borderRadius:2 }}>
-        {lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ fontSize:14, color:C.inkLine }}>＋</span>}
+        {lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ fontSize:14, color:C.inkFaint }}>＋</span>}
       </div>
     );
   }
@@ -1003,7 +1006,7 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
           cursor:active?"default":"pointer",
           display:"flex", alignItems:"center", justifyContent:"center",
           fontSize:14, opacity:active?0.6:1, borderRadius:1 }}>
-        {!active && (lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ color:C.inkLine, fontSize:8 }}>＋</span>)}
+        {!active && (lm ? <LandmarkImage item={lm} size={24}/> : <span style={{ color:C.inkFaint, fontSize:14 }}>＋</span>)}
       </div>
     );
   }
@@ -1043,7 +1046,7 @@ function LandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, selType, lm
                 <LandmarkImage item={lm} size={26}/>
                 <span style={{ fontSize:14, color:C.inkFaint, fontFamily:HAND }}>{lm.label}</span>
                 {lm.memo && <span style={{ fontSize:14, color:C.ink }}>— {lm.memo}</span>}
-                <span style={{ fontSize:14, color:C.inkLine, marginLeft:"auto", fontFamily:HAND }}>タップで編集</span>
+                <span style={{ fontSize:14, color:C.inkFaint, marginLeft:"auto", fontFamily:HAND }}>タップで編集</span>
               </div>
             );
           })}
@@ -2753,7 +2756,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                           {warn==="danger"?"連作":"注意"}
                         </div>
                       )}
-                      <span style={{fontSize:14,color:C.inkLine,flexShrink:0}}>›</span>
+                      <span style={{fontSize:20,color:C.inkFaint,flexShrink:0}}>›</span>
                     </button>
                   );
                 })}
@@ -2771,7 +2774,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
         {/* ── 変遷ビュー ── */}
         {farm && mainTab === "history" && (
-          <div style={{maxWidth:560}}>
+          <div style={{width:"100%"}}>
             <label style={{display:"block",marginBottom:16}}>場所で絞り込む<select value={historyPlace} onChange={e=>setHistoryPlace(e.target.value)} style={{display:"block",width:"100%",padding:10}}><option value="">すべての場所・すべての年</option><option value="whole">畑全体</option>{Object.values(ridges[fid]||{}).map(r=><option key={r.id} value={r.id}>{r.name}{r.deletedFrom?"（以前の畝）":""}</option>)}</select></label>
             <WorkTimeline entries={timeline.filter(e=>!historyPlace||(historyPlace==="whole"?!e.rid:entryAtBed(e,historyPlace,ridges[fid]||{})))} onEdit={setWorkDraft} onRemove={removeWork}/>
             <details style={{marginTop:24}}><summary style={{padding:12,cursor:"pointer"}}>残しておいた畑の図（{(snapshots[fid]||[]).length}件）</summary>
@@ -2835,7 +2838,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                               <div key={ridge.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",border:"1px solid "+C.inkLine,fontSize:14,fontFamily:HAND,borderRadius:2,background:C.paper}}>
                                 {vg&&<VegetableImage id={vg.id} size={24}/>}
                                 <span style={{color:C.inkFaint}}>{ridge.name}</span>
-                                {vg?<span style={{color:C.ink}}>{vg.name}</span>:<span style={{color:C.inkLine}}>未設定</span>}
+                                {vg?<span style={{color:C.ink}}>{vg.name}</span>:<span style={{color:C.inkFaint}}>未設定</span>}
                               </div>
                             );
                           })}
@@ -3414,7 +3417,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
               ) : (
                 <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={function(){setEditName(true);}}>
                   <div style={{fontSize:16,letterSpacing:2,fontFamily:HAND}}>{ridge.name}</div>
-                  <span style={{fontSize:14,color:C.inkLine}}>✎</span>
+                  <span style={{fontSize:14,color:C.inkFaint}}>✎</span>
                 </div>
               )}
               <div style={{fontSize:14,color:C.inkFaint,marginTop:3,fontFamily:HAND}}>
