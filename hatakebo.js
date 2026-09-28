@@ -26,9 +26,12 @@ const C = {
 const SERIF  = "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif";
 const SANS   = "'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif";
 const HAND   = SANS;
+// One quiet ruled-paper surface for all screens; dense answers and controls stay solid.
+const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px)";
 
 function LedgerStyle(){return <style>{`
-  .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;background-image:none!important;font-family:${SANS}!important}
+  .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
+  .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;font-family:${SANS}!important}
   .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important;font-family:${SANS}!important;line-height:1.5}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
   .ledger-app button{min-width:44px;font-size:16px}.ledger-app input,.ledger-app select,.ledger-app textarea{font:16px/1.5 ${SANS};min-height:44px;max-width:100%;color:${C.ink}}
@@ -40,22 +43,23 @@ function LedgerStyle(){return <style>{`
   .journal-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.journal-toolbar button{padding:10px 16px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink}}.journal-toolbar .journal-primary{background:${C.indigo};color:white}.journal-mode{padding:12px;background:${C.paper2};border:1px solid ${C.inkLine};margin-bottom:16px}
   .ledger-app .ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-app .ledger-aside{display:none}.ledger-app .ledger-map{padding-right:0}.ledger-app .ledger-content{user-select:text}.ledger-app .ledger-bottom{position:sticky!important;bottom:0!important;z-index:30;padding:10px 0!important;background:${C.paper};border-top:1px solid ${C.inkLine}!important}
   .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
-  .ledger-header{position:relative!important;border-bottom:0!important;background:${C.paper}!important}
-  .ledger-brand{display:flex;align-items:center;gap:12px;padding:24px 0 16px;border-bottom:1px solid ${C.inkLine}}
+  .ledger-header{position:relative!important;border-bottom:0!important;background:transparent!important}
+  .ledger-brand{display:flex;align-items:center;gap:12px;padding:16px 0 12px;border-bottom:1px solid ${C.inkLine}}
   .ledger-seal{display:none}
-  .ledger-logo{font:700 24px/1.5 ${SANS};letter-spacing:1px}.ledger-tagline{font-size:14px;color:${C.inkFaint};margin-top:4px}
+  .ledger-logo{font:700 24px/1.25 ${SANS};letter-spacing:1px}.ledger-tagline{font:14px/1.5 ${SANS};color:${C.inkFaint};margin-top:2px}
   .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
-  .ledger-navrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:start!important;gap:16px!important;padding:16px 0!important}
+  .ledger-navrow{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:start!important;gap:16px!important;padding:12px 0 8px!important}
   .ledger-navtabs{border:0!important;gap:16px;min-width:0}.ledger-navtabs button{height:44px;background:transparent!important;color:${C.ink}!important;border-bottom:2px solid transparent!important;padding:8px 0!important;font-size:16px!important;white-space:nowrap}
   .ledger-navtabs button[aria-current=page]{border-bottom-color:${C.indigo}!important;font-weight:700}
   .ledger-yearnav{display:grid;grid-template-columns:44px minmax(80px,1fr) 44px;gap:8px;align-items:start}
   .ledger-yearnav>div{text-align:center;min-width:0}
   .ledger-yearnav .year-arrow,.ledger-menu-button{height:44px!important;min-height:44px;box-sizing:border-box;padding:0!important;border:1px solid ${C.inkBorder};background:transparent;color:${C.ink};display:flex;align-items:center;justify-content:center;cursor:pointer}
   .ledger-yearnav .year-arrow{width:44px;font-size:24px!important;line-height:1}.ledger-yearnav .year-number{height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .ledger-yearnav .year-arrow,.ledger-menu-button{background:${C.paper}!important}.ledger-menu-button[aria-expanded=true]{background:${C.ink}!important}
   .ledger-yearnav .year-caption{display:block;margin-top:4px;font:14px/1.5 ${SANS};color:${C.inkFaint};white-space:nowrap}
   .ledger-yearnav button.year-caption{width:100%;padding:0;border:0;background:transparent;color:${C.indigo};text-decoration:underline;cursor:pointer}
   .ledger-menu-wrap{position:relative;grid-column:3;align-self:start}.ledger-menu-button{width:96px;font-size:16px!important}
-  .ledger-title{padding:8px 0 16px}.ledger-title h1{font:600 28px/1.5 ${SANS};overflow-wrap:anywhere;margin-top:4px}.ledger-title small{font:14px ${SANS};color:${C.inkFaint}}
+  .ledger-title{padding:0 0 12px}.ledger-title h1{font:600 28px/1.4 ${SANS};overflow-wrap:anywhere;margin-top:2px}.ledger-title small{display:block;font:14px/1.5 ${SANS};color:${C.inkFaint}}
   .ledger-content{padding:0 0 12px!important;overflow:visible!important}
   .ledger-spread{display:grid!important;grid-template-columns:minmax(0,1fr) 240px;min-width:0!important;width:100%;border-top:1px solid ${C.inkBorder};align-items:start}
   .ledger-map{min-width:0;padding:12px 0}.ledger-maphead{flex-wrap:wrap!important;font-family:${SANS}}
@@ -69,7 +73,8 @@ function LedgerStyle(){return <style>{`
   .ledger-list{max-width:none!important}.ledger-list>button{width:100%;text-align:left;font-family:${SANS};border-width:0 0 1px!important;margin:0!important;background:transparent!important;border-radius:0!important}
   .ledger-bottom{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;border-top:0!important;box-shadow:none!important}
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
-  .ledger-status{border-top:1px solid ${C.inkLine};padding:12px 0!important;font:14px/1.8 ${SANS}}
+  .ledger-status{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-top:1px solid ${C.inkLine};padding:8px 0!important;font:14px/1.6 ${SANS}}
+  .ledger-status .faq-link{margin:0;padding:8px 0;border:0;background:transparent;color:${C.ink};font-size:14px;text-decoration:underline;text-underline-offset:4px}
   .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
   .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
   .ledger-app button[aria-pressed=true]{font-weight:700}.ledger-app button:disabled{cursor:not-allowed}
@@ -80,6 +85,20 @@ function LedgerStyle(){return <style>{`
   .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr) 80px;gap:12px 8px!important}.ledger-tight .ledger-menu-button{width:80px;min-width:80px!important}.ledger-tight .ledger-yearnav{grid-template-columns:44px minmax(0,1fr) 44px;gap:0}.ledger-tight .year-number{font-size:16px}.ledger-tight .year-caption{white-space:normal}.ledger-tight .ledger-navtabs{gap:12px}.ledger-tight .ledger-navtabs button{font-size:15px!important}
   .ledger-narrow .ledger-navrow{grid-template-columns:minmax(0,1fr)}.ledger-narrow .ledger-menu-wrap{grid-column:1}.ledger-narrow .ledger-menu-button{width:100%}.ledger-narrow .ledger-yearnav{grid-column:1}.ledger-narrow .ledger-navtabs{flex-wrap:wrap}
   @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-brand{padding-top:16px}.ledger-fieldbox{max-height:440px!important}}
+  .faq-screen{position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
+  .faq-header{position:sticky;top:0;z-index:10;background:${C.paper};border-bottom:1px solid ${C.inkLine}}
+  .faq-header-inner{max-width:760px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:12px}.faq-header h1{font:600 22px/1.4 ${SANS}}
+  .faq-back{min-width:44px;height:44px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};font-size:24px;cursor:pointer}
+  .faq-content{max-width:760px;margin:auto;padding:16px 16px 24px}.faq-intro{font-size:16px;line-height:1.7;margin-bottom:16px}
+  .faq-search{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin-bottom:12px}
+  .faq-search label{display:grid;gap:4px;font-size:14px}.faq-search input,.faq-search select{width:100%;min-width:0;height:48px;padding:8px 12px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};font:16px/1.5 ${SANS};border-radius:2px}
+  .faq-count{font-size:14px;line-height:1.6;color:${C.inkFaint};margin-bottom:16px}.faq-group{margin-bottom:24px}.faq-group h2{font:600 18px/1.5 ${SANS};margin-bottom:8px}
+  .faq-item{background:${C.paper};border-bottom:1px solid ${C.inkLine}}.faq-item:first-of-type{border-top:1px solid ${C.inkLine}}
+  .faq-question{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;padding:12px;border:0;background:transparent;text-align:left;color:${C.ink};font:16px/1.6 ${SANS};cursor:pointer}.faq-question[aria-expanded=true]{background:${C.indigoPale}}
+  .faq-question-text{flex:1}.faq-indicator{width:24px;flex-shrink:0;text-align:center;font-size:22px}.faq-answer{padding:12px 16px 16px;font:16px/1.8 ${SANS};color:${C.ink}}.faq-answer>:last-child{margin-bottom:0!important}
+  .faq-screen button:focus-visible,.faq-screen input:focus-visible,.faq-screen select:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
+  .faq-footer{max-width:760px;margin:auto;padding:24px 16px;border-top:1px solid ${C.inkLine};text-align:left;background:${C.paper}}
+  .faq-footer a{box-shadow:none!important;font-family:${SANS}!important;letter-spacing:0!important;min-height:44px;align-items:center}.faq-footer a[href*="google.com"]{font-size:16px!important;border-width:1px!important;padding:10px 20px!important}
 `}</style>}
 
 /* ══════════════════════════════════════
@@ -594,6 +613,7 @@ function HatakeApp() {
   if (screen === "setup" || farms.length===0) {
     return (
       <div style={{zoom:uiScale,"--ui-scale":uiScale}}>
+        <LedgerStyle/>
         {undoCount>0&&<button onClick={undoChange} style={{minHeight:44,fontSize:16,margin:12}}>直前の操作を戻す</button>}
         <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
         <OfflineNotice/>
@@ -602,6 +622,7 @@ function HatakeApp() {
   }
   return (
     <div style={{zoom:uiScale,"--ui-scale":uiScale}}>
+      <LedgerStyle/>
       {recoveryLimited&&<div role="status" style={{padding:12,fontSize:14}}>今の記録は保存しました。空き容量が少ないため、一部の取り消し履歴を残せませんでした。「バックアップ」で控えを保存してください。</div>}
       {saveError && (
         <div style={{position:"fixed",top:0,left:0,right:0,zIndex:200,background:"#b3382c",color:"#fff",
@@ -1112,7 +1133,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
   };
 
   return (
-    <div style={pageStyle}>
+    <div className="notebook-page" style={pageStyle}>
       {/* 表紙バー */}
       <div style={{ borderBottom:"2px solid " + C.ink, background:C.paper2, padding:"0 20px", position:"sticky", top:0, zIndex:20 }}>
         <div style={{ display:"flex", alignItems:"center", height:54, gap:12 }}>
@@ -2482,9 +2503,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   var bottomBarH = 80;
 
   return (
-    <div className={"ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
+    <div className={"notebook-page ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
       onClick={function(){ closeSheet(); if(s1){setS1(null);setHov(null);} setMenuOpen(false); }}>
-      <LedgerStyle/>
 
       {/* ══ ヘッダー（シンプル） ══ */}
       <div className="ledger-header" style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
@@ -2856,7 +2876,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=rawFarm;preserveLayout("畑の形・目印を変更する前の図");onUpdateFarm(geometryVersion(rawFarm,f,year,FARM_GEOMETRY));setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
       {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;preserveLayout("畝の寸法・位置を変更する前の図");setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:geometryVersion(p[fid][old.id],next,year,BED_GEOMETRY)}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
-      <div className="ledger-status" style={{fontSize:14,padding:"8px 16px",color:saveError?C.red:C.inkFaint}}><div role="status">{saveError?"この端末に保存できていません":"保存しました（この端末）"}</div><OfflineNotice/><button onClick={function(e){e.stopPropagation();onShowFaq();}} style={{marginTop:8,border:0,background:"transparent",color:C.ink,fontSize:14}}>よくある質問</button></div>
+      <div className="ledger-status" style={{color:saveError?C.red:C.inkFaint}}><div><div role="status">{saveError?"この端末に保存できていません":"保存しました（この端末）"}</div><OfflineNotice/></div><button className="faq-link" onClick={function(e){e.stopPropagation();onShowFaq();}}>よくある質問</button></div>
       {/* 畝ボトムシート */}
       {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && (
         <div className="ledger-toast" role="status" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:80,
@@ -3147,15 +3167,13 @@ const FAQ_DATA = [
 function FaqBlock({ item }) {
   var [open, setOpen] = useState(false);
   return (
-    <div style={{border:"1px solid "+C.inkLine,background:C.paper2,marginBottom:8,borderRadius:2,overflow:"hidden"}}>
-      <button aria-expanded={open} onClick={function(e){e.stopPropagation();setOpen(function(v){return !v;});}}
-        style={{width:"100%",textAlign:"left",background:open?C.indigoPale:"transparent",border:"none",cursor:"pointer",padding:"15px 16px",display:"flex",alignItems:"flex-start",gap:12,fontFamily:SERIF,transition:"background .15s"}}>
-        <div style={{flexShrink:0,width:24,height:24,borderRadius:"50%",background:C.indigo,color:C.paper,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:HAND,marginTop:1}}>Q</div>
-        <span style={{flex:1,fontSize:14,letterSpacing:"0.06em",color:C.ink,lineHeight:1.7,fontWeight:500}}>{item.q}</span>
-        <span style={{flexShrink:0,fontSize:14,color:C.inkFaint,transition:"transform .2s",display:"inline-block",transform:open?"rotate(180deg)":"rotate(0deg)",marginTop:4}}>▼</span>
+    <div className="faq-item">
+      <button className="faq-question" aria-expanded={open} onClick={function(e){e.stopPropagation();setOpen(function(v){return !v;});}}>
+        <span className="faq-question-text">{item.q}</span>
+        <span className="faq-indicator" aria-hidden="true">{open?"−":"＋"}</span>
       </button>
       {open && (
-        <div style={{padding:"14px 18px 18px",borderTop:"1px solid "+C.inkLine,fontFamily:SANS,fontSize:16,color:C.ink,lineHeight:1.9}}>
+        <div className="faq-answer">
           {item.a.map(function(block, i){
             if (typeof block === "string") return <p key={i} style={{marginBottom:10}}>{block}</p>;
             if (block.type === "note") return (
@@ -3187,54 +3205,53 @@ function FaqBlock({ item }) {
 }
 
 function FAQScreen({ onClose }) {
+  const faqRef=useRef(null);
+  useEffect(function(){const old=document.activeElement,overflow=document.body.style.overflow;document.body.style.overflow="hidden";faqRef.current.querySelector('button').focus();return function(){document.body.style.overflow=overflow;if(old&&old.isConnected)old.focus();};},[]);
+  function faqKeys(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){const nodes=Array.from(faqRef.current.querySelectorAll('button:not([disabled]),input,select,a[href]')).filter(n=>n.getClientRects().length),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
   const [query,setQuery]=useState("");
   const [category,setCategory]=useState("全て");
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const results=FAQ_DATA.filter(function(c){return category==="全て"||c.cat===category;}).map(function(c){return {cat:c.cat,items:c.items.filter(function(item){var hay=(item.q+" "+item.a.map(function(b){return typeof b==="string"?b:b.text||(b.items||[]).join(" ");}).join(" ")).toLocaleLowerCase();return words.every(function(w){return hay.includes(w);});})};}).filter(function(c){return c.items.length;});
   const resultCount=results.reduce(function(n,c){return n+c.items.length;},0);
   return (
-    <div style={{position:"fixed",inset:0,background:C.paper,zIndex:200,overflowY:"auto",fontFamily:SERIF,color:C.ink,
-      backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,"+C.inkLine+"28 27px,"+C.inkLine+"28 28px)"}}
+    <div ref={faqRef} onKeyDown={faqKeys} className="notebook-page faq-screen" role="dialog" aria-modal="true" aria-label="よくある質問"
       onClick={function(e){e.stopPropagation();}}>
 
       {/* ヘッダー */}
-      <div style={{position:"sticky",top:0,background:C.paper2,borderBottom:"2px solid "+C.ink,zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",padding:"12px 16px",gap:14}}>
-          <button onClick={onClose} aria-label="畑の画面に戻る"
-            style={{background:"none",border:"1px solid "+C.inkBorder,cursor:"pointer",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:C.inkFaint,flexShrink:0}}>
+      <div className="faq-header">
+        <div className="faq-header-inner">
+          <button className="faq-back" onClick={onClose} aria-label="畑の画面に戻る">
             ‹
           </button>
-          <div>
-            <div style={{fontSize:16,letterSpacing:3,fontWeight:"bold"}}>よくある質問</div>
-            <div style={{fontSize:14,color:C.inkFaint,letterSpacing:2,fontFamily:HAND}}>ハタケボ 畑の帳簿</div>
-          </div>
+          <h1>よくある質問</h1>
         </div>
       </div>
 
       {/* コンテンツ */}
-      <div style={{maxWidth:680,margin:"0 auto",padding:"32px 16px 60px"}}>
-        <p style={{fontFamily:SANS,fontSize:16,lineHeight:1.8,marginBottom:24}}>畝を押すと記録を開けます。パソコンなどで右側に畝の記録が出るときは、「野菜・記録を開く」から編集や履歴の確認へ進んでください。</p>
-        <label style={{display:"block",fontFamily:SANS,fontSize:15,marginBottom:8}} htmlFor="faq-search">知りたいことを検索</label>
-        <input id="faq-search" type="search" value={query} onChange={function(e){setQuery(e.target.value);}} placeholder="例：畝幅、季節、バックアップ" style={{width:"100%",minHeight:48,padding:"10px 12px",fontSize:16,border:"1px solid "+C.inkBorder,background:C.paper2,color:C.ink,marginBottom:14}}/>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>{["全て"].concat(FAQ_DATA.map(function(c){return c.cat;})).map(function(name){return <button key={name} aria-pressed={category===name} onClick={function(){setCategory(name);}} style={{minHeight:44,padding:"8px 12px",border:"1px solid "+C.inkBorder,background:category===name?C.indigo:C.paper2,color:category===name?C.paper:C.ink,fontSize:14,cursor:"pointer"}}>{name}</button>;})}</div>
-        <p role="status" style={{fontSize:14,color:C.inkFaint,marginBottom:20}}>{resultCount}件の質問{resultCount===0?"：言葉や分類を変えて探してください。":"：質問を押すと回答が開きます。"}</p>
+      <div className="faq-content">
+        <p className="faq-intro">使い方や困ったときのヒントをまとめました。質問を押すと回答が開きます。</p>
+        <div className="faq-search">
+          <label htmlFor="faq-search">言葉で探す<input id="faq-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="例：畝幅、バックアップ"/></label>
+          <label htmlFor="faq-category">分類で探す<select id="faq-category" value={category} onChange={e=>setCategory(e.target.value)}><option value="全て">すべての質問</option>{FAQ_DATA.map(c=><option key={c.cat} value={c.cat}>{c.cat}</option>)}</select></label>
+        </div>
+        <p role="status" className="faq-count">{resultCount}件の質問{resultCount===0?"：言葉や分類を変えて探してください。":""}</p>
         {(query||category!=="全て")&&<button onClick={function(){setQuery("");setCategory("全て");}} style={{minHeight:44,padding:"8px 12px",fontSize:14,marginBottom:18,cursor:"pointer"}}>検索と分類をリセット</button>}
         {results.map(function(cat, ci){
           return (
-            <div key={cat.cat} style={{marginBottom:40}}>
-              <div style={{fontSize:14,fontWeight:"bold",letterSpacing:3,color:C.indigo,marginBottom:14,padding:"8px 0 8px 12px",borderLeft:"3px solid "+C.indigo,fontFamily:HAND}}>
+            <section key={cat.cat} className="faq-group">
+              <h2>
                 {cat.cat}
-              </div>
+              </h2>
               {cat.items.map(function(item, ii){
                 return <FaqBlock key={item.q} item={item}/>;
               })}
-            </div>
+            </section>
           );
         })}
       </div>
 
       {/* フッター */}
-      <div style={{borderTop:"1px solid "+C.inkLine,padding:"32px 24px",textAlign:"center",background:C.paper2}}>
+      <div className="faq-footer">
         {/* ▼▼▼ お問い合わせフォームのURLをここに設定 ▼▼▼ */}
         {(function(){
           var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdlE3jPEoKjx_ILFNv6nvAr2SWC1GheFMEGl7f71iV2-_cVMA/viewform?usp=dialog";
