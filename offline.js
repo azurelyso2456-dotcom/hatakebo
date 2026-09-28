@@ -18,12 +18,14 @@
       status(ready?(navigator.onLine?'ready':'offline'):'unavailable');
     }catch(e){status('unavailable');}finally{checking=false;}
   }
-  navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(reg){
+  function register(){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(reg){
     check();
     function watch(worker){if(!worker)return;worker.addEventListener('statechange',function(){if(worker.state==='activated'||worker.state==='redundant')check();});}
     watch(reg.installing);reg.addEventListener('updatefound',function(){watch(reg.installing);});
     navigator.serviceWorker.ready.then(check);
-  }).catch(function(){status('unavailable');});
+  }).catch(function(){status('unavailable');});}
+  if(document.readyState==='complete')register();
+  else window.addEventListener('load',register,{once:true});
   navigator.serviceWorker.addEventListener('controllerchange',check);
   window.addEventListener('online',function(){check();navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update().catch(function(){});});});
   window.addEventListener('offline',check);

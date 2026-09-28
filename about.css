@@ -11,3 +11,4 @@
 @media(max-width:520px){.hero .benefits li{font-size:15px;padding:8px 10px}.hero .benefits li+li{padding-left:10px}.steps-intro{font-size:16px}}
 .getting-started .steps li>span{display:block}
 @media(max-width:520px){.getting-started .steps li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px 12px}.getting-started .steps li::before{float:none;grid-row:1/3;margin:0}.getting-started .steps strong{margin:0}.getting-started .steps li>span{grid-column:2}}
+.features .feature{display:block}.features .feature p{margin:0}
