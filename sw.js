@@ -1,5 +1,5 @@
 /* The release builder updates VERSION when any cached file changes. */
-const VERSION = 'dfc9a04c81a7774a';
+const VERSION = '0e998393aa367b3e';
 const BASE = new URL('./',self.location.href);
 const PREFIX = 'hatakebo-offline:'+BASE.pathname+':';
 const CACHE = PREFIX+VERSION;

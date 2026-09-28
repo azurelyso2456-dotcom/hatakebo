@@ -76,6 +76,8 @@ function LedgerStyle(){return <style>{`
   .ledger-status{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-top:1px solid ${C.inkLine};padding:8px 0!important;font:14px/1.6 ${SANS}}
   .ledger-status .faq-link{margin:0;padding:8px 0;border:0;background:transparent;color:${C.ink};font-size:14px;text-decoration:underline;text-underline-offset:4px}
   .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .action-notice{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:8px;padding:8px 12px;background:${C.indigoPale};border-left:3px solid ${C.indigo};font-size:14px;line-height:1.5}
+  .action-notice>span{flex:1 1 180px;overflow-wrap:anywhere}.action-notice button{padding:4px 8px;background:${C.paper};color:${C.ink};border:1px solid ${C.inkBorder}}
   .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
   .ledger-app button[aria-pressed=true]{font-weight:700}.ledger-app button:disabled{cursor:not-allowed}
   .ledger-backup{background:transparent!important;border:0!important;border-bottom:1px solid ${C.inkLine}!important;padding:12px 0!important;flex-wrap:wrap}
@@ -468,7 +470,8 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
     <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
     <label>何をした<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>(v.name+v.kana).includes(vegQuery.trim())).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
-    <label>いつ{unknown?<input aria-label="作業した年" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label>
+    {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
+    <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
     <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
     <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
     {error&&<p role="alert">{error}</p>}<div className="journal-actions"><button type="button" onClick={onClose}>やめる</button><button className="journal-primary" type="submit">{initial.id?"訂正を保存":"記録を残す"}</button></div>
@@ -1374,6 +1377,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 style={{ width:"100%", padding:"14px 0 10px", fontSize:18, borderRadius:0, outline:"none",
                   fontFamily:SERIF, boxSizing:"border-box", letterSpacing:2, color:C.ink,
                   background:"transparent", border:"none", borderBottom:"2px solid " + C.ink }}/>
+              <p style={{fontSize:14,color:C.inkFaint,marginTop:8}}>名前はあとから変更できます。空欄のままでも始められます。</p>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:10 }}>
                 {["南の畑","北の畑","家の裏","第一圃場","ばあちゃんの畑"].map(function(n){
                   return (
@@ -1762,7 +1766,7 @@ function plannedRidges(farm, ori, width, count, lengthM, pathCm, edgeCm) {
   return Array.from({length:count},function(_,i){var p=start+i*(width+gap);return {orientation:ori,gx:ori==="H"?length/2:p,gy:ori==="H"?p:length/2,gl:requested,ridgeW:width};});
 }
 function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA, setPickerA, pickerStart, setPickerStart, pickerEnd, setPickerEnd, onConfirm, onCancel, isInvalid, pickerVid, setPickerVid, pickerRidgeW, setPickerRidgeW, onBulkConfirm }) {
-  const [batchCount,setBatchCount]=useState(2);
+  const [batchCount,setBatchCount]=useState(1);
   const [creationMode,setCreationMode]=useState(Object.keys(farmRidges).length?"single":"batch");
   const [edgeCm,setEdgeCm]=useState(40);
   const [batchLength,setBatchLength]=useState(3);
@@ -2083,13 +2087,14 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [editMode,setEditMode]=useState(false);
   const [workDraft,setWorkDraft]=useState(null);
   const [historyPlace,setHistoryPlace]=useState("");
-  useEffect(function(){setEditMode(false);setSelRid(null);setWorkDraft(null);setHistoryPlace("");setS1(null);setHov(null);setMapZoom(1);},[fid,year]);
+    useEffect(function(){setEditMode(false);setSelRid(null);setWorkDraft(null);setHistoryPlace("");setS1(null);setHov(null);setMapZoom(1);setToast(null);clearTimeout(toastTimer.current);},[fid,year]);
   const [snapMsg, setSnapMsg] = useState(null);
   const [editFarm,setEditFarm]=useState(false);
   const [editBed,setEditBed]=useState(false);
   const [confirmSnapId, setConfirmSnapId] = useState(null); /* 変遷削除確認用 */
   const [toast, setToast] = useState(null); /* {msg, undo} */
   const toastTimer = useRef(null);
+  useEffect(function(){return function(){clearTimeout(toastTimer.current);};},[]);
 
   function showToast(msg, undoFn, extra){
     clearTimeout(toastTimer.current);
@@ -2133,7 +2138,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     }else{
       var journal=(rawFarm.journal||[]).filter(e=>e.id!==entry.id).concat(entry);
       onUpdateFarm(Object.assign({},rawFarm,{journal}));
-      showToast("作業の記録を保存しました",function(){});
+      showToast((entry.place||"畑全体")+"に「"+(entry.name||WORK_TYPES[entry.kind]||"作業")+"」を"+(workDraft&&workDraft.id?"訂正しました":"記録しました"),function(){});
     }
     setWorkDraft(null);
   }
@@ -2158,7 +2163,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   }
   function sp(rid, vid, plantYear, month, day, note){
     const yr = plantYear || year;
-    var before=plantings;showToast("植え付けを記録しました",function(){setPlantings(before);});
+    var before=plantings;var recordedBed=bedsAt(ridges[fid],yr)[rid];showToast((recordedBed?recordedBed.name:"畝")+"に"+(VM[vid]?VM[vid].name:"野菜")+"を記録しました",function(){setPlantings(before);});
     setPlantings(function(prev){
       const fd=prev[fid]||{}, fy=fd[yr]||{};
       var bed=bedsAt(ridges[fid],yr)[rid];
@@ -2723,14 +2728,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                 <div style={{fontSize:14,fontFamily:SERIF,letterSpacing:2,color:C.ink,marginBottom:6}}>まだ畝がありません</div>
                   <div>
                     <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,lineHeight:2,marginBottom:14}}>
-                      「畝を作る」を押して<br/>最初の畝を作りましょう
+                      まずは畝1本から始められます。<br/>大きさや位置は、あとから直せます。
                     </div>
-                    <button onClick={function(e){e.stopPropagation();openRidgePicker();}}
-                      style={{padding:"14px 32px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,
-                        fontSize:15,fontFamily:SERIF,letterSpacing:3,cursor:"pointer",
-                        boxShadow:"3px 3px 0 "+C.inkFaint}}>
-                      ＋ 畝を作る
-                    </button>
+                    <p style={{fontSize:14,color:C.inkFaint}}>下の「畝を作る」からどうぞ。肥料などは畝を作る前でも記録できます。</p>
                   </div>
                 {editMode&&!isTouchDevice&&<div style={{marginTop:10,fontSize:14,color:C.inkFaint}}>編集中は、畑の上でドラッグして作ることもできます。</div>}
               </div>
@@ -2866,9 +2866,16 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       </div>
 
       <div className="ledger-bottom" onClick={e=>e.stopPropagation()}>
+        {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && <div className="action-notice">
+          <span role="status">{saveError&&toast.undo?"この端末に保存できていません。バックアップで記録を残してください。":toast.msg}</span>
+          <button aria-label="通知を閉じる" onClick={()=>setToast(null)}>×</button>
+          {toast.undo&&canUndo&&<button onClick={()=>{onUndo();setToast(null);clearTimeout(toastTimer.current);}}>もとに戻す</button>}
+          {toast.extra&&<button onClick={()=>{var fn=toast.extra.fn;setToast(null);clearTimeout(toastTimer.current);fn();}}>{toast.extra.label}</button>}
+        </div>}
         <div className="journal-toolbar">
           {mainTab==="map"&&editMode?<><button className="journal-primary" onClick={openRidgePicker}>＋ 畝を作る</button><button onClick={()=>setEditFarm(true)}>畑の形・目印</button><button onClick={()=>{setEditMode(false);setS1(null);setHov(null);}}>編集を終える</button></>:<>
-          <button className="journal-primary" onClick={()=>openWork(null)}>＋ 作業を記録</button>
+          {mainTab==="map"&&ridgeCount===0&&<button className="journal-primary" onClick={openRidgePicker}>＋ 畝を作る</button>}
+          <button className={mainTab==="map"&&ridgeCount===0?"":"journal-primary"} onClick={()=>openWork(null)}>＋ 作業を記録</button>
           {mainTab==="map"&&<button onClick={()=>{closeSheet();setEditMode(true);}}>畑を編集</button>}
           </>}
         </div>
@@ -2878,28 +2885,6 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;preserveLayout("畝の寸法・位置を変更する前の図");setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:geometryVersion(p[fid][old.id],next,year,BED_GEOMETRY)}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
       <div className="ledger-status" style={{color:saveError?C.red:C.inkFaint}}><div><div role="status">{saveError?"この端末に保存できていません":"保存しました（この端末）"}</div><OfflineNotice/></div><button className="faq-link" onClick={function(e){e.stopPropagation();onShowFaq();}}>よくある質問</button></div>
       {/* 畝ボトムシート */}
-      {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && (
-        <div className="ledger-toast" role="status" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:80,
-          background:C.ink,color:C.paper,padding:"14px 18px",borderRadius:4,
-          boxShadow:"0 4px 16px rgba(28,20,8,0.35)",display:"flex",alignItems:"center",gap:14,
-          fontSize:14,fontFamily:SERIF,letterSpacing:1,maxWidth:"90vw",whiteSpace:"nowrap"}}>
-          <span>{toast.msg}</span><button aria-label="通知を閉じる" onClick={function(){setToast(null);}} style={{color:"inherit",background:"none",border:0,fontSize:24}}>×</button>
-          {toast.extra && (
-            <button onClick={function(){var fn=toast.extra.fn;setToast(null);clearTimeout(toastTimer.current);fn();}}
-              style={{border:"2px solid "+C.paper,background:C.paper,color:C.ink,
-                padding:"8px 14px",fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0,fontWeight:"bold"}}>
-              {toast.extra.label}
-            </button>
-          )}
-          {toast.undo && canUndo && (
-            <button onClick={function(){onUndo();setToast(null);clearTimeout(toastTimer.current);}}
-              style={{border:"1px solid "+C.paper,background:"transparent",color:C.paper,
-                padding:"8px 14px",fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1,flexShrink:0}}>
-              もとに戻す
-            </button>
-          )}
-        </div>
-      )}
 
       {showGuide && <WelcomeGuide onClose={closeGuide} isTouchDevice={isTouchDevice}/>}
 
