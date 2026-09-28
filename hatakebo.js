@@ -896,7 +896,7 @@ function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmType
               </button>
             );
           })()}
-          <div style={{ flex:1, border:"2px solid "+C.ink, background:"#d4c89c",
+          <div style={{ flex:1, border:"2px solid "+C.ink, background:"#e9dcc7",
             display:"flex", alignItems:"center", justifyContent:"center",
             padding:"24px 0", fontSize:14, color:C.inkFaint, fontFamily:HAND }}>
             <div style={{ textAlign:"center" }}>
@@ -1572,7 +1572,7 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
       </defs>
 
       {/* 畑フィールドの土 */}
-      <rect x={padL} y={padT} width={W} height={H} fill="#eef0e4"/>
+      <rect x={padL} y={padT} width={W} height={H} fill="#e9dcc7"/>
 
       {/* ポインターイベント受け取り用の透明rect */}
       <rect x={padL} y={padT} width={W} height={H} fill="transparent"
@@ -1635,7 +1635,7 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
             {/* タップ領域拡張用の不可視rect */}
             <rect x={rx-10} y={ry-10} width={rr.w+20} height={rr.h+20} fill="transparent" stroke="none"/>
             <rect x={rx} y={ry} width={rr.w} height={rr.h}
-              fill={isSel?"#c2d1b8":"#dce3cc"} stroke={isSel?C.indigo:C.inkBorder}
+              fill={isSel?"#bc9066":"#cda77d"} stroke={isSel?C.indigo:"#806047"}
               strokeWidth={isSel?2.5:1.5} rx={3}/>
             {/* 土壌重なり（連作由来）ハッチ表示 */}
             {(soil&&soil[fid]||[]).filter(function(s){return s.year<year&&ridgesOverlap(ridge,s);}).map(function(s,i){
@@ -1913,7 +1913,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
               var used=batchCount*effectiveRW*cellCm/100+(batchCount-1)*batchPath/100;
               return <div style={{marginTop:14}}>
                 <svg viewBox={"0 0 "+farm.cols+" "+farm.rows} width="100%" style={{display:"block",height:200,background:C.paper}} aria-label="畑と畝の実寸比率プレビュー">
-                  <rect width={farm.cols} height={farm.rows} fill="#d4c89c"/>
+                  <rect width={farm.cols} height={farm.rows} fill="#e9dcc7"/>
                   {farm.grid.map(function(row,r){return row.map(function(active,c){return active?null:<rect key={r+"-"+c} x={c} y={r} width={1} height={1} fill={C.paper}/>;});})}
                   {plan.map(function(r,i){var b=ridgeBBox(r);return <rect key={i} x={b.xa} y={b.ya} width={b.xb-b.xa} height={b.yb-b.ya} fill={blocked?C.red:C.green}/>;})}
                 </svg>
@@ -1931,7 +1931,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
           <div style={{maxWidth:"100%",maxHeight:needScroll?280:"none",overflow:needScroll?"auto":"visible",border:needScroll?"1px solid "+C.inkLine:"none"}}>
           <svg ref={svgTapRef} viewBox={"0 0 "+W+" "+H} width={W} height={H}
             onClick={onPreviewTap}
-            style={{border:"2px solid "+C.ink,display:"block",background:"#d4c89c",boxShadow:"3px 3px 0 "+C.inkLine,cursor:"pointer",touchAction:"manipulation"}}>
+            style={{border:"2px solid "+C.ink,display:"block",background:"#e9dcc7",boxShadow:"3px 3px 0 "+C.inkLine,cursor:"pointer",touchAction:"manipulation"}}>
             {Array.from({length:farm.cols+1},function(_,i){
               return <line key={"vg"+i} x1={i*miniCS} y1={0} x2={i*miniCS} y2={H} stroke={C.inkLine} strokeWidth={0.5}/>;
             })}
@@ -1949,7 +1949,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
               var rr = ridge.orientation==="H"
                 ? {x:(ridge.gx-ridge.gl/2)*miniCS,y:(ridge.gy-rwp/2)*miniCS,w:ridge.gl*miniCS,h:rwp*miniCS}
                 : {x:(ridge.gx-rwp/2)*miniCS,y:(ridge.gy-ridge.gl/2)*miniCS,w:rwp*miniCS,h:ridge.gl*miniCS};
-              return <rect key={ridge.id} x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#e0d4a8" stroke={C.inkBorder} strokeWidth={1} rx={2}/>;
+              return <rect key={ridge.id} x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#cda77d" stroke={C.inkBorder} strokeWidth={1} rx={2}/>;
             })}
             {previewRect && (
               <rect x={previewRect.x} y={previewRect.y} width={previewRect.w} height={previewRect.h}
@@ -3303,7 +3303,7 @@ function SnapMiniMap({ farm, ridges, plantings }) {
   return (
     <svg viewBox={"0 0 "+SVG_W+" "+SVG_H} width={SVG_W} height={SVG_H} style={{display:"block"}}>
       <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
-      <rect x={padL} y={padT} width={W} height={H} fill="#d4c89c"/>
+      <rect x={padL} y={padT} width={W} height={H} fill="#e9dcc7"/>
       {farm.grid.flatMap(function(row,r){
         return row.map(function(active,c){
           if (active) return null;
@@ -3344,7 +3344,7 @@ function SnapMiniMap({ farm, ridges, plantings }) {
         var cx=rr.x+rr.w/2, cy=rr.y+rr.h/2;
         return (
           <g key={ridge.id}>
-            <rect x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#e0d4a8" stroke={C.inkBorder} strokeWidth={1} rx={2}/>
+            <rect x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#cda77d" stroke={C.inkBorder} strokeWidth={1} rx={2}/>
             {vg && <VegetableImage id={vg.id} size={Math.min(rr.w,rr.h)} x={cx-Math.min(rr.w,rr.h)/2} y={cy-Math.min(rr.w,rr.h)/2}/>}
           </g>
         );
@@ -3590,7 +3590,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     /* 背景 */
     parts.push('<rect width="'+SVG_W+'" height="'+SVG_H+'" fill="#f2edd8"/>');
     /* 土 */
-    parts.push('<rect x="'+padL+'" y="'+padT+'" width="'+W+'" height="'+H+'" fill="#d4c89c"/>');
+    parts.push('<rect x="'+padL+'" y="'+padT+'" width="'+W+'" height="'+H+'" fill="#e9dcc7"/>');
     /* 非活性マスク */
     farm.grid.forEach(function(row,r){
       row.forEach(function(active,c){
@@ -3629,7 +3629,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       else rr={x:padL+(ridge.gx-RW2/2)*CS2, y:padT+(ridge.gy-ridge.gl/2)*CS2, w:RW2*CS2, h:ridge.gl*CS2};
       var cx=rr.x+rr.w/2, cy=rr.y+rr.h/2;
       var sz=Math.min(rr.w,rr.h);
-      parts.push('<rect x="'+rr.x+'" y="'+rr.y+'" width="'+rr.w+'" height="'+rr.h+'" fill="#e0d4a8" stroke="#1c1408" stroke-width="1" rx="2"/>');
+      parts.push('<rect x="'+rr.x+'" y="'+rr.y+'" width="'+rr.w+'" height="'+rr.h+'" fill="#cda77d" stroke="#1c1408" stroke-width="1" rx="2"/>');
       if(vg) {
         var nameFontSize = Math.min(sz*0.28, 9);
         var nameText = vg.name;
@@ -3745,7 +3745,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     return (
       <svg viewBox={"0 0 "+SVG_W+" "+SVG_H} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style={{display:"block",width:"100%",height:"100%"}}>
         <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
-        <rect x={padL} y={padT} width={W} height={H} fill="#d4c89c"/>
+        <rect x={padL} y={padT} width={W} height={H} fill="#e9dcc7"/>
         {farm.grid.flatMap(function(row,r){ return row.map(function(active,c){
           if(active) return null;
           return <rect key={"m"+r+c} x={padL+c*CS2} y={padT+r*CS2} width={CS2} height={CS2} fill={C.paper} opacity={0.9}/>;
@@ -3778,7 +3778,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
           var nameH = nameFontSize + 3;
           return (
             <g key={ridge.id}>
-              <rect x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#e0d4a8" stroke={C.inkBorder} strokeWidth={1} rx={2}/>
+              <rect x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#cda77d" stroke={C.inkBorder} strokeWidth={1} rx={2}/>
               {/* 野菜名：白背景付き黒文字でモノクロ対応 */}
               <rect x={cx-nameW/2} y={cy-nameH/2} width={nameW} height={nameH} fill="white" opacity={0.85} rx={1}/>
               <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={nameFontSize} fill={C.ink} fontFamily={SERIF} fontWeight="bold">{nameText}</text>
