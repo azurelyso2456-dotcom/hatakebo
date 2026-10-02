@@ -169,6 +169,8 @@ const VEGGIES = [
 ];
 const VM = Object.fromEntries(VEGGIES.map(function(v){ return [v.id, v]; }));
 function seasonalVegetables(list, month) {
+  // Language is not a climate setting: do not suggest Japan's seasons abroad.
+  if(typeof document!=="undefined"&&document.documentElement.lang==="en")return list.slice().sort((a,b)=>a.name.localeCompare(b.name,"en"));
   var m=month||new Date().getMonth()+1;
   var season=m>=3&&m<=5?[3,4,5]:m>=6&&m<=8?[6,7,8]:m>=9&&m<=11?[9,10,11]:[12,1,2];
   function rank(v){var ms=v.plantMonths||[];return ms.includes(m)?0:ms.some(function(n){return season.includes(n);})?1:2;}
@@ -425,7 +427,19 @@ function landTimeline(farm,beds,plantings) {
   }));
   return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
 }
-function entryDate(e){return e.year?(e.year+"年"+(e.month?e.month+"月"+(e.day?e.day+"日":"（詳細な日付不明）"):"（月日不明）")):"日付不明";}
+function cropDate(year,month,day){
+  if(document.documentElement.lang==="en"){
+    if(!month)return year?String(year):"Not recorded";
+    const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][month-1];
+    return (day?day+" ":"")+m+(year?" "+year:"");
+  }
+  return (year?year+"年":"")+(month?month+"月"+(day?day+"日":""):"");
+}
+function entryDate(e){return e.year?(cropDate(e.year,e.month,e.day)+(e.month?(e.day?"":"（詳細な日付不明）"):"（月日不明）")):"日付不明";}
+function cropMatches(v,query){
+  const aliases={eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage"};
+  return (v.name+" "+v.kana+" "+(aliases[v.id]||"")).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+}
 function entryAtBed(entry,rid,beds){
   if(!entry.rid||entry.rid===rid)return true;
   var child=beds[rid],seen=new Set();
@@ -478,7 +492,7 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
   return <EditDialog title={initial.id?"作業の記録を訂正":"作業を記録"} onClose={onClose}><form className="journal-form" onSubmit={submit}>
     <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
     <label>何をした<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-    {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>(v.name+v.kana).includes(vegQuery.trim())).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
+    {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
     {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
     <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
     <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
@@ -2682,7 +2696,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
               <span>畑の見取り図</span>
               <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
-              <span>{ridgeCount}区画</span>
+              <span>{document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
             </div>
 
             {/* SVGフィールド + ズームコントロール */}
@@ -2765,7 +2779,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,letterSpacing:1,color:isSel?C.indigo:C.ink}}>{ridge.name}</div>
                         {vg ? (
-                          <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?"　"+pl.month+"月植付":""}</div>
+                          <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?(document.documentElement.lang==="en"?" · Planted "+cropDate(null,pl.month,pl.day):"　"+pl.month+"月植付"):""}</div>
                         ) : (
                           <div style={{fontSize:14,color:C.indigo,fontFamily:SERIF,marginTop:3,fontWeight:"bold",letterSpacing:1}}>
                             野菜の記録はまだありません
@@ -2786,7 +2800,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             </div>
             <aside className="ledger-aside" aria-label="選んだ畝の記録" aria-live="polite">
               {previewRidge?<Fragment><small>{previewRidge.name}の記録</small><h2>{previewVeg?previewVeg.name:"野菜の記録はまだありません"}</h2>{previewVeg&&<VeggieStamp id={previewVeg.id} size={88}/>}
-                <dl><div><dt>植えた日</dt><dd>{previewPlant&&previewPlant.month?previewPlant.month+"月"+(previewPlant.day?previewPlant.day+"日":""):"未記入"}</dd></div><div><dt>畝の幅</dt><dd>{Number(((previewRidge.ridgeW||RWIDTH)*(farm.cellCm||100)).toFixed(1))}cm</dd></div><div><dt>畝の長さ</dt><dd>{Number((previewRidge.gl*(farm.cellCm||100)/100).toFixed(2))}m</dd></div></dl>
+                <dl><div><dt>植えた日</dt><dd>{previewPlant&&previewPlant.month?cropDate(null,previewPlant.month,previewPlant.day):"未記入"}</dd></div><div><dt>畝の幅</dt><dd>{Number(((previewRidge.ridgeW||RWIDTH)*(farm.cellCm||100)).toFixed(1))}cm</dd></div><div><dt>畝の長さ</dt><dd>{Number((previewRidge.gl*(farm.cellCm||100)/100).toFixed(2))}m</dd></div></dl>
                 <button onClick={function(){setSelRid(previewRidge.id);setTab("plant");}}>野菜・記録を開く</button><p>畝や畝一覧を押すと、ここに記録が表示されます。</p>
               </Fragment>:<Fragment><h2>最初の畝を作る</h2><p>「畝を引く」から、向き・幅・位置を選べます。</p><button onClick={openRidgePicker}>＋ 畝を作る</button></Fragment>}
             </aside>
@@ -2817,7 +2831,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               <div style={{display:"flex",flexDirection:"column",gap:16}}>
                 {(snapshots[fid]||[]).map(function(snap){
                   const d=new Date(snap.ts);
-                  const dateStr=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";
+                  const dateStr=cropDate(d.getFullYear(),d.getMonth()+1,d.getDate());
                   const timeStr=d.getHours()+":"+(d.getMinutes()<10?"0":"")+d.getMinutes();
                   const ridgeList=Object.values(snap.ridges||{});
                   return (
@@ -3430,7 +3444,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
               <div style={{fontSize:14,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>{ridgeSizeLabel(ridge)}</div>
               {vg && planting && planting.month && (
                 <div style={{fontSize:14,color:C.indigo,marginTop:2,fontFamily:HAND,letterSpacing:1}}>
-                  {year}年{planting.month}月{planting.day?planting.day+"日":""}植付
+                  {cropDate(year,planting.month,planting.day)} 植付
                 </div>
               )}
             </div>
@@ -3488,7 +3502,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
 
 function HistRow({ year, month, day, veggieId, isCurrent }) {
   const v = veggieId ? VM[veggieId] : null;
-  const dateStr = month ? (year+"年"+month+"月"+(day?day+"日":"")) : (year+"年");
+  const dateStr = cropDate(year,month,day);
   return (
     <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 0",borderBottom:"1px solid "+C.inkLine}}>
       <div style={{width:72,flexShrink:0}}>
@@ -3554,7 +3568,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
   var snapDateStr = "";
   if (isSnap) {
     var sd = new Date(snapOverride.ts);
-    snapDateStr = sd.getFullYear()+"年"+(sd.getMonth()+1)+"月"+sd.getDate()+"日 記録";
+    snapDateStr = cropDate(sd.getFullYear(),sd.getMonth()+1,sd.getDate());
   }
 
   const allYears = (function(){
@@ -3678,7 +3692,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       var pl=yp[ridge.id], vid=extractVid(pl), vg=vid?VM[vid]:null;
       var warn = checkRot(fid, ridge.id, activeYear, plantings, soil, activeRidges);
       var warnTd = warn==="danger" ? '<td class="wd">同じ科が連続</td>' : warn==="caution" ? '<td class="wc">前年と同じ科</td>' : '<td>—</td>';
-      return '<tr><td>'+ridge.name+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+vg.name:'—')+'</td><td>'+(vg?vg.family:'')+'</td><td>'+(pl&&pl.month?pl.month+'月'+(pl.day?pl.day+'日':''):'—')+'</td>'+warnTd+'</tr>';
+      return '<tr><td>'+ridge.name+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+vg.name:'—')+'</td><td>'+(vg?vg.family:'')+'</td><td>'+(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td>'+warnTd+'</tr>';
     }).join('');
 
     var titleRight = isSnap
@@ -3878,7 +3892,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{ridge.name}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{vg?<><VegetableImage id={vg.id} size={24}/> {vg.name}</>:"—"}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:C.inkFaint}}>{vg?vg.family:""}</td>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{pl&&pl.month?pl.month+"月"+(pl.day?pl.day+"日":""):"—"}</td>
+                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{pl&&pl.month?cropDate(null,pl.month,pl.day):"—"}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:warn==="danger"?C.red:warn==="caution"?C.orange:"",fontWeight:warn?"bold":"normal"}}>
                           {warn==="danger"?"同じ科が連続":warn==="caution"?"前年と同じ科":"—"}
                         </td>

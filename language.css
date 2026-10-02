@@ -1,0 +1,20 @@
+.language-nav{max-width:920px;margin:0 auto;padding:4px 24px;display:flex;justify-content:flex-end;gap:16px;align-items:center;font:15px/1.5 Arial,sans-serif;background:#faf8f1;color:#20372e}
+.language-nav a,.language-nav span{display:inline-flex;align-items:center;min-height:44px;padding:4px 8px;color:inherit;text-underline-offset:4px}
+.language-nav [aria-current=page]{font-weight:bold}
+.language-nav a:focus-visible{outline:3px solid #8a5010;outline-offset:2px}
+html[lang=en] .ledger-app button{white-space:normal;overflow-wrap:anywhere}
+html[lang=en] .ledger-navtabs{flex-wrap:wrap;gap:12px}
+html[lang=en] .ledger-navtabs button{white-space:normal;height:auto;min-height:44px}
+html[lang=en] .ledger-yearnav .year-caption{white-space:normal}
+html[lang=en] .ledger-app .ledger-bottom{flex-wrap:wrap;gap:8px}
+html[lang=en] .ledger-app .ledger-bottom button{flex:1 1 140px}
+html[lang=en] .ledger-logo{letter-spacing:0}
+html[lang=en] .ledger-app *{letter-spacing:normal!important}
+html[lang=en] footer a{color:#304f43;text-underline-offset:4px}
+html[lang=en] .ledger-brand-copy{gap:4px 12px}
+html[lang=en] .ledger-list>button{display:grid!important;grid-template-columns:42px minmax(0,1fr) 12px;gap:8px 12px!important;text-align:left}
+html[lang=en] .ledger-list>button>div:nth-child(2){grid-column:2;min-width:0;overflow-wrap:break-word}
+html[lang=en] .ledger-list>button>div:nth-child(3){grid-column:2;grid-row:2;justify-self:start}
+html[lang=en] .ledger-list>button>span:last-child{grid-column:3;grid-row:1}
+html[lang=en] .ledger-list>button>div:first-child{grid-column:1;grid-row:1}
+@media(max-width:600px){html[lang=en] .ledger-navrow{grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important}html[lang=en] .ledger-navtabs{grid-column:1/-1}html[lang=en] .ledger-menu-wrap{grid-column:2}html[lang=en] .ledger-yearnav{grid-column:1;grid-row:2}html[lang=en] .ledger-app{padding:0 12px!important}html[lang=en] .ledger-header{padding:0 12px 8px}.language-nav{padding:4px 12px}}
