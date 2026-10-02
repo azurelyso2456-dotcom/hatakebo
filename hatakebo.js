@@ -29,6 +29,10 @@ const HAND   = SANS;
 // One quiet ruled-paper surface for all screens; dense answers and controls stay solid.
 const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px)";
 
+function LanguageSwitch(){
+  const english=document.documentElement.lang==="en";
+  return <nav className="language-nav" aria-label="表示言語"><a href={english?"index.html":"en.html"} lang={english?"ja":"en"} hrefLang={english?"ja":"en"} data-language-switch>{english?"日本語":"English"}</a></nav>;
+}
 function LedgerStyle(){return <style>{`
   .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
   .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;font-family:${SANS}!important}
@@ -45,7 +49,7 @@ function LedgerStyle(){return <style>{`
   .ledger-app .ledger-fieldbox{overscroll-behavior:contain}.ledger-app .work-overview{padding:12px 0}.ledger-app .work-overview>h3{font-size:18px;margin:8px 0}
   .ledger-header{position:relative!important;background:${C.paper}!important;border:1px solid ${C.inkLine}!important;padding:0 16px 8px;margin:12px 0}
   .ledger-brand{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid ${C.inkLine}}
-  .ledger-brand-copy{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;min-width:0}
+  .ledger-brand-copy{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;min-width:0;flex:1}
   .ledger-seal{display:none}
   .ledger-logo{font:700 24px/1.25 ${SANS};letter-spacing:1px}.ledger-tagline{font:14px/1.5 ${SANS};color:${C.inkFaint};margin:0}
   .ledger-farms{flex-wrap:wrap;overflow:visible!important}.ledger-farms button{font-family:${SANS}!important;overflow-wrap:anywhere;flex-shrink:1!important}
@@ -1180,11 +1184,11 @@ function FarmSetup({ farms, onComplete, onSkip }) {
     <div className="notebook-page" style={pageStyle}>
       {/* 表紙バー */}
       <div style={{ borderBottom:"2px solid " + C.ink, background:C.paper2, padding:"0 20px", position:"sticky", top:0, zIndex:20 }}>
-        <div style={{ display:"flex", alignItems:"center", height:54, gap:12 }}>
+        <div style={{ display:"flex", alignItems:"center", minHeight:54, gap:8 }}>
           {step > 0 && <button onClick={function(){ setStep(function(s){ return s-1; }); }}
             style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.inkFaint, fontFamily:SERIF, padding:"0 4px" }}>‹</button>}
           {/* ロゴ */}
-          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+          <div style={{ display:"flex", alignItems:"baseline", flexWrap:"wrap", minWidth:0, gap:6 }}>
             <span style={{ fontSize:20, fontWeight:"bold", letterSpacing:4, color:C.ink }}>ハタケボ</span>
             <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:2 }}>植え付け記録</span>
           </div>
@@ -1197,6 +1201,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               {step} / {SETUP_STEPS.length-2}
             </span>
           )}
+          <LanguageSwitch/>
         </div>
         {/* 進捗罫線 */}
         {step > 0 && step < SETUP_STEPS.length-1 && (
@@ -2555,7 +2560,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {/* ══ ヘッダー（シンプル） ══ */}
       <div className="ledger-header" style={{position:"sticky",top:0,background:C.paper2,zIndex:20,borderBottom:"2px solid "+C.ink}}>
-        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div className="ledger-brand-copy"><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの土地の記録帳</div></div></header>
+        <header className="ledger-brand"><span className="ledger-seal" aria-hidden="true">畑帳</span><div className="ledger-brand-copy"><div className="ledger-logo">ハタケボ</div><div className="ledger-tagline">わたしの土地の記録帳</div></div><LanguageSwitch/></header>
 
         {/* 畑タブ行 */}
         <div className="ledger-farms" style={{display:"flex",alignItems:"stretch",overflowX:"auto",borderBottom:"1px solid "+C.inkLine}}>
