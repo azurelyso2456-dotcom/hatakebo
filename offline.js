@@ -10,11 +10,16 @@
       var registration=await navigator.serviceWorker.getRegistration();
       var worker=registration&&registration.active;
       if(!worker){status(navigator.onLine?'preparing':'unavailable');return;}
-      var ready=await new Promise(function(resolve){
-        var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();resolve(false);},5000);
+      function message(type){return new Promise(function(resolve){
+        var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();resolve(false);},type==='PREPARE_LANGUAGE'?60000:5000);
         channel.port1.onmessage=function(e){clearTimeout(timer);channel.port1.close();resolve(e.data&&e.data.ready===true);};
-        worker.postMessage({type:'CHECK_OFFLINE'},[channel.port2]);
-      });
+        worker.postMessage({type:type,lang:document.documentElement.lang},[channel.port2]);
+      });}
+      var ready=await message('CHECK_OFFLINE');
+      if(!ready&&navigator.onLine){
+        status('preparing');
+        ready=await message('PREPARE_LANGUAGE');
+      }
       status(ready?(navigator.onLine?'ready':'offline'):'unavailable');
     }catch(e){status('unavailable');}finally{checking=false;}
   }

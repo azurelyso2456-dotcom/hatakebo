@@ -35,7 +35,7 @@ function LedgerStyle(){return <style>{`
   .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important;font-family:${SANS}!important;line-height:1.5}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
   .ledger-app button{min-width:44px;font-size:16px}.ledger-app input,.ledger-app select,.ledger-app textarea{font:16px/1.5 ${SANS};min-height:44px;max-width:100%;color:${C.ink}}
-  .ledger-app{font-size:16px;line-height:1.7}.ledger-list>button div{font-size:16px!important;color:${C.ink}!important}
+  .ledger-app{font-size:16px;line-height:1.7}.ledger-list>button div{font-size:16px!important;color:${C.ink}!important;min-width:0;overflow-wrap:anywhere}.journal-form p{overflow-wrap:anywhere}
   .journal-form{display:grid;gap:16px}.journal-form label{display:grid;gap:6px;font-size:16px}.journal-form input,.journal-form select,.journal-form textarea{width:100%;padding:10px;border:1px solid ${C.inkBorder};background:${C.paper};border-radius:3px}
   .journal-form .journal-check{display:flex;align-items:center;gap:8px}.journal-check input{width:24px;min-height:24px;height:24px}.journal-form summary{cursor:pointer;padding:10px 0;min-height:44px}.journal-form details label{margin-top:12px}
   .journal-help,.work-date{display:block;font-size:14px;color:${C.inkFaint}}.journal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.journal-actions button,.work-timeline>button{padding:10px 16px;background:${C.paper};border:1px solid ${C.inkBorder};color:${C.ink}}
@@ -167,7 +167,24 @@ const VEGGIES = [
   { id:"taro",         name:"サトイモ",     kana:"さといも",     family:"サトイモ科", mark:"🥔", plantMonths:[4,5] },
   { id:"spinach",      name:"ホウレンソウ", kana:"ほうれんそう", family:"ヒユ科",     mark:"🌿", plantMonths:[3,4,9,10] },
 ];
-const VM = Object.fromEntries(VEGGIES.map(function(v){ return [v.id, v]; }));
+// Self-contained IDs preserve names in history, snapshots and JSON backups.
+// Built-in crop IDs remain unchanged; custom crops have no inferred family.
+function customCrop(id){
+  if(typeof id!=="string"||!id.startsWith("custom:"))return null;
+  try {var name=decodeURIComponent(id.slice(7));return name.length<=80?{id,name,family:"",kana:"",plantMonths:[],custom:true}:null;}catch(e){return null;}
+}
+const VM = new Proxy(Object.fromEntries(VEGGIES.map(function(v){ return [v.id, v]; })),{
+  get(target,id){return Object.hasOwn(target,id)?target[id]:customCrop(id)||undefined;}
+});
+function escapePrint(value){return String(value==null?"":value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function mapCropName(name,width,fontSize){var chars=Array.from(name||""),limit=Math.max(2,Math.floor(width/fontSize));return chars.length>limit?chars.slice(0,limit-1).join("")+"…":name;}
+function CustomCropInput({value,onChange}){
+  const crop=customCrop(value);
+  return <label style={{display:"grid",gap:6,margin:"12px 0",fontSize:16}}>一覧にない野菜を名前で記録
+    <input aria-label="自由入力の野菜名" maxLength={80} value={crop?crop.name:""} placeholder="例：ケール、スイスチャード" onChange={e=>onChange(e.target.value?"custom:"+encodeURIComponent(e.target.value):"")} style={{width:"100%",minWidth:0,minHeight:44,padding:10,fontSize:16,border:"1px solid "+C.inkBorder,background:C.paper}}/>
+    <span className="journal-help">名前だけで残せます。自由入力の野菜は連作判定の対象外です。</span>
+  </label>;
+}
 function seasonalVegetables(list, month) {
   // Language is not a climate setting: do not suggest Japan's seasons abroad.
   if(typeof document!=="undefined"&&document.documentElement.lang==="en")return list.slice().sort((a,b)=>a.name.localeCompare(b.name,"en"));
@@ -485,7 +502,7 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
   function submit(e){e.preventDefault();
     if(!Number.isInteger(yr)||yr<1900||yr>2200||(!unknown&&!/^\d{4}-\d{2}-\d{2}$/.test(date))){setError("日付または年を確認してください。");return;}
     if(rid&&!available[rid]&&!(initial.id&&initial.rid===rid)){setError("この年に記録する畝を選んでください。畑全体も選べます。");return;}
-    if(kind==="plant"&&(!rid||!vid)){setError("野菜を植えた畝と、野菜を選んでください。");return;}
+    if(kind==="plant"&&(!rid||!VM[vid]||!VM[vid].name.trim())){setError("野菜を植えた畝と、野菜を選んでください。");return;}
     var d=unknown?[yr,null,null]:date.split("-").map(Number);
     onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind,rid:rid||null,year:d[0],month:d[1],day:d[2],name:name.trim(),vid,amount:amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):null});
   }
@@ -493,6 +510,7 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
     <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
     <label>何をした<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
+    {kind==="plant"&&<CustomCropInput value={vid} onChange={setVid}/>}
     {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
     <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
     <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
@@ -1659,10 +1677,10 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
             {vg && sz > 20 && (
               <VegetableImage id={vg.id} size={Math.min(sz-4,28)} x={ridge.orientation==="H"&&rr.w>120?cx-62:cx-Math.min(sz-4,28)/2} y={ridge.orientation==="H"&&rr.w>120?cy-Math.min(sz-4,28)/2:cy-Math.min(sz-4,28)/2-10}/>
             )}
-            <text x={vg&&ridge.orientation==="H"&&rr.w>120?cx+10:cx} y={cy+(vg&&sz>20&&!(ridge.orientation==="H"&&rr.w>120)?20:5)} textAnchor="middle"
+            <text x={vg&&!vg.custom&&ridge.orientation==="H"&&rr.w>120?cx+10:cx} y={cy+(vg&&!vg.custom&&sz>20&&!(ridge.orientation==="H"&&rr.w>120)?20:5)} textAnchor="middle"
               fontSize={Math.min(sz*0.5,14,Math.max(8,(rr.w-8)/((vg?vg.name:ridge.name)||"").length))} fill={isSel?C.indigo:C.ink}
               fontFamily={SERIF} style={{pointerEvents:"none"}}>
-              {vg ? vg.name : ridge.name}
+              {vg&&vg.custom ? mapCropName(vg.name,rr.w-8,8) : vg ? vg.name : ridge.name}
             </text>
           </g>
         );
@@ -2040,6 +2058,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
               );
             })}
           </div>
+          <CustomCropInput value={pickerVid} onChange={v=>setPickerVid(v&&VM[v]&&VM[v].name.trim()?v:null)}/>
           {pickerVid && (
             <div style={{marginTop:10,padding:"8px 12px",background:C.indigoPale,border:"1px solid "+C.indigo,fontSize:14,color:C.indigo,fontFamily:HAND,letterSpacing:1}}>
               ✓ {VM[pickerVid].name} を設定済みで畝を引きます
@@ -3019,7 +3038,7 @@ const FAQ_DATA = [
         "a": [
           "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると42種類すべてが表示されます。",
           "今の月や季節の植え付け候補から並びますが、季節外の野菜も選べます。時期は地域や品種によって違うので、種袋や苗の案内も参考にしてください。",
-          "一覧にない野菜は、「メモを残す」で名前を残せます。野菜の一覧への追加のご要望は、お問い合わせからお知らせください。"
+          "一覧にない野菜も、「野菜を植えた」の画面で「一覧にない野菜を名前で記録」に入力すると植えられます。畑の図・履歴・印刷・バックアップにも名前が残ります。自由入力の野菜は科を特定しないため、連作判定の対象外です。"
         ]
       },
       {
@@ -3070,6 +3089,7 @@ const FAQ_DATA = [
         "q": "電波が届かない畑で使うには、どう準備すればよいですか？",
         "a": [
           "最初に電波のある場所でハタケボを開き、「電波のない場所でも使えます」と表示されるまでお待ちください。準備は自動で行うので、設定やログインは必要ありません。",
+          "最初は、開いている言語だけを準備します。別の言語を初めて使うときは通信が必要です。切り替え先でも準備完了の表示を確認すれば、その言語も通信なしで使えます。更新後は、使いたい言語でも準備完了を確認してください。",
           "準備ができれば、電波のない畑でも、いつものハタケボを開き直して、畑の図を見たり、野菜を植え替えたり、記録を保存したりできます。電波が戻るまで画面を開いたままにしておく必要はありません。",
           "畑へ持っていく端末で準備し、同じブラウザ（SafariやChromeなど、ページを見るアプリ）で開いてください。いつものアドレスをお気に入りに入れておくと、探さずに開けます。",
           "初めて使うときや、ブラウザに保存されたデータが消えた後は、電波のある場所で準備が必要です。準備中の表示が出ている間は、そのままお待ちください。お問い合わせの送信や新しい版の受け取りには、インターネット接続が必要です。"
@@ -3439,7 +3459,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
                 </div>
               )}
               <div style={{fontSize:14,color:C.inkFaint,marginTop:3,fontFamily:HAND}}>
-                {vg ? vg.name+"（"+vg.family+"）" : "野菜の記録なし"}
+                {vg ? vg.name+(vg.family?"（"+vg.family+"）":"") : "野菜の記録なし"}
               </div>
               <div style={{fontSize:14,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>{ridgeSizeLabel(ridge)}</div>
               {vg && planting && planting.month && (
@@ -3486,7 +3506,8 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
       <div style={{overflowY:"auto",flex:1,padding:"14px 24px 24px"}}>
 
         {tab!=="history"&&<div className="work-overview">
-          <h3>{year}年の記録</h3><p>{vg?vg.name+"を記録しています。":"野菜の記録はまだありません。休ませている畝も、そのまま残せます。"}</p>
+          <h3>{year}年の記録</h3><p style={{overflowWrap:"anywhere"}}>{vg?vg.name+"を記録しています。":"野菜の記録はまだありません。休ませている畝も、そのまま残せます。"}</p>
+          {vg&&vg.custom&&<p className="journal-help">名前だけで残せます。自由入力の野菜は連作判定の対象外です。</p>}
           <div className="journal-actions"><button className="journal-primary" onClick={()=>onRecord("plant")}>野菜を植えた</button><button onClick={()=>onRecord("fertilizer")}>作業を記録</button></div>
           {vg&&<details style={{marginTop:16}}><summary>栽培を終える</summary><p>前の野菜を履歴に残し、地図を空欄にします。</p><button onClick={onClear}>栽培を終了する</button></details>}
           <h3 style={{marginTop:24}}>最近の記録</h3><WorkTimeline entries={entries||[]} limit={3}/>
@@ -3646,12 +3667,12 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
       parts.push('<rect x="'+rr.x+'" y="'+rr.y+'" width="'+rr.w+'" height="'+rr.h+'" fill="#cda77d" stroke="#1c1408" stroke-width="1" rx="2"/>');
       if(vg) {
         var nameFontSize = Math.min(sz*0.28, 9);
-        var nameText = vg.name;
+        var nameText = mapCropName(vg.name,rr.w-4,nameFontSize);
         /* 野菜名：中央に白背景付きで黒文字。モノクロ印刷でも読みやすい */
         var nameW = nameText.length * nameFontSize * 0.72 + 4;
         var nameH = nameFontSize + 3;
         parts.push('<rect x="'+(cx-nameW/2)+'" y="'+(cy-nameH/2)+'" width="'+nameW+'" height="'+nameH+'" fill="white" opacity="0.85" rx="1"/>');
-        parts.push('<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-size="'+nameFontSize+'" fill="#1c1408" font-family="serif" font-weight="bold">'+nameText+'</text>');
+        parts.push('<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-size="'+nameFontSize+'" fill="#1c1408" font-family="serif" font-weight="bold">'+escapePrint(nameText)+'</text>');
         /* 絵文字は小さく左上隅に添える */
         if(sz > 22) {
           var emFs = Math.min(sz*0.28, 11);
@@ -3691,8 +3712,8 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     var tableRows = ridgeList.map(function(ridge){
       var pl=yp[ridge.id], vid=extractVid(pl), vg=vid?VM[vid]:null;
       var warn = checkRot(fid, ridge.id, activeYear, plantings, soil, activeRidges);
-      var warnTd = warn==="danger" ? '<td class="wd">同じ科が連続</td>' : warn==="caution" ? '<td class="wc">前年と同じ科</td>' : '<td>—</td>';
-      return '<tr><td>'+ridge.name+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+vg.name:'—')+'</td><td>'+(vg?vg.family:'')+'</td><td>'+(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td>'+warnTd+'</tr>';
+      var warnTd = vg&&vg.custom ? '<td>'+escapePrint("判定対象外")+'</td>' : warn==="danger" ? '<td class="wd">同じ科が連続</td>' : warn==="caution" ? '<td class="wc">前年と同じ科</td>' : '<td>—</td>';
+      return '<tr><td>'+escapePrint(ridge.name)+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+escapePrint(vg.name):'—')+'</td><td>'+(vg?escapePrint(vg.family):'')+'</td><td>'+(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td>'+warnTd+'</tr>';
     }).join('');
 
     var titleRight = isSnap
@@ -3716,7 +3737,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     w.document.write('.north .arrow{font-size:16pt;display:inline-block;line-height:1;}');
     w.document.write('table{width:100%;border-collapse:collapse;font-size:9pt;}');
     w.document.write('th{text-align:left;border-bottom:1pt solid #1c1408;padding:4pt 6pt;font-size:8pt;letter-spacing:1pt;color:#7a6848;font-weight:normal;}');
-    w.document.write('td{padding:5pt 6pt;border-bottom:0.5pt solid #c8b898;vertical-align:middle;}');
+    w.document.write('td{padding:5pt 6pt;border-bottom:0.5pt solid #c8b898;vertical-align:middle;overflow-wrap:anywhere;}table{table-layout:fixed;}');
     w.document.write('td.wd{color:#8c2a2a;font-weight:bold;}td.wc{color:#8a5010;}');
     w.document.write('.section-title{font-size:11pt;letter-spacing:3pt;font-weight:normal;margin:0 0 8pt;padding-bottom:4pt;border-bottom:0.5pt solid #c8b898;}');
     w.document.write('footer{margin-top:14pt;border-top:0.5pt solid #c8b898;padding-top:5pt;font-size:7pt;color:#b09060;display:flex;justify-content:space-between;}');
@@ -3787,7 +3808,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
           else rr={x:padL+(ridge.gx-RW2/2)*CS2,y:padT+(ridge.gy-ridge.gl/2)*CS2,w:RW2*CS2,h:ridge.gl*CS2};
           var cx=rr.x+rr.w/2,cy=rr.y+rr.h/2,sz=Math.min(rr.w,rr.h);
           var nameFontSize = Math.min(sz*0.28, 9);
-          var nameText = vg ? vg.name : ridge.name;
+          var nameText = mapCropName(vg ? vg.name : ridge.name,rr.w-4,nameFontSize);
           var nameW = nameText.length * nameFontSize * 0.75 + 4;
           var nameH = nameFontSize + 3;
           return (
@@ -3894,7 +3915,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:C.inkFaint}}>{vg?vg.family:""}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{pl&&pl.month?cropDate(null,pl.month,pl.day):"—"}</td>
                         <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:warn==="danger"?C.red:warn==="caution"?C.orange:"",fontWeight:warn?"bold":"normal"}}>
-                          {warn==="danger"?"同じ科が連続":warn==="caution"?"前年と同じ科":"—"}
+                          {vg&&vg.custom?"判定対象外":warn==="danger"?"同じ科が連続":warn==="caution"?"前年と同じ科":"—"}
                         </td>
                       </tr>
                     );
