@@ -30,6 +30,7 @@ const HAND   = SANS;
 const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px)";
 
 function LanguageSwitch(){
+  if(document.documentElement.lang==="id")return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>Bahasa</summary><div><a href="index.html" lang="ja" hrefLang="ja" data-language-switch>日本語</a><a href="en.html" lang="en" hrefLang="en" data-language-switch>English</a></div></details></nav>;
   const english=document.documentElement.lang==="en";
   return <nav className="language-nav" aria-label="表示言語"><a href={english?"index.html":"en.html"} lang={english?"ja":"en"} hrefLang={english?"ja":"en"} data-language-switch>{english?"日本語":"English"}</a></nav>;
 }
@@ -170,6 +171,9 @@ const VEGGIES = [
   { id:"shiso",        name:"シソ",         kana:"しそ",         family:"シソ科",     mark:"🌿", plantMonths:[4,5] },
   { id:"taro",         name:"サトイモ",     kana:"さといも",     family:"サトイモ科", mark:"🥔", plantMonths:[4,5] },
   { id:"spinach",      name:"ホウレンソウ", kana:"ほうれんそう", family:"ヒユ科",     mark:"🌿", plantMonths:[3,4,9,10] },
+  { id:"kangkung", name:"クウシンサイ", kana:"くうしんさい えんさい 空心菜", family:"ヒルガオ科", mark:"🌿", plantMonths:[] },
+  { id:"amaranth", name:"ヒユ（バヤム）", kana:"ひゆ ばやむ あまらんさす", family:"ヒユ科", mark:"🌿", plantMonths:[] },
+  { id:"yardlong_bean", name:"ジュウロクササゲ", kana:"じゅうろくささげ ささげ", family:"マメ科", mark:"🫘", plantMonths:[] },
 ];
 // Self-contained IDs preserve names in history, snapshots and JSON backups.
 // Built-in crop IDs remain unchanged; custom crops have no inferred family.
@@ -191,7 +195,14 @@ function CustomCropInput({value,onChange}){
 }
 function seasonalVegetables(list, month) {
   // Language is not a climate setting: do not suggest Japan's seasons abroad.
-  if(typeof document!=="undefined"&&document.documentElement.lang==="en")return list.slice().sort((a,b)=>a.name.localeCompare(b.name,"en"));
+  var lang=typeof document!=="undefined"?document.documentElement.lang:"ja";
+  // Editorial shortcuts, not popularity measurements or planting advice.
+  var preferred={id:["kangkung","amaranth","yardlong_bean","chili","chingensai","eggplant","tomato","cucumber"],en:["tomato","carrot","lettuce","potato","green_bean","cucumber","zucchini","onion"]};
+  if(lang!=="ja"){
+    var first=preferred[lang]||[];
+    function position(v){var i=first.indexOf(v.id);return i<0?first.length:i;}
+    return list.slice().sort((a,b)=>position(a)-position(b)||a.name.localeCompare(b.name,lang));
+  }
   var m=month||new Date().getMonth()+1;
   var season=m>=3&&m<=5?[3,4,5]:m>=6&&m<=8?[6,7,8]:m>=9&&m<=11?[9,10,11]:[12,1,2];
   function rank(v){var ms=v.plantMonths||[];return ms.includes(m)?0:ms.some(function(n){return season.includes(n);})?1:2;}
@@ -201,7 +212,7 @@ function seasonalVegetables(list, month) {
 /* ══════════════════════════════════════
    野菜スタンプ SVG（インク画風）
 ══════════════════════════════════════ */
-const VEGETABLE_ORDER = VEGGIES.map(function(v){return v.id;});
+const VEGETABLE_ORDER = VEGGIES.slice(0,42).map(function(v){return v.id;});
 function vegetableBox(index) {
   var xs=[0,200,390,580,775,968,1160], ys=[15,205,378,570,768,939,1120,1340];
   var c=index%6,r=Math.floor(index/6);
@@ -209,6 +220,8 @@ function vegetableBox(index) {
 }
 function VegetableImage({id,size,x,y}) {
   var index=VEGETABLE_ORDER.indexOf(id), s=size||32;
+  var extra=(window.HATAKEBO_EXTRA_VEGETABLES||{})[id];
+  if(extra)return <svg x={x} y={y} width={s} height={s} viewBox="0 0 192 192" role="img" aria-label={VM[id].name} style={{display:"inline-block",verticalAlign:"middle",flexShrink:0,pointerEvents:"none"}}><image href={extra} width="192" height="192"/></svg>;
   if(index<0)return null;
   var box=vegetableBox(index).split(" ").map(Number);
   return <svg x={x} y={y} width={s} height={s} viewBox={vegetableBox(index)} preserveAspectRatio="xMidYMid meet" role="img" aria-label={VM[id].name} style={{display:"inline-block",verticalAlign:"middle",flexShrink:0,pointerEvents:"none",overflow:"hidden"}}>
@@ -219,6 +232,8 @@ function VegetableImage({id,size,x,y}) {
 }
 function VeggieStamp({id,size}) {return <VegetableImage id={id} size={size||48}/>;}
 function vegetableMarkup(id,size,x,y) {
+  var extra=(window.HATAKEBO_EXTRA_VEGETABLES||{})[id];
+  if(extra)return '<svg xmlns="http://www.w3.org/2000/svg" x="'+(x||0)+'" y="'+(y||0)+'" width="'+size+'" height="'+size+'" viewBox="0 0 192 192" style="vertical-align:middle"><image href="'+extra+'" width="192" height="192"/></svg>';
   var index=VEGETABLE_ORDER.indexOf(id);if(index<0)return "";
   var b=vegetableBox(index).split(" ");
   return '<svg xmlns="http://www.w3.org/2000/svg" x="'+(x||0)+'" y="'+(y||0)+'" width="'+size+'" height="'+size+'" viewBox="'+vegetableBox(index)+'" style="overflow:hidden;vertical-align:middle"><svg x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" viewBox="'+vegetableBox(index)+'" overflow="hidden"><image href="'+window.HATAKEBO_VEGETABLE_ATLAS+'" width="1160" height="1355"/></svg></svg>';
@@ -449,6 +464,11 @@ function landTimeline(farm,beds,plantings) {
   return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
 }
 function cropDate(year,month,day){
+  if(document.documentElement.lang==="id"){
+    if(!month)return year?String(year):"未記入";
+    const m=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"][month-1];
+    return (day?day+" ":"")+m+(year?" "+year:"");
+  }
   if(document.documentElement.lang==="en"){
     if(!month)return year?String(year):"Not recorded";
     const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][month-1];
@@ -459,7 +479,8 @@ function cropDate(year,month,day){
 function entryDate(e){return e.year?(cropDate(e.year,e.month,e.day)+(e.month?(e.day?"":"（詳細な日付不明）"):"（月日不明）")):"日付不明";}
 function cropMatches(v,query){
   const aliases={eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage"};
-  return (v.name+" "+v.kana+" "+(aliases[v.id]||"")).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const localAliases=document.documentElement.lang==="id"?{eggplant:"terong terung",chili:"cabe cabai",cucumber:"timun ketimun mentimun",chingensai:"pakcoy pakcoi pak choi bok choy",cabbage:"kol kubis",bitter_melon:"peria pare",spinach:"spinach bayam eropa",sweetpotato:"ubi jalar ketela rambat",onion:"bawang bombay bombai",lettuce:"selada slada",zucchini:"zucchini zukini"}:{};
+  return (v.name+" "+v.kana+" "+(aliases[v.id]||"")+" "+(localAliases[v.id]||"")).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
 }
 function entryAtBed(entry,rid,beds){
   if(!entry.rid||entry.rid===rid)return true;
@@ -2720,7 +2741,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
               <span>畑の見取り図</span>
               <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
-              <span>{document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
+              <span>{document.documentElement.lang==="id"?ridgeCount+" bedengan":document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
             </div>
 
             {/* SVGフィールド + ズームコントロール */}
@@ -2732,7 +2753,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               return (
                 <div>
                   {isLarge && (
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <div className="ledger-mapzoom" style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,marginBottom:6}}>
                       <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1}}>表示倍率</span>
                       <button
                         onClick={function(e){e.stopPropagation();if(zIdx>0){var nz=ZOOM_STEPS[zIdx-1];setMapZoom(nz);}}}
@@ -2803,7 +2824,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,letterSpacing:1,color:isSel?C.indigo:C.ink}}>{ridge.name}</div>
                         {vg ? (
-                          <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?(document.documentElement.lang==="en"?" · Planted "+cropDate(null,pl.month,pl.day):"　"+pl.month+"月植付"):""}</div>
+                          <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:2}}>{vg.name}　{vg.family}{pl.month?(document.documentElement.lang!=="ja"?" · "+"植付"+" "+cropDate(null,pl.month,pl.day):"　"+pl.month+"月植付"):""}</div>
                         ) : (
                           <div style={{fontSize:14,color:C.indigo,fontFamily:SERIF,marginTop:3,fontWeight:"bold",letterSpacing:1}}>
                             野菜の記録はまだありません
@@ -3041,7 +3062,7 @@ const FAQ_DATA = [
       {
         "q": "植えたい野菜が見つかりません",
         "a": [
-          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると42種類すべてが表示されます。",
+          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると45種類すべてが表示されます。",
           "今の月や季節の植え付け候補から並びますが、季節外の野菜も選べます。時期は地域や品種によって違うので、種袋や苗の案内も参考にしてください。",
           "一覧にない野菜も、「野菜を植えた」の画面で「一覧にない野菜を名前で記録」に入力すると植えられます。畑の図・履歴・印刷・バックアップにも名前が残ります。自由入力の野菜は科を特定しないため、連作判定の対象外です。"
         ]
@@ -3736,6 +3757,7 @@ function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, 
     w.document.write('header{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2pt solid #1c1408;padding-bottom:8pt;margin-bottom:14pt;}');
     w.document.write('header h1{font-size:20pt;letter-spacing:6pt;font-weight:normal;}');
     w.document.write('header .meta{font-size:9pt;color:#7a6848;letter-spacing:1pt;}');
+    if(document.documentElement.lang!=="ja")w.document.write('header h1,header .meta,.north,th,.section-title{letter-spacing:normal!important}header h1{overflow-wrap:anywhere}');
     w.document.write('.field-area{display:grid;grid-template-columns:minmax(0,120mm) minmax(0,1fr);align-items:start;gap:6mm;margin-bottom:14pt;break-inside:avoid;}');
     w.document.write('.field-map{width:100%;height:120mm;min-width:0;}.field-map>svg{display:block;width:100%;height:100%;}.field-info{font-size:11pt;line-height:1.7;overflow-wrap:anywhere;}.field-info h2{font-size:12pt;margin-bottom:8pt;}.field-info dt{font-size:9pt;color:#7a6848;margin-top:8pt;}.field-info dd{margin:0;}.field-note{font-size:9pt;line-height:1.6;margin-top:12pt;color:#7a6848;}thead{display:table-header-group;}tr{break-inside:avoid;}');
     w.document.write('.north{font-size:8pt;color:#3d4f8c;letter-spacing:2pt;margin-bottom:6pt;display:flex;align-items:center;gap:4pt;}');
