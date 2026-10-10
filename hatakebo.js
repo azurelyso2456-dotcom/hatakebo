@@ -31,7 +31,7 @@ const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transpare
 
 function LanguageSwitch(){
   const lang=document.documentElement.lang;
-  return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
+  return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"},{lang:"pl",href:"pl.html",name:"Polski"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
 }
 function LedgerStyle(){return <style>{`
   .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
@@ -173,6 +173,10 @@ const VEGGIES = [
   { id:"kangkung", name:"クウシンサイ", kana:"くうしんさい えんさい 空心菜", family:"ヒルガオ科", mark:"🌿", plantMonths:[] },
   { id:"amaranth", name:"ヒユ（バヤム）", kana:"ひゆ ばやむ あまらんさす", family:"ヒユ科", mark:"🌿", plantMonths:[] },
   { id:"yardlong_bean", name:"ジュウロクササゲ", kana:"じゅうろくささげ ささげ", family:"マメ科", mark:"🫘", plantMonths:[] },
+  // Japan-only spring/autumn ordering hints, not a location-specific sowing calendar.
+  { id:"beetroot", name:"ビーツ", kana:"びーつ びーと ビート てーぶるびーと テーブルビート かえんさい 火焔菜", family:"ヒユ科", mark:"", plantMonths:[3,4,9,10] },
+  { id:"dill", name:"ディル", kana:"でぃる いのんど イノンド", family:"セリ科", mark:"", plantMonths:[4,5,9,10] },
+  { id:"radish", name:"ラディッシュ", kana:"らでぃっしゅ はつかだいこん ハツカダイコン 二十日大根 二十日ダイコン", family:"アブラナ科", mark:"", plantMonths:[3,4,5,9,10] },
 ];
 // Self-contained IDs preserve names in history, snapshots and JSON backups.
 // Built-in crop IDs remain unchanged; custom crops have no inferred family.
@@ -196,7 +200,7 @@ function seasonalVegetables(list, month) {
   // Language is not a climate setting: do not suggest Japan's seasons abroad.
   var lang=typeof document!=="undefined"?document.documentElement.lang:"ja";
   // Editorial shortcuts, not popularity measurements or planting advice.
-  var preferred={id:["kangkung","amaranth","yardlong_bean","chili","chingensai","eggplant","tomato","cucumber"],en:["tomato","carrot","lettuce","potato","green_bean","cucumber","zucchini","onion"]};
+  var preferred={id:["kangkung","amaranth","yardlong_bean","chili","chingensai","eggplant","tomato","cucumber"],en:["tomato","carrot","lettuce","radish","beetroot","potato","green_bean","cucumber","zucchini","onion"],pl:["tomato","cucumber","carrot","beetroot","radish","dill","lettuce","onion","green_bean","cabbage","potato"]};
   if(lang!=="ja"){
     var first=preferred[lang]||[];
     function position(v){var i=first.indexOf(v.id);return i<0?first.length:i;}
@@ -463,6 +467,11 @@ function landTimeline(farm,beds,plantings) {
   return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
 }
 function cropDate(year,month,day){
+  if(document.documentElement.lang==="pl"){
+    if(!month)return year?String(year):"Nie zapisano";
+    const m=["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"][month-1];
+    return (day?day+" ":"")+m+(year?" "+year:"");
+  }
   if(document.documentElement.lang==="id"){
     if(!month)return year?String(year):"未記入";
     const m=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"][month-1];
@@ -476,10 +485,14 @@ function cropDate(year,month,day){
   return (year?year+"年":"")+(month?month+"月"+(day?day+"日":""):"");
 }
 function entryDate(e){return e.year?(cropDate(e.year,e.month,e.day)+(e.month?(e.day?"":"（詳細な日付不明）"):"（月日不明）")):"日付不明";}
+function searchText(value){
+  const text=String(value).toLocaleLowerCase();
+  return document.documentElement.lang==="pl"?text.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ł/g,"l"):text;
+}
 function cropMatches(v,query){
-  const aliases={eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage"};
-  const localAliases=document.documentElement.lang==="id"?{eggplant:"terong terung",chili:"cabe cabai",cucumber:"timun ketimun mentimun",chingensai:"pakcoy pakcoi pak choi bok choy",cabbage:"kol kubis",bitter_melon:"peria pare",spinach:"spinach bayam eropa",sweetpotato:"ubi jalar ketela rambat",onion:"bawang bombay bombai",lettuce:"selada slada",zucchini:"zucchini zukini"}:{};
-  return (v.name+" "+v.kana+" "+(aliases[v.id]||"")+" "+(localAliases[v.id]||"")).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const aliases={eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage",beetroot:"beetroot beet beets table beet",dill:"dill",radish:"radish salad radish"};
+  const localAliases=document.documentElement.lang==="id"?{eggplant:"terong terung",chili:"cabe cabai",cucumber:"timun ketimun mentimun",chingensai:"pakcoy pakcoi pak choi bok choy",cabbage:"kol kubis",bitter_melon:"peria pare",spinach:"spinach bayam eropa",sweetpotato:"ubi jalar ketela rambat",onion:"bawang bombay bombai",lettuce:"selada slada",zucchini:"zucchini zukini",beetroot:"bit beet bit merah",dill:"dill adas sowa",radish:"lobak merah radis"}:document.documentElement.lang==="pl"?{beetroot:"burak buraki buraczki burak czerwony",dill:"koper koperek",radish:"rzodkiewka rzodkiewki",parsley:"pietruszka naciowa natka pietruszki"}:{};
+  return searchText(v.name+" "+v.kana+" "+(aliases[v.id]||"")+" "+(localAliases[v.id]||"")).includes(searchText(query.trim()));
 }
 function entryAtBed(entry,rid,beds){
   if(!entry.rid||entry.rid===rid)return true;
@@ -1957,7 +1970,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
             <div style={{fontSize:14,color:C.inkFaint,lineHeight:1.8,marginBottom:10}}>
               畑は {(farm.cols*cellCm/100).toFixed(2)}m × {(farm.rows*cellCm/100).toFixed(2)}m。本数を減らしても畝幅は変わりません。周囲の余白も選べます。
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:14}}>
+            <div className="bed-batch-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:14}}>
               <label>畝幅<select aria-label="自動配置の畝幅" value={Math.round(effectiveRW*cellCm)} onChange={function(e){setPickerRidgeW(Number(e.target.value)/cellCm);}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[30,60,90,120].map(function(w){return <option key={w} value={w}>{w}cm{w===60?"（初期値）":""}</option>;})}</select></label>
               <label>本数<select aria-label="自動配置の本数" value={batchCount} onChange={function(e){setBatchCount(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from({length:15},function(_,i){return <option key={i+1} value={i+1}>{i+1}本</option>;})}</select></label>
               <label>1本の長さ<select aria-label="自動配置の長さ" value={effectiveLength} onChange={function(e){setBatchLength(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from(new Set([1,2,3,4,5,6,8,10,maxBatchLength].filter(function(n){return n>0&&n<=maxBatchLength;}))).sort(function(a,b){return a-b;}).map(function(n){return <option key={n} value={n}>{n}m{n===maxBatchLength?"（最大）":""}</option>;})}</select></label>
@@ -2740,7 +2753,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
               <span>畑の見取り図</span>
               <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
-              <span>{document.documentElement.lang==="id"?ridgeCount+" bedengan":document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
+              <span>{document.documentElement.lang==="pl"?"Grządki: "+ridgeCount:document.documentElement.lang==="id"?ridgeCount+" bedengan":document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
             </div>
 
             {/* SVGフィールド + ズームコントロール */}
@@ -3061,7 +3074,7 @@ const FAQ_DATA = [
       {
         "q": "植えたい野菜が見つかりません",
         "a": [
-          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると45種類すべてが表示されます。",
+          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると48種類すべてが表示されます。",
           "今の月や季節の植え付け候補から並びますが、季節外の野菜も選べます。時期は地域や品種によって違うので、種袋や苗の案内も参考にしてください。",
           "一覧にない野菜も、「野菜を植えた」の画面で「一覧にない野菜を名前で記録」に入力すると植えられます。畑の図・履歴・印刷・バックアップにも名前が残ります。自由入力の野菜は科を特定しないため、連作判定の対象外です。"
         ]
@@ -3265,8 +3278,8 @@ function FAQScreen({ onClose }) {
   function faqKeys(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){const nodes=Array.from(faqRef.current.querySelectorAll('button:not([disabled]),input,select,a[href]')).filter(n=>n.getClientRects().length),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
   const [query,setQuery]=useState("");
   const [category,setCategory]=useState("全て");
-  const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const results=FAQ_DATA.filter(function(c){return category==="全て"||c.cat===category;}).map(function(c){return {cat:c.cat,items:c.items.filter(function(item){var hay=(item.q+" "+item.a.map(function(b){return typeof b==="string"?b:b.text||(b.items||[]).join(" ");}).join(" ")).toLocaleLowerCase();return words.every(function(w){return hay.includes(w);});})};}).filter(function(c){return c.items.length;});
+  const words=searchText(query.trim()).split(/\s+/).filter(Boolean);
+  const results=FAQ_DATA.filter(function(c){return category==="全て"||c.cat===category;}).map(function(c){return {cat:c.cat,items:c.items.filter(function(item){var hay=searchText(item.q+" "+item.a.map(function(b){return typeof b==="string"?b:b.text||(b.items||[]).join(" ");}).join(" "));return words.every(function(w){return hay.includes(w);});})};}).filter(function(c){return c.items.length;});
   const resultCount=results.reduce(function(n,c){return n+c.items.length;},0);
   return (
     <div ref={faqRef} onKeyDown={faqKeys} className="notebook-page faq-screen" role="dialog" aria-modal="true" aria-label="よくある質問"
