@@ -1,4 +1,10 @@
 /* Language navigation changes the page, never the shared garden records. */
+document.addEventListener('click',function(event){
+  document.querySelectorAll('.language-picker[open]').forEach(function(picker){if(!picker.contains(event.target))picker.open=false;});
+});
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape')document.querySelectorAll('.language-picker[open]').forEach(function(picker){picker.open=false;picker.querySelector('summary').focus();});
+});
 document.addEventListener('click',async function(event){
   var link=event.target.closest('[data-language-switch]');
   if(!link||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;

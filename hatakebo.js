@@ -30,9 +30,8 @@ const HAND   = SANS;
 const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px)";
 
 function LanguageSwitch(){
-  if(document.documentElement.lang==="id")return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>Bahasa</summary><div><a href="index.html" lang="ja" hrefLang="ja" data-language-switch>日本語</a><a href="en.html" lang="en" hrefLang="en" data-language-switch>English</a></div></details></nav>;
-  const english=document.documentElement.lang==="en";
-  return <nav className="language-nav" aria-label="表示言語"><a href={english?"index.html":"en.html"} lang={english?"ja":"en"} hrefLang={english?"ja":"en"} data-language-switch>{english?"日本語":"English"}</a></nav>;
+  const lang=document.documentElement.lang;
+  return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
 }
 function LedgerStyle(){return <style>{`
   .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
