@@ -1,4 +1,5 @@
-/* No accounts or uploads: only the public application files are cached. */
+/* This worker setup caches public files only; it never uploads garden records.
+   The separate page analytics tag is not cached by the offline worker. */
 (function(){
   function status(value){window.hatakeboOfflineStatus=value;window.dispatchEvent(new Event('hatakebo-offline-status'));}
   status('preparing');
