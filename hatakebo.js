@@ -31,7 +31,7 @@ const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transpare
 
 function LanguageSwitch(){
   const lang=document.documentElement.lang;
-  return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"},{lang:"pl",href:"pl.html",name:"Polski"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
+  return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"},{lang:"pl",href:"pl.html",name:"Polski"},{lang:"sw",href:"sw.html",name:"Kiswahili"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
 }
 function LedgerStyle(){return <style>{`
   .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
@@ -177,6 +177,10 @@ const VEGGIES = [
   { id:"beetroot", name:"ビーツ", kana:"びーつ びーと ビート てーぶるびーと テーブルビート かえんさい 火焔菜", family:"ヒユ科", mark:"", plantMonths:[3,4,9,10] },
   { id:"dill", name:"ディル", kana:"でぃる いのんど イノンド", family:"セリ科", mark:"", plantMonths:[4,5,9,10] },
   { id:"radish", name:"ラディッシュ", kana:"らでぃっしゅ はつかだいこん ハツカダイコン 二十日大根 二十日ダイコン", family:"アブラナ科", mark:"", plantMonths:[3,4,5,9,10] },
+  // Regional crops: keep existing IDs intact. Okra months are a broad Japan-only guide; no inferred calendar for kale/cowpea.
+  { id:"kale", name:"ケール（スクマウィキ）", kana:"けーる すくまうぃき スクマウィキ コラード こらーど", family:"アブラナ科", mark:"", plantMonths:[] },
+  { id:"okra", name:"オクラ", kana:"おくら ばみあ バミア", family:"アオイ科", mark:"", plantMonths:[5,6] },
+  { id:"cowpea", name:"ササゲ", kana:"ささげ くんで クンデ", family:"マメ科", mark:"", plantMonths:[] },
 ];
 // Self-contained IDs preserve names in history, snapshots and JSON backups.
 // Built-in crop IDs remain unchanged; custom crops have no inferred family.
@@ -192,7 +196,7 @@ function mapCropName(name,width,fontSize){var chars=Array.from(name||""),limit=M
 function CustomCropInput({value,onChange}){
   const crop=customCrop(value);
   return <label style={{display:"grid",gap:6,margin:"12px 0",fontSize:16}}>一覧にない野菜を名前で記録
-    <input aria-label="自由入力の野菜名" maxLength={80} value={crop?crop.name:""} placeholder="例：ケール、スイスチャード" onChange={e=>onChange(e.target.value?"custom:"+encodeURIComponent(e.target.value):"")} style={{width:"100%",minWidth:0,minHeight:44,padding:10,fontSize:16,border:"1px solid "+C.inkBorder,background:C.paper}}/>
+    <input aria-label="自由入力の野菜名" maxLength={80} value={crop?crop.name:""} placeholder="例：スイスチャード、セロリ" onChange={e=>onChange(e.target.value?"custom:"+encodeURIComponent(e.target.value):"")} style={{width:"100%",minWidth:0,minHeight:44,padding:10,fontSize:16,border:"1px solid "+C.inkBorder,background:C.paper}}/>
     <span className="journal-help">名前だけで残せます。自由入力の野菜は連作判定の対象外です。</span>
   </label>;
 }
@@ -200,7 +204,7 @@ function seasonalVegetables(list, month) {
   // Language is not a climate setting: do not suggest Japan's seasons abroad.
   var lang=typeof document!=="undefined"?document.documentElement.lang:"ja";
   // Editorial shortcuts, not popularity measurements or planting advice.
-  var preferred={id:["kangkung","amaranth","yardlong_bean","chili","chingensai","eggplant","tomato","cucumber"],en:["tomato","carrot","lettuce","radish","beetroot","potato","green_bean","cucumber","zucchini","onion"],pl:["tomato","cucumber","carrot","beetroot","radish","dill","lettuce","onion","green_bean","cabbage","potato"]};
+  var preferred={sw:["tomato","kale","amaranth","cowpea","okra","cabbage","onion","carrot","eggplant","pepper","sweetpotato"],id:["kangkung","amaranth","yardlong_bean","chili","chingensai","eggplant","tomato","cucumber","okra"],en:["tomato","carrot","lettuce","kale","radish","beetroot","potato","green_bean","cucumber","zucchini","onion"],pl:["tomato","cucumber","carrot","beetroot","radish","dill","lettuce","onion","green_bean","cabbage","kale","potato"]};
   if(lang!=="ja"){
     var first=preferred[lang]||[];
     function position(v){var i=first.indexOf(v.id);return i<0?first.length:i;}
@@ -467,7 +471,7 @@ function landTimeline(farm,beds,plantings) {
   return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
 }
 function cropDate(year,month,day){
-  if(document.documentElement.lang==="pl"){
+  if(document.documentElement.lang==="sw"){if(!month)return year?String(year):"未記入";return (day?day+" ":"")+["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ago","Sep","Okt","Nov","Des"][month-1]+(year?" "+year:"");} if(document.documentElement.lang==="pl"){
     if(!month)return year?String(year):"Nie zapisano";
     const m=["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"][month-1];
     return (day?day+" ":"")+m+(year?" "+year:"");
@@ -490,8 +494,8 @@ function searchText(value){
   return document.documentElement.lang==="pl"?text.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ł/g,"l"):text;
 }
 function cropMatches(v,query){
-  const aliases={eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage",beetroot:"beetroot beet beets table beet",dill:"dill",radish:"radish salad radish"};
-  const localAliases=document.documentElement.lang==="id"?{eggplant:"terong terung",chili:"cabe cabai",cucumber:"timun ketimun mentimun",chingensai:"pakcoy pakcoi pak choi bok choy",cabbage:"kol kubis",bitter_melon:"peria pare",spinach:"spinach bayam eropa",sweetpotato:"ubi jalar ketela rambat",onion:"bawang bombay bombai",lettuce:"selada slada",zucchini:"zucchini zukini",beetroot:"bit beet bit merah",dill:"dill adas sowa",radish:"lobak merah radis"}:document.documentElement.lang==="pl"?{beetroot:"burak buraki buraczki burak czerwony",dill:"koper koperek",radish:"rzodkiewka rzodkiewki",parsley:"pietruszka naciowa natka pietruszki"}:{};
+  const aliases={kale:"kale collard collards sukuma wiki sukumawiki",okra:"okra okro lady finger ladies fingers bhindi bamia",cowpea:"cowpea cowpeas black eyed pea black-eyed pea kunde",eggplant:"eggplant aubergine",zucchini:"zucchini courgette",rocket:"arugula rocket",chingensai:"bok choy pak choi",corn:"corn sweetcorn",broad_bean:"fava bean",negi:"spring onion scallion",hakusai:"napa cabbage",beetroot:"beetroot beet beets table beet",dill:"dill",radish:"radish salad radish"};
+  const localAliases=document.documentElement.lang==="sw"?{kale:"sukuma wiki sukumawiki",okra:"bamia",cowpea:"kunde majani ya kunde",eggplant:"bilinganya biringanya biringani",amaranth:"mchicha",spinach:"spinachi spinashi spinach",onion:"kitunguu vitunguu maji",garlic:"kitunguu saumu vitunguu saumu",tomato:"nyanya",carrot:"karoti",pepper:"pilipili hoho",chili:"pilipili kali",cucumber:"tango matango",sweetpotato:"kiazi kitamu viazi vitamu",potato:"viazi mviringo viazi ulaya",beetroot:"biti bitiruti beetroot",dill:"dill dili",radish:"figili radish"}:document.documentElement.lang==="id"?{kale:"kale kubis daun",okra:"okra bendi",cowpea:"kacang tunggak kacang tolo kacang otok",eggplant:"terong terung",chili:"cabe cabai",cucumber:"timun ketimun mentimun",chingensai:"pakcoy pakcoi pak choi bok choy",cabbage:"kol kubis",bitter_melon:"peria pare",spinach:"spinach bayam eropa",sweetpotato:"ubi jalar ketela rambat",onion:"bawang bombay bombai",lettuce:"selada slada",zucchini:"zucchini zukini",beetroot:"bit beet bit merah",dill:"dill adas sowa",radish:"lobak merah radis"}:document.documentElement.lang==="pl"?{kale:"jarmuż jarmuz kapusta liściowa",okra:"okra ketmia jadalna",cowpea:"wspięga wężowata fasola czarne oczko",beetroot:"burak buraki buraczki burak czerwony",dill:"koper koperek",radish:"rzodkiewka rzodkiewki",parsley:"pietruszka naciowa natka pietruszki"}:{};
   return searchText(v.name+" "+v.kana+" "+(aliases[v.id]||"")+" "+(localAliases[v.id]||"")).includes(searchText(query.trim()));
 }
 function entryAtBed(entry,rid,beds){
@@ -2753,7 +2757,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
             <div className="ledger-maphead" style={{marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
               <span>畑の見取り図</span>
               <span>幅 {Number((farm.cols*(farm.cellCm||100)/100).toFixed(2))}m × 奥行き {Number((farm.rows*(farm.cellCm||100)/100).toFixed(2))}m</span>
-              <span>{document.documentElement.lang==="pl"?"Grządki: "+ridgeCount:document.documentElement.lang==="id"?ridgeCount+" bedengan":document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
+              <span>{document.documentElement.lang==="sw"?"Matuta: "+ridgeCount:document.documentElement.lang==="pl"?"Grządki: "+ridgeCount:document.documentElement.lang==="id"?ridgeCount+" bedengan":document.documentElement.lang==="en"?ridgeCount+" beds":ridgeCount+"区画"}</span>
             </div>
 
             {/* SVGフィールド + ズームコントロール */}
@@ -3074,7 +3078,7 @@ const FAQ_DATA = [
       {
         "q": "植えたい野菜が見つかりません",
         "a": [
-          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると48種類すべてが表示されます。",
+          "野菜を選ぶ画面で、名前を入力して探せます。検索欄を空にすると51種類すべてが表示されます。",
           "今の月や季節の植え付け候補から並びますが、季節外の野菜も選べます。時期は地域や品種によって違うので、種袋や苗の案内も参考にしてください。",
           "一覧にない野菜も、「野菜を植えた」の画面で「一覧にない野菜を名前で記録」に入力すると植えられます。畑の図・履歴・印刷・バックアップにも名前が残ります。自由入力の野菜は科を特定しないため、連作判定の対象外です。"
         ]

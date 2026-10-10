@@ -12,9 +12,9 @@ html:not([lang=ja]) .ledger-app *{letter-spacing:normal!important}
 html:not([lang=ja]) footer a{color:#304f43;text-underline-offset:4px}
 html:not([lang=ja]) .ledger-brand-copy{gap:4px 12px}
 html[lang=id] #root *{letter-spacing:normal!important}
-html[lang=pl] #root *{letter-spacing:normal!important}
-html[lang=pl] .bed-batch-grid>label{display:flex;flex-direction:column;min-width:0}
-html[lang=pl] .bed-batch-grid>label>select{margin-top:auto}
+html:is([lang=pl],[lang=sw]) #root *{letter-spacing:normal!important}
+html:is([lang=pl],[lang=sw]) .bed-batch-grid>label{display:flex;flex-direction:column;min-width:0}
+html:is([lang=pl],[lang=sw]) .bed-batch-grid>label>select{margin-top:auto}
 html:not([lang=ja]) .ledger-list>button{display:grid!important;grid-template-columns:42px minmax(0,1fr) 12px;gap:8px 12px!important;text-align:left}
 html:not([lang=ja]) .ledger-list>button>div:nth-child(2){grid-column:2;min-width:0;overflow-wrap:break-word}
 html:not([lang=ja]) .ledger-list>button>div:nth-child(3){grid-column:2;grid-row:2;justify-self:start}
@@ -32,15 +32,19 @@ body>header{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px}
 @media print{.language-nav{display:none!important}}
 @media(max-width:400px){html[lang=id] .ledger-mapzoom>span:first-child{flex-basis:100%}}
 @media(max-width:600px){html:not([lang=ja]) .ledger-navrow{grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important}html:not([lang=ja]) .ledger-navtabs{grid-column:1/-1}html:not([lang=ja]) .ledger-menu-wrap{grid-column:2}html:not([lang=ja]) .ledger-yearnav{grid-column:1;grid-row:2}html:not([lang=ja]) .ledger-app{padding:0 12px!important}html:not([lang=ja]) .ledger-header{padding:0 12px 8px}}
-html[lang=pl] .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr)!important}
-html[lang=pl] .ledger-tight .ledger-yearnav{grid-column:1;grid-row:auto;grid-template-columns:minmax(0,1fr) minmax(60px,1fr) minmax(0,1fr);gap:6px}
-html[lang=pl] .ledger-tight .year-arrow{margin-inline:auto}
-html[lang=pl] .ledger-tight .year-caption{overflow-wrap:anywhere}
-html[lang=pl] .ledger-tight .ledger-menu-wrap{grid-column:1}
-html[lang=pl] .ledger-tight .ledger-menu-button{width:100%}
-html[lang=pl] .ledger-tight .ledger-bottom{position:static!important}
-html[lang=pl] .ledger-narrow .ledger-list>button{grid-template-columns:minmax(0,1fr) 12px}
-html[lang=pl] .ledger-narrow .ledger-list>button>div:first-child{grid-column:1;grid-row:1}
-html[lang=pl] .ledger-narrow .ledger-list>button>div:nth-child(2){grid-column:1;grid-row:2}
-html[lang=pl] .ledger-narrow .ledger-list>button>div:nth-child(3){grid-column:1;grid-row:3}
-html[lang=pl] .ledger-narrow .ledger-list>button>span:last-child{grid-column:2;grid-row:2}
+html:is([lang=pl],[lang=sw]) .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr)!important}
+html:is([lang=pl],[lang=sw]) .ledger-tight .ledger-yearnav{grid-column:1;grid-row:auto;grid-template-columns:minmax(0,1fr) minmax(60px,1fr) minmax(0,1fr);gap:6px}
+html:is([lang=pl],[lang=sw]) .ledger-tight .year-arrow{margin-inline:auto}
+html:is([lang=pl],[lang=sw]) .ledger-tight .year-caption{overflow-wrap:anywhere}
+html:is([lang=pl],[lang=sw]) .ledger-tight .ledger-menu-wrap{grid-column:1}
+html:is([lang=pl],[lang=sw]) .ledger-tight .ledger-menu-button{width:100%}
+html:is([lang=pl],[lang=sw]) .ledger-tight .ledger-bottom{position:static!important}
+html:is([lang=pl],[lang=sw]) .ledger-narrow .ledger-list>button{grid-template-columns:minmax(0,1fr) 12px}
+html:is([lang=pl],[lang=sw]) .ledger-narrow .ledger-list>button>div:first-child{grid-column:1;grid-row:1}
+html:is([lang=pl],[lang=sw]) .ledger-narrow .ledger-list>button>div:nth-child(2){grid-column:1;grid-row:2}
+html:is([lang=pl],[lang=sw]) .ledger-narrow .ledger-list>button>div:nth-child(3){grid-column:1;grid-row:3}
+html:is([lang=pl],[lang=sw]) .ledger-narrow .ledger-list>button>span:last-child{grid-column:2;grid-row:2}
+/* Keep the long Swahili tagline readable at the largest text size. */
+html[lang=sw] .ledger-narrow .ledger-brand{flex-wrap:wrap;gap:0}
+html[lang=sw] .ledger-narrow .ledger-brand-copy{flex-basis:100%}
+html[lang=sw] .ledger-tight .ledger-mapzoom>span:first-child{flex-basis:100%}
