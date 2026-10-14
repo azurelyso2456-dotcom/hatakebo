@@ -526,9 +526,144 @@ function WorkTimeline({entries,onEdit,onRemove,limit}) {
     {e.source==="journal"&&onEdit&&<div className="journal-actions">{removing===e.id?<><span>この作業の記録を削除しますか？</span><button onClick={()=>setRemoving(null)}>やめる</button><button onClick={()=>{onRemove(e);setRemoving(null);}}>削除する</button></>:<><button onClick={()=>onEdit(e)}>訂正</button><button onClick={()=>setRemoving(e.id)}>削除</button></>}</div>}
   </article>)}{!limit&&entries.length>count&&<button onClick={()=>setCount(count+20)}>さらに前の記録を見る</button>}</div>;
 }
+const HISTORY_LABELS = {
+  "records": "畝ごとの記録",
+  "layouts": "以前の畑の図",
+  "navigation": "記録の見方",
+  "empty": "この年の記録はまだありません",
+  "emptyBed": "この畝の記録はまだありません",
+  "shared": "全体に行ったこと",
+  "former": "以前の畝",
+  "edit": "内容を直す",
+  "remove": "削除する",
+  "cancel": "やめる",
+  "deleteRecord": "この記録を削除しますか？",
+  "deleteShared": "畑全体への記録です。削除すると、すべての畝の表示からなくなります。",
+  "sharedEdit": "畑全体への記録です。内容を直すと、各畝の表示にも反映されます。",
+  "cropHint": "植え付けの記録です。野菜の変更は「畑のようす」で行えます。",
+  "details": "記録の内容",
+  "more": "残りの記録も表示",
+  "less": "表示を少なくする",
+  "chartHelp": "下線は記録した時期を表します。詳しい内容は下の記録を押して確認できます。",
+  "unknown": "日付が不明な記録は、下の一覧に表示しています。",
+  "save": "この配置を取っておく",
+  "saved": "この配置は取ってあります",
+  "saveHelp": "あとで配置を変えても、この図を見返せます。通常の記録は自動保存されます。",
+  "savedNotice": "この配置を取っておきました。「これまでの記録」から見返せます。",
+  "pastSave": "{year}年のこの配置を取っておく",
+  "layoutEmpty": "この年に取っておいた畑の図はありません",
+  "layoutHelp": "「畑のようす」で「この配置を取っておく」を押すと、ここで見返せます。配置の変更前に自動で残した図も表示します。",
+  "openLayout": "図を見る",
+  "layoutYear": "{year}年の配置",
+  "savedOn": "保存した日時",
+  "automatic": "変更前に自動で保存",
+  "manual": "自分で取っておいた図",
+  "print": "印刷する",
+  "deleteLayout": "この図だけを削除しますか？ 畑や作付けの記録は消えません。",
+  "deletedLayout": "取っておいた図を削除しました",
+  "legacyLayout": "この図には当時の畑の形が含まれないため、その年の形で表示しています。",
+  "entries": "件",
+  "month": "月"
+};
+
+/* History is a read-only projection of existing records; shared entries keep one ID. */
+function historyWholePlace(p){return !p||[String.fromCharCode(30033,20840,20307),'Whole garden','Seluruh kebun','Cały ogród','Bustani nzima'].includes(p);}
+function historyGroups(allBeds, entries, year) {
+  const active=Object.values(bedsAt(allBeds,year)), groups=active.map((b,i)=>({key:'bed:'+b.id,rid:b.id,name:b.name,number:i+1,entries:[]}));
+
+  const shared=[];
+  entries.filter(e=>Number(e.year)===Number(year)).forEach(e=>{
+    if(!e.rid&&historyWholePlace(e.place)){shared.push(e);return;}
+    let group=e.rid?groups.find(g=>g.rid===e.rid):null;
+    if(!e.rid){const matches=groups.filter(g=>g.name===e.place);if(matches.length===1)group=matches[0];}
+    if(!group){
+      const key=e.rid?'bed:'+e.rid:'place:'+e.place;
+      group=groups.find(g=>g.key===key);
+      if(!group){const old=e.rid&&allBeds[e.rid];group={key,rid:e.rid,name:old?geometryAt(old,year).name:e.place||DIARY_LABELS.missingPlace,former:!!e.rid,entries:[]};groups.push(group);}
+    }
+    group.entries.push(e);
+  });
+  if(!groups.length&&shared.length)groups.push({key:'unassigned',name:DIARY_LABELS.whole,entries:[]});
+  groups.forEach(g=>{
+    if(g.rid)entries.filter(e=>Number(e.year)===Number(year)&&e.source==='journal'&&e.rid&&e.rid!==g.rid&&entryAtBed(e,g.rid,allBeds)).forEach(e=>g.entries.push({...e,inherited:true}));
+    g.entries=g.entries.concat(shared.map(e=>({...e,shared:true}))).sort((a,b)=>(a.month||13)-(b.month||13)||(a.day||32)-(b.day||32)||(a.createdAt||0)-(b.createdAt||0)||a.id.localeCompare(b.id));
+  });
+  return groups;
+}
+function historyEventTitle(e){return (WORK_TYPES[e.kind]||DIARY_LABELS.note)+(e.name?' · '+e.name:'');}
+function historyEventColor(e){return e.kind==='plant'?'#438063':e.kind==='harvest'?'#b66649':/^(fertilizer|green)/.test(e.kind)?'#aa812c':e.kind==='end'?'#73766c':'#547c9b';}
+function HistoryStyle(){return <style>{`
+  .history-view,.layout-keeper{font-family:${SANS};font-size:18px;line-height:1.7;color:#263e32;min-width:0;overflow-wrap:anywhere;user-select:text}
+  .history-view *,.layout-keeper *{box-sizing:border-box}.history-view button,.layout-keeper button{font:inherit;line-height:1.5;min-height:48px;padding:10px 16px;border:1px solid #81978a;border-radius:5px;background:#fff;color:#263e32;cursor:pointer;white-space:normal;overflow-wrap:anywhere;max-width:100%}
+  .history-view button:focus-visible,.history-view summary:focus-visible,.layout-keeper button:focus-visible{outline:3px solid #257350;outline-offset:3px}.history-view button:disabled,.layout-keeper button:disabled{color:#52685b;background:#edf1ec;cursor:default}.history-view .history-danger{border-color:#a04435;color:#91382c}
+  .history-nav{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #c7d1c6;border-radius:8px}.history-nav button{flex:1 1 180px}.history-nav button[aria-pressed=true]{background:#294b3b;color:white;border-color:#294b3b;font-weight:700}
+  .history-intro,.history-empty{padding:16px 20px;background:#fff;border:1px solid #d0d8ce;border-radius:7px;margin:0 0 20px}.history-intro p,.history-empty p{margin:0}.history-help{font-size:16px;color:#4e6254;line-height:1.7}
+  .history-bed{background:white;border:1px solid #bdcbbb;border-radius:8px;padding:24px;margin-bottom:24px;min-width:0}.history-bed h2{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:22px;margin:0 0 18px;line-height:1.5}.history-bed-number{font:italic 28px Georgia,serif;color:#4e6e54}.history-bed h2 small{font:16px ${SANS};font-weight:400;color:#526653}
+  .history-calendar{margin-bottom:18px}.history-months{display:grid;grid-template-columns:repeat(var(--months),minmax(0,1fr));border-bottom:1px solid #a9bca7;font-size:16px;font-variant-numeric:tabular-nums}.history-months span{text-align:center;padding:5px 0;border-left:1px solid #e1e8dd}.history-chart-row{height:48px;position:relative;background:repeating-linear-gradient(to right,#e1e8dd 0,#e1e8dd 1px,transparent 1px,transparent calc(100% / var(--months)));border-bottom:1px solid #eff2eb}
+  .history-chart-row .event-label{position:absolute;top:5px;left:var(--label);max-width:52%;font-size:16px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:white;padding:0 3px}.history-chart-row .event-mark{position:absolute;left:clamp(12px,var(--point),calc(100% - 12px));bottom:5px;transform:translateX(-50%);height:5px;width:24px;border-radius:2px;background:var(--color)}.history-chart-row .event-mark:before{content:'';display:block;width:2px;height:10px;background:var(--color);position:absolute;left:11px;bottom:0}
+  .history-record{border-top:1px solid #d1dacc}.history-record summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:135px minmax(0,1fr) 20px;gap:12px;padding:16px 0;min-height:56px;align-items:start}.history-record summary::-webkit-details-marker{display:none}.history-record summary:after{content:'＋';color:#516c57}.history-record[open] summary:after{content:'−'}.history-record summary strong{font-weight:600}.history-record time{font-size:16px;color:#526653}.history-record .history-shared{display:block;width:fit-content;font-size:15px;background:#eef2e9;padding:2px 8px;margin-top:5px;border-radius:3px;color:#435e42}.history-record .record-snippet{display:block;font-size:16px;font-weight:400;margin-top:3px;white-space:pre-wrap}.history-record-body{padding:0 0 18px 147px}.history-record-body p{margin:0 0 14px;white-space:pre-wrap}.history-actions{display:flex;gap:10px;flex-wrap:wrap}.history-confirm{background:#fff7ef;padding:16px;border:1px solid #d5ad94;border-radius:5px;margin-top:12px}.history-confirm p{margin:0 0 12px}.history-view .history-more{display:block;margin:16px auto 0}
+  .layout-keeper{margin:20px 0 4px;padding:18px 20px;background:#fff;border:1px solid #c7d1c6;border-radius:7px}.layout-keeper p{margin:10px 0 0;font-size:16px}.history-layout{background:#fff;border:1px solid #bdcbbb;border-radius:8px;margin-bottom:20px;padding:20px}.history-layout>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:20px;min-height:72px}.history-layout>summary::-webkit-details-marker{display:none}.history-layout>summary strong,.history-layout>summary span{display:block}.history-layout>summary .layout-link{margin-top:6px;text-decoration:underline;text-underline-offset:4px}.history-thumb{flex:0 0 100px;max-width:30%}.history-thumb svg{width:100%!important;height:auto!important;max-height:110px}.history-layout-map{max-width:620px;margin:22px auto;background:#faf8f1;padding:12px}.history-layout-map svg{width:100%!important;height:auto!important;max-height:600px}.history-layout dl{margin:16px 0}.history-layout dt{font-size:16px;color:#526653}.history-layout dd{margin:0 0 12px;white-space:pre-wrap}.history-layout-beds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;padding:0;list-style:none;margin:16px 0}.history-layout-beds li{padding:8px 12px;background:#f2f5ed}.history-layout-beds strong{display:block}
+  .history-view.is-small .history-bed{padding:16px}.history-view.is-small .history-record summary{grid-template-columns:minmax(0,1fr) 20px;gap:4px 8px}.history-view.is-small .history-record time{grid-column:1}.history-view.is-small .history-record summary>div{grid-column:1}.history-view.is-small .history-record summary:after{grid-column:2;grid-row:1 / span 2}.history-view.is-small .history-record-body{padding-left:0}.history-view.is-small .history-layout{padding:14px}.history-view.is-small .history-layout>summary{gap:12px;align-items:flex-start}.history-view.is-small .history-thumb{flex-basis:66px}.history-view.is-small .history-nav{gap:6px}.history-view.is-small .history-intro{padding:14px}.history-view.is-small .history-bed h2{gap:8px;font-size:20px}
+`}</style>;}
+function HistoryCalendar({entries,small}){
+  const parts=small?[[1,6],[7,12]]:[[1,12]], lang=document.documentElement.lang||'ja';
+  return <div aria-hidden="true">{parts.map(([start,end])=>{
+    const dated=entries.filter(e=>e.month>=start&&e.month<=end),n=end-start+1;
+    return <div className="history-calendar" key={start} style={{'--months':n}}>
+      <div className="history-months">{Array.from({length:n},(_,i)=><span key={i} title={new Intl.DateTimeFormat(lang,{month:'long'}).format(new Date(2024,start+i-1,1))}>{start+i}</span>)}</div>
+      {dated.map(e=>{const point=(e.month-start+(e.day?(e.day-.5)/new Date(e.year,e.month,0).getDate():.5))/n*100;return <div className="history-chart-row" key={e.source+':'+e.id} style={{'--point':point+'%','--label':(point>50?point-52:Math.max(point-2,0))+'%','--color':historyEventColor(e)}}><span className="event-label" style={{width:"52%",textAlign:point>50?"right":"left"}}>{e.name?e.name+" · "+(WORK_TYPES[e.kind]||DIARY_LABELS.note):historyEventTitle(e)}</span><i className="event-mark"/></div>;})}
+    </div>;
+  })}</div>;
+}
+function HistoryEntry({entry:e,onEdit,onRemove}){
+  const t=HISTORY_LABELS,d=DIARY_LABELS,[confirming,setConfirming]=useState(false);
+  return <details className="history-record" data-entry={e.id} data-shared={!!e.shared} onToggle={ev=>{if(!ev.currentTarget.open)setConfirming(false);}}>
+    <summary><time>{entryDate(e)}</time><div><strong>{historyEventTitle(e)}</strong>{!e.name&&e.note&&<span className="record-snippet">{e.note.length>100?e.note.slice(0,100)+'…':e.note}</span>}{e.shared&&<span className="history-shared">{t.shared}</span>}{e.inherited&&<span className="history-shared">{d.bed}: {e.place}</span>}</div></summary>
+    <div className="history-record-body">
+      {e.amount&&<p>{e.shared?d.total:d.amount}: {e.amount}</p>}{e.note&&<p>{e.note}</p>}
+      {e.source==='journal'?<>
+        {e.shared&&<p className="history-help">{t.sharedEdit}</p>}
+        <div className="history-actions"><button onClick={()=>onEdit(e)}>{t.edit}</button><button className="history-danger" onClick={()=>setConfirming(true)}>{t.remove}</button></div>
+        {confirming&&<div className="history-confirm" role="alert"><p>{t.deleteRecord}{e.shared?' '+t.deleteShared:''}</p><div className="history-actions"><button autoFocus onClick={()=>setConfirming(false)}>{t.cancel}</button><button className="history-danger" onClick={()=>onRemove(e)}>{t.remove}</button></div></div>}
+      </>:<p className="history-help">{t.cropHint}</p>}
+    </div>
+  </details>;
+}
+function HistoryBed({group:g,small,onEdit,onRemove}){
+  const [expanded,setExpanded]=useState(false),t=HISTORY_LABELS,visible=expanded?g.entries:g.entries.slice(0,12);
+  return <section className="history-bed" data-bed={g.key}>
+    <h2>{g.number&&<span className="history-bed-number">{String(g.number).padStart(2,'0')}</span>}{g.name}{g.former&&<small>{t.former}</small>}<small>{visible.length<g.entries.length?visible.length+" / ":""}{g.entries.length} {t.entries}</small></h2>
+    {g.entries.length?<><HistoryCalendar entries={visible} small={small}/>{visible.some(e=>!e.month)&&<p className="history-help">{t.unknown}</p>}{visible.map(e=><HistoryEntry key={e.source+':'+e.id} entry={e} onEdit={onEdit} onRemove={onRemove}/>)}{g.entries.length>12&&<button className="history-more" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?t.less:t.more} {!expanded&&'('+ (g.entries.length-12)+')'}</button>}</>:<p>{t.emptyBed}</p>}
+  </section>;
+}
+function HistoryLayout({snap,farm,onPrint,onRemove}){
+  const t=HISTORY_LABELS,[confirming,setConfirming]=useState(false),date=new Date(snap.ts),savedFarm=snap.farm||farm;
+  return <details className="history-layout" data-snapshot={snap.id} onToggle={e=>{if(!e.currentTarget.open)setConfirming(false);}}>
+    <summary><div className="history-thumb" aria-hidden="true"><SnapMiniMap farm={savedFarm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/></div><div><strong>{t.layoutYear.replace('{year}',snap.year)}</strong><span>{Number.isNaN(date.getTime())?DIARY_LABELS.unknownDate:cropDate(date.getFullYear(),date.getMonth()+1,date.getDate())}</span><span className="layout-link">{t.openLayout}</span></div></summary>
+    <div className="history-layout-map" role="img" aria-label={t.layoutYear.replace('{year}',snap.year)}><SnapMiniMap farm={savedFarm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/></div>
+    {!snap.farm&&<p className="history-help">{t.legacyLayout}</p>}
+    <dl><dt>{t.savedOn}</dt><dd>{Number.isNaN(date.getTime())?DIARY_LABELS.unknownDate:date.toLocaleString(document.documentElement.lang||'ja')}</dd><dt>{snap.automatic?t.automatic:t.manual}</dt>{snap.note&&<dd>{snap.note}</dd>}</dl>
+    <ul className="history-layout-beds">{Object.values(snap.ridges||{}).map(r=><li key={r.id}><strong>{r.name}</strong>{(VM[extractVid((snap.plantings||{})[r.id])]||{}).name||DIARY_LABELS.blank}</li>)}</ul>
+    <div className="history-actions"><button onClick={()=>onPrint(snap)}>{t.print}</button><button className="history-danger" onClick={()=>setConfirming(true)}>{t.remove}</button></div>
+    {confirming&&<div className="history-confirm" role="alert"><p>{t.deleteLayout}</p><div className="history-actions"><button autoFocus onClick={()=>setConfirming(false)}>{t.cancel}</button><button className="history-danger" onClick={()=>onRemove(snap.id)}>{t.remove}</button></div></div>}
+  </details>;
+}
+function HistoryView({allBeds,entries,year,view,onView,snapshots,farm,small,onEdit,onRemove,onPrint,onRemoveSnapshot}){
+  const t=HISTORY_LABELS,groups=historyGroups(allBeds,entries,year),saved=snapshots.filter(s=>Number(s.year)===Number(year));
+  return <div className={'history-view'+(small?' is-small':'')} onClick={e=>e.stopPropagation()}>
+    <div className="history-nav" role="group" aria-label={t.navigation}>{[['records',t.records],['layouts',t.layouts]].map(([key,label])=><button key={key} aria-pressed={view===key} onClick={()=>onView(key)}>{label}</button>)}</div>
+    {view==='records'?<>
+      {groups.some(g=>g.entries.length)?<div className="history-intro"><p className="history-help">{t.chartHelp}</p><p className="history-help">{t.month}: 1–12</p></div>:<div className="history-empty">{t.empty}</div>}
+      {groups.map(g=><HistoryBed key={g.key+':'+year} group={g} small={small} onEdit={onEdit} onRemove={onRemove}/>)}
+    </>:<><div className="history-intro"><p className="history-help">{t.layoutHelp}</p></div>{!saved.length&&<div className="history-empty">{t.layoutEmpty}</div>}{saved.map(s=><HistoryLayout key={s.id} snap={s} farm={farm} onPrint={onPrint} onRemove={onRemoveSnapshot}/>)}</>}
+  </div>;
+}
+
 function WorkForm({farm,beds,initial,onSave,onClose}) {
   const [kind,setKind]=useState(initial.kind||"fertilizer");
-  const [rid,setRid]=useState(initial.rid||"");
+  const legacyPlace=!!initial.id&&!initial.rid&&!historyWholePlace(initial.place);
+  const [rid,setRid]=useState(initial.rid||(legacyPlace?"__legacy_place__":""));
+  const [monthOnly,setMonthOnly]=useState(!!initial.id&&!!initial.month&&!initial.day);
   const [name,setName]=useState(initial.name||"");
   const [vid,setVid]=useState("");
   const [vegQuery,setVegQuery]=useState("");
@@ -542,21 +677,22 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
   var available=bedsAt(beds,yr);
   function submit(e){e.preventDefault();
     if(!Number.isInteger(yr)||yr<1900||yr>2200||(!unknown&&!/^\d{4}-\d{2}-\d{2}$/.test(date))){setError("日付または年を確認してください。");return;}
-    if(rid&&!available[rid]&&!(initial.id&&initial.rid===rid)){setError("この年に記録する畝を選んでください。畑全体も選べます。");return;}
+    if(rid&&rid!=="__legacy_place__"&&!available[rid]&&!(initial.id&&initial.rid===rid)){setError("この年に記録する畝を選んでください。畑全体も選べます。");return;}
     if(kind==="plant"&&(!rid||!VM[vid]||!VM[vid].name.trim())){setError("野菜を植えた畝と、野菜を選んでください。");return;}
-    var d=unknown?[yr,null,null]:date.split("-").map(Number);
-    onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind,rid:rid||null,year:d[0],month:d[1],day:d[2],name:name.trim(),vid,amount:amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):null});
+    var d=unknown?[yr,null,null]:date.split("-").map(Number);if(monthOnly&&!unknown)d[2]=null;
+    onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind,rid:rid==="__legacy_place__"?null:rid||null,year:d[0],month:d[1],day:d[2],name:name.trim(),vid,amount:amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:rid==="__legacy_place__"?initial.place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):initial.id&&(initial.rid===rid||rid==="__legacy_place__")?initial.geometry||null:null});
   }
   return <EditDialog title={initial.id?"作業の記録を訂正":"作業を記録"} onClose={onClose}><form className="journal-form" onSubmit={submit}>
-    <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
+    <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{legacyPlace&&<option value="__legacy_place__">{initial.place}</option>}{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&rid!=="__legacy_place__"&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
     <label>何をした<select value={kind.startsWith("green")?"green":kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>!["greenSow","greenCut","greenMix"].includes(k)&&(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     {kind.startsWith("green")&&kind!=="green"&&<span className="journal-help" style={{marginTop:-12}}>{WORK_TYPES[kind]}</span>}
     {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
     {kind==="plant"&&<CustomCropInput value={vid} onChange={setVid}/>}
     {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
-    <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type="date" value={date} onChange={e=>setDate(e.target.value)}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
+    <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type={monthOnly?"month":"date"} value={monthOnly?date.slice(0,7):date} onChange={e=>setDate(e.target.value+(monthOnly?"-01":""))}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
     <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
-    <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
+    {!!initial.id&&!!initial.month&&!initial.day&&!unknown&&<label className="journal-check"><input type="checkbox" checked={monthOnly} onChange={e=>setMonthOnly(e.target.checked)}/>{DIARY_LABELS.unknownDay}</label>}
+    <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea aria-label="メモ" maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
     {error&&<p role="alert">{error}</p>}<div className="journal-actions"><button type="button" onClick={onClose}>やめる</button><button className="journal-primary" type="submit">{initial.id?"訂正を保存":"記録を残す"}</button></div>
   </form></EditDialog>;
 }
@@ -2171,12 +2307,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [mainTab, setMainTab] = useState("map"); /* "map" | "history" */
   const [editMode,setEditMode]=useState(false);
   const [workDraft,setWorkDraft]=useState(null);
-  const [historyPlace,setHistoryPlace]=useState("");
-    useEffect(function(){setEditMode(false);setSelRid(null);setWorkDraft(null);setHistoryPlace("");setS1(null);setHov(null);setMapZoom(1);setToast(null);clearTimeout(toastTimer.current);},[fid,year]);
-  const [snapMsg, setSnapMsg] = useState(null);
+  const [historyView,setHistoryView]=useState("records");
+    useEffect(function(){setEditMode(false);setSelRid(null);setWorkDraft(null);setS1(null);setHov(null);setMapZoom(1);setToast(null);clearTimeout(toastTimer.current);},[fid,year]);
+  useEffect(()=>setHistoryView("records"),[fid]);
   const [editFarm,setEditFarm]=useState(false);
   const [editBed,setEditBed]=useState(false);
-  const [confirmSnapId, setConfirmSnapId] = useState(null); /* 変遷削除確認用 */
+
   const [toast, setToast] = useState(null); /* {msg, undo} */
   const toastTimer = useRef(null);
   useEffect(function(){return function(){clearTimeout(toastTimer.current);};},[]);
@@ -2524,15 +2660,14 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       year: year,
       note: note || "",
       farm: Object.fromEntries(["id","name"].concat(FARM_GEOMETRY).map(k=>[k,farm[k]])),
-      ridges: Object.assign({}, farmRidges),
-      plantings: Object.assign({}, (plantings[fid]&&plantings[fid][year]) ? plantings[fid][year] : {})
+      ridges: JSON.parse(JSON.stringify(farmRidges)),
+      plantings: JSON.parse(JSON.stringify(farmPlant))
     };
     setSnapshots(function(prev){
       const fd = prev[fid] || [];
       return Object.assign({}, prev, {[fid]: [snap].concat(fd)});
     });
-    setSnapMsg("記録しました！");
-    setTimeout(function(){ setSnapMsg(null); }, 2000);
+    showToast(HISTORY_LABELS.savedNotice);
   }
 
   /* 最新スナップと現在の状態が同じかどうか判定 */
@@ -2540,7 +2675,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     var snaps = snapshots[fid] || [];
     if (snaps.length === 0) return false;
     var last = snaps[0];
-    if (last.year !== year) return false;
+    if (Number(last.year) !== Number(year)) return false;
+    if (!last.farm || last.farm.name !== farm.name) return false;
     if(!last.farm||JSON.stringify(FARM_GEOMETRY.map(k=>last.farm[k]))!==JSON.stringify(FARM_GEOMETRY.map(k=>farm[k])))return false;
     /* 畝の比較（id・位置・方向・名前） */
     var curRidgeIds = Object.keys(farmRidges).sort();
@@ -2552,19 +2688,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       if (!lr) return false;
       if (cr.gx!==lr.gx||cr.gy!==lr.gy||cr.gl!==lr.gl||cr.ridgeW!==lr.ridgeW||cr.orientation!==lr.orientation||cr.name!==lr.name) return false;
     }
-    /* 作付けの比較 */
-    var curP = (plantings[fid]&&plantings[fid][year]) || {};
-    var lastP = last.plantings || {};
-    var curPIds = Object.keys(curP).sort();
-    var lastPIds = Object.keys(lastP).sort();
-    if (JSON.stringify(curPIds) !== JSON.stringify(lastPIds)) return false;
-    for (var j=0; j<curPIds.length; j++) {
-      var pid = curPIds[j];
-      var cp = curP[pid], lp = lastP[pid];
-      if (!lp) return false;
-      if (cp.vid!==lp.vid||cp.month!==lp.month||cp.day!==lp.day) return false;
-    }
-    return true;
+    /* Include notes and past crops; a changed record must be retainable too. */
+    function stable(value){if(Array.isArray(value))return value.map(stable);if(value&&typeof value==="object")return Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])]));return value;}
+    return JSON.stringify(stable(farmPlant))===JSON.stringify(stable(last.plantings||{}));
   })();
 
   function delSnapshot(sid) {
@@ -2636,7 +2762,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           </div>
 
           {/* 年ナビ */}
-          {mainTab==="map"&&<div className="ledger-yearnav" aria-label="表示する年">
+          {<div className="ledger-yearnav" aria-label="表示する年">
             <div><button className="year-arrow" aria-label="前の年" onClick={function(e){e.stopPropagation();setYear(y=>y-1);}}>‹</button><span className="year-caption" aria-hidden="true">前の年</span></div>
             <div><div className="year-number">{year}年</div>{year===cy?<span className="year-caption">今年</span>:<button className="year-caption" onClick={function(e){e.stopPropagation();setYear(cy);}}>今年に戻る</button>}</div>
             <div><button className="year-arrow" aria-label="次の年" onClick={function(e){e.stopPropagation();setYear(y=>y+1);}}>›</button><span className="year-caption" aria-hidden="true">次の年</span></div>
@@ -2807,6 +2933,11 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               );
             })()}
 
+            <div className="layout-keeper" onClick={e=>e.stopPropagation()}>
+              <button onClick={()=>saveSnapshot()} disabled={isSameAsLastSnap}>{isSameAsLastSnap?HISTORY_LABELS.saved:year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}</button>
+              <p>{HISTORY_LABELS.saveHelp}</p>
+            </div>
+
             {/* 畝が0のヒント */}
             {ridgeCount===0 && !s1 && (
               <div style={{marginTop:16,padding:"20px 16px",border:"2px dashed "+C.inkLine,background:C.paper2,textAlign:"center"}}>
@@ -2869,86 +3000,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           </div>
         )}
 
-        {/* ── 変遷ビュー ── */}
-        {farm && mainTab === "history" && (
-          <div style={{width:"100%"}}>
-            <label style={{display:"block",marginBottom:16}}>場所で絞り込む<select value={historyPlace} onChange={e=>setHistoryPlace(e.target.value)} style={{display:"block",width:"100%",padding:10}}><option value="">すべての場所・すべての年</option><option value="whole">畑全体</option>{Object.values(ridges[fid]||{}).map(r=><option key={r.id} value={r.id}>{r.name}{r.deletedFrom?"（以前の畝）":""}</option>)}</select></label>
-            <WorkTimeline entries={timeline.filter(e=>!historyPlace||(historyPlace==="whole"?!e.rid:entryAtBed(e,historyPlace,ridges[fid]||{})))} onEdit={setWorkDraft} onRemove={removeWork}/>
-            <details style={{marginTop:24}}><summary style={{padding:12,cursor:"pointer"}}>残しておいた畑の図（{(snapshots[fid]||[]).length}件）</summary>
-            <button onClick={()=>saveSnapshot()} disabled={isSameAsLastSnap} style={{padding:12,margin:"12px 0"}}>{isSameAsLastSnap?"この図は保存済み":"今の畑の図を残す"}</button>
-            <div style={{marginBottom:20,padding:"14px 16px",background:C.paper2,border:"1px solid "+C.inkLine,borderRadius:3}}>
-              <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,letterSpacing:1,marginBottom:4}}>これまでの記録について</div>
-              <div style={{fontSize:14,color:C.ink,fontFamily:HAND,lineHeight:1.9}}>
-                畑の図を残しておくと、以前の配置を見返せます。配置の変更前にも自動で図を残します。
-              </div>
-            </div>
-
-            {(snapshots[fid]||[]).length === 0 ? (
-              <div style={{padding:"40px 16px",textAlign:"center",border:"1px dashed "+C.inkLine,color:C.inkFaint,fontSize:14,fontFamily:HAND,letterSpacing:1,lineHeight:2.5}}>
-                まだ記録がありません<br/>
-                <span style={{fontSize:22}}>📸</span><br/>
-                「今の畑の図を残す」で、配置を残せます。
-              </div>
-            ) : (
-              <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                {(snapshots[fid]||[]).map(function(snap){
-                  const d=new Date(snap.ts);
-                  const dateStr=cropDate(d.getFullYear(),d.getMonth()+1,d.getDate());
-                  const timeStr=d.getHours()+":"+(d.getMinutes()<10?"0":"")+d.getMinutes();
-                  const ridgeList=Object.values(snap.ridges||{});
-                  return (
-                    <div key={snap.id} style={{border:"1px solid "+C.inkLine,background:C.paper2,borderRadius:3,overflow:"hidden"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderBottom:"1px solid "+C.inkLine,background:C.paper}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:14,letterSpacing:1,fontFamily:HAND}}>{dateStr}　{timeStr}</div>
-                          <div style={{fontSize:14,color:C.inkFaint,fontFamily:HAND,marginTop:2}}>
-                            {snap.year}年の図 · {snap.note||"手動で保存"} · {ridgeList.length}区画
-                          </div>
-                        </div>
-                        <button onClick={function(e){e.stopPropagation();setPrintSnap(snap);setShowPrint(true);}}
-                          style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,display:"flex",alignItems:"center",gap:4}}>
-                          <span>🖨</span> 印刷
-                        </button>
-                        {confirmSnapId===snap.id ? (
-                          <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                            <button onClick={function(e){e.stopPropagation();setConfirmSnapId(null);}}
-                              style={{padding:"4px 8px",border:"1px solid "+C.inkBorder,background:"transparent",fontSize:14,cursor:"pointer",fontFamily:SERIF}}>やめる</button>
-                            <button onClick={function(e){e.stopPropagation();delSnapshot(snap.id);setConfirmSnapId(null);}}
-                              style={{padding:"4px 8px",border:"1px solid "+C.red,background:C.red,color:"#fff",fontSize:14,cursor:"pointer",fontFamily:SERIF,fontWeight:"bold"}}>削除</button>
-                          </div>
-                        ) : (
-                          <button onClick={function(e){e.stopPropagation();setConfirmSnapId(snap.id);}}
-                            style={{padding:"4px 12px",border:"1px solid "+C.inkLine,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>
-                            削除
-                          </button>
-                        )}
-                      </div>
-                      <div style={{padding:"12px 14px",overflowX:"auto"}}>
-                        <SnapMiniMap farm={snap.farm||farm} ridges={snap.ridges||{}} plantings={snap.plantings||{}}/>
-                      </div>
-                      {ridgeList.length > 0 && (
-                        <div style={{padding:"0 14px 12px",display:"flex",flexWrap:"wrap",gap:5}}>
-                          {ridgeList.map(function(ridge){
-                            const pl=snap.plantings&&snap.plantings[ridge.id];
-                            const vg=VM[extractVid(pl)]||null;
-                            return (
-                              <div key={ridge.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",border:"1px solid "+C.inkLine,fontSize:14,fontFamily:HAND,borderRadius:2,background:C.paper}}>
-                                {vg&&<VegetableImage id={vg.id} size={24}/>}
-                                <span style={{color:C.inkFaint}}>{ridge.name}</span>
-                                {vg?<span style={{color:C.ink}}>{vg.name}</span>:<span style={{color:C.inkFaint}}>未設定</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            </details>
-          </div>
-        )}
+        <HistoryStyle/>
+        {farm && mainTab === "history" && <HistoryView key={fid} allBeds={ridges[fid]||{}} entries={timeline} year={year} view={historyView} onView={setHistoryView} snapshots={snapshots[fid]||[]} farm={farm} small={viewportWidth/(uiScale||1)<700} onEdit={setWorkDraft} onRemove={removeWork} onPrint={snap=>{setPrintSnap(snap);setShowPrint(true);}} onRemoveSnapshot={sid=>{delSnapshot(sid);showToast(HISTORY_LABELS.deletedLayout,function(){});}}/>}
       </div>
 
       </div>
@@ -3060,7 +3113,7 @@ const FAQ_DATA = [
         "a": [
           "「畑を編集」から変更できます。「畑の形・目印」では大きさや形を直したり、「入口」「田中さんの家」などの目印を付けたりできます。畑名は「メニュー」→「畑名を変更」で直せます。",
           "畝を直すときは、編集中にその畝を押し、「この畝を編集」→「畝の大きさ・位置を編集」を選びます。変更は表示中の年から反映します。過去の年の配置は残り、後の年に別の配置を保存済みなら、その配置も残ります。",
-          "変更前の図は自動で「これまでの記録」→「残しておいた畑の図」に残ります。同じ年に何度も配置を変えた場合も、ここで見返せます。以前の版ですでに上書きされた配置までは復元できません。"
+          "変更前の図は自動で「これまでの記録」→「以前の畑の図」に残ります。上の年を選ぶと、その年の図を見返せます。以前の版ですでに上書きされた配置までは復元できません。"
         ]
       }
     ]
@@ -3089,7 +3142,7 @@ const FAQ_DATA = [
         "a": [
           "畝を押して「野菜を植えた」から、次の野菜を記録します。前の野菜は履歴に残るので、同じ年に植え替えても振り返れます。",
           "しばらく畝を休ませるときは、畝の「栽培を終える」を開き、「栽培を終了する」を押してください。野菜の履歴を残して地図を空欄にします。",
-          "以前の作付けや肥料・緑肥の記録は「これまでの記録」に年をまたいで並びます。畝を押して開くと、その畝と畑全体の作業を確認できます。"
+          "以前の作付けや肥料・緑肥の記録は「これまでの記録」で年を選んで見返せます。畝ごとに表示され、畑全体への記録も各畝で確認できます。"
         ]
       },
       {
@@ -3097,7 +3150,7 @@ const FAQ_DATA = [
         "a": [
           "「畑を編集」を押し、畝を選んで「2区画に分ける」を押します。長さ60cm以上の畝を、半分ずつのA・B区画に分けられます。",
           "分けた年より前の図と作付けはそのまま残ります。分けた年以降の作付けは両区画に引き継ぎ、それぞれ別の野菜を記録できます。新しい区画でも、元の畝に残した作業を確認できます。",
-          "分ける直前の図も自動で残します。「これまでの記録」→「残しておいた畑の図」から確認してください。"
+          "分ける直前の図も自動で残します。「これまでの記録」→「以前の畑の図」から、その年の図を確認してください。"
         ]
       },
       {
@@ -3119,8 +3172,8 @@ const FAQ_DATA = [
       {
         "q": "作業の記録を間違えたときは、どう直せばよいですか？",
         "a": [
-          "「これまでの記録」で該当する作業の「訂正」を押すと、名前・量・日付・場所・メモを直せます。重ねて新しい記録を作る必要はありません。不要な作業は「削除」で取り消せます。",
-          "野菜の植え付けを直後に間違えた場合は、「メニュー」→「直前の操作を戻す」で戻してから選び直してください。過去の作付けの訂正は、現在この作業の「訂正」ボタンには対応していません。"
+          "「これまでの記録」で年を選び、該当する記録を押して「内容を直す」を選びます。名前・量・日付・場所・メモを直せるので、重ねて新しい記録を作る必要はありません。不要な記録は確認してから「削除する」を押します。畑全体への記録を削除すると、各畝の表示からもなくなります。",
+          "野菜の植え付けを直後に間違えた場合は、「メニュー」→「直前の操作を戻す」で戻してから選び直してください。過去の作付けは、この「内容を直す」では変更できません。"
         ]
       }
     ]
@@ -3142,7 +3195,8 @@ const FAQ_DATA = [
         "q": "入力した記録は、そのまま閉じても残りますか？",
         "a": [
           "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。「保存しました（この端末）」を確認できれば、そのまま閉じて大丈夫です。入力途中の内容はまだ保存されていません。",
-          "「今の畑の図を残す」は、そのときの配置を後で見返すためのボタンです。通常の保存のために押す必要はありません。図は「これまでの記録」→「残しておいた畑の図」から残せます。",
+          "「畑のようす」の「この配置を取っておく」を押すと、あとで配置を変えても、その図を見返せます。通常の保存のために押す必要はありません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。",
+          "「これまでの記録」では、年を選ぶと畝ごとの記録が表示されます。下線は記録した時期を表し、記録を押すと詳しい内容を確認できます。畑全体への施肥やメモは各畝に表示し、量は全体の合計として扱います。",
           "作付け・作業・畑の図は同じ端末内に保存されます。端末の故障や機種変更に備え、「バックアップ」で控えも残しておくと安心です。"
         ]
       },
@@ -3364,7 +3418,7 @@ function FAQScreen({ onClose }) {
    スナップショット用ミニマップ
 ══════════════════════════════════════ */
 function SnapMiniMap({ farm, ridges, plantings }) {
-  var miniCS = Math.min(32, Math.floor(240 / Math.max(farm.cols, farm.rows)));
+  var miniCS = Math.min(32, Math.max(0.1, 240 / Math.max(farm.cols, farm.rows)));
   var lm = farm.landmarks || {};
   var PAD = Math.round(miniCS * 0.7);
   var padT=0, padB=0, padL=0, padR=0;
