@@ -80,7 +80,7 @@ function LedgerStyle(){return <style>{`
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
   .ledger-status{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-top:1px solid ${C.inkLine};padding:8px 0!important;font:14px/1.6 ${SANS}}
   .ledger-status .faq-link{margin:0;padding:8px 0;border:0;background:transparent;color:${C.ink};font-size:14px;text-decoration:underline;text-underline-offset:4px}
-  .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
   .action-notice{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:8px;padding:8px 12px;background:${C.indigoPale};border-left:3px solid ${C.indigo};font-size:14px;line-height:1.5}
   .action-notice>span{flex:1 1 180px;overflow-wrap:anywhere}.action-notice button{padding:4px 8px;background:${C.paper};color:${C.ink};border:1px solid ${C.inkBorder}}
   .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
@@ -544,15 +544,13 @@ const HISTORY_LABELS = {
   "details": "記録の内容",
   "more": "残りの記録も表示",
   "less": "表示を少なくする",
-  "chartHelp": "下線は記録した時期を表します。詳しい内容は下の記録を押して確認できます。",
+  "chartHelp": "点は記録した時期、下線付きの文字はその内容です。詳しくは下の記録を押してください。",
   "unknown": "日付が不明な記録は、下の一覧に表示しています。",
-  "save": "この配置を取っておく",
-  "saved": "この配置は取ってあります",
-  "saveHelp": "あとで配置を変えても、この図を見返せます。通常の記録は自動保存されます。",
-  "savedNotice": "この配置を取っておきました。「これまでの記録」から見返せます。",
-  "pastSave": "{year}年のこの配置を取っておく",
+  "save": "配置図を保存",
+  "savedNotice": "配置図を保存しました。",
+  "pastSave": "{year}年の配置図を保存",
   "layoutEmpty": "この年に取っておいた畑の図はありません",
-  "layoutHelp": "「畑のようす」で「この配置を取っておく」を押すと、ここで見返せます。配置の変更前に自動で残した図も表示します。",
+  "layoutHelp": "「畑のようす」で「配置図を保存」を押すと、ここで見返せます。配置の変更前に自動で残した図も表示します。",
   "openLayout": "図を見る",
   "layoutYear": "{year}年の配置",
   "savedOn": "保存した日時",
@@ -593,25 +591,39 @@ function historyGroups(allBeds, entries, year) {
 function historyEventTitle(e){return (WORK_TYPES[e.kind]||DIARY_LABELS.note)+(e.name?' · '+e.name:'');}
 function historyEventColor(e){return e.kind==='plant'?'#438063':e.kind==='harvest'?'#b66649':/^(fertilizer|green)/.test(e.kind)?'#aa812c':e.kind==='end'?'#73766c':'#547c9b';}
 function HistoryStyle(){return <style>{`
-  .history-view,.layout-keeper{font-family:${SANS};font-size:18px;line-height:1.7;color:#263e32;min-width:0;overflow-wrap:anywhere;user-select:text}
-  .history-view *,.layout-keeper *{box-sizing:border-box}.history-view button,.layout-keeper button{font:inherit;line-height:1.5;min-height:48px;padding:10px 16px;border:1px solid #81978a;border-radius:5px;background:#fff;color:#263e32;cursor:pointer;white-space:normal;overflow-wrap:anywhere;max-width:100%}
-  .history-view button:focus-visible,.history-view summary:focus-visible,.layout-keeper button:focus-visible{outline:3px solid #257350;outline-offset:3px}.history-view button:disabled,.layout-keeper button:disabled{color:#52685b;background:#edf1ec;cursor:default}.history-view .history-danger{border-color:#a04435;color:#91382c}
+  .history-view{font-family:${SANS};font-size:18px;line-height:1.7;color:#263e32;min-width:0;overflow-wrap:anywhere;user-select:text}
+  .history-view *{box-sizing:border-box}.history-view button{font:inherit;line-height:1.5;min-height:48px;padding:10px 16px;border:1px solid #81978a;border-radius:5px;background:#fff;color:#263e32;cursor:pointer;white-space:normal;overflow-wrap:anywhere;max-width:100%}
+  .history-view button:focus-visible,.history-view summary:focus-visible{outline:3px solid #257350;outline-offset:3px}.history-view button:disabled{color:#52685b;background:#edf1ec;cursor:default}.history-view .history-danger{border-color:#a04435;color:#91382c}
   .history-nav{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #c7d1c6;border-radius:8px}.history-nav button{flex:1 1 180px}.history-nav button[aria-pressed=true]{background:#294b3b;color:white;border-color:#294b3b;font-weight:700}
   .history-intro,.history-empty{padding:16px 20px;background:#fff;border:1px solid #d0d8ce;border-radius:7px;margin:0 0 20px}.history-intro p,.history-empty p{margin:0}.history-help{font-size:16px;color:#4e6254;line-height:1.7}
   .history-bed{background:white;border:1px solid #bdcbbb;border-radius:8px;padding:24px;margin-bottom:24px;min-width:0}.history-bed h2{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:22px;margin:0 0 18px;line-height:1.5}.history-bed-number{font:italic 28px Georgia,serif;color:#4e6e54}.history-bed h2 small{font:16px ${SANS};font-weight:400;color:#526653}
-  .history-calendar{margin-bottom:18px}.history-months{display:grid;grid-template-columns:repeat(var(--months),minmax(0,1fr));border-bottom:1px solid #a9bca7;font-size:16px;font-variant-numeric:tabular-nums}.history-months span{text-align:center;padding:5px 0;border-left:1px solid #e1e8dd}.history-chart-row{height:48px;position:relative;background:repeating-linear-gradient(to right,#e1e8dd 0,#e1e8dd 1px,transparent 1px,transparent calc(100% / var(--months)));border-bottom:1px solid #eff2eb}
-  .history-chart-row .event-label{position:absolute;top:5px;left:var(--label);max-width:52%;font-size:16px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:white;padding:0 3px}.history-chart-row .event-mark{position:absolute;left:clamp(12px,var(--point),calc(100% - 12px));bottom:5px;transform:translateX(-50%);height:5px;width:24px;border-radius:2px;background:var(--color)}.history-chart-row .event-mark:before{content:'';display:block;width:2px;height:10px;background:var(--color);position:absolute;left:11px;bottom:0}
+  .history-calendar{margin-bottom:20px}.history-months{display:grid;grid-template-columns:repeat(var(--months),minmax(0,1fr));border-bottom:1px solid #91aa8e;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:#f5f7f1}.history-months span{text-align:center;padding:6px 0;border-left:1px solid #dce5d7}.history-chart-row{padding:9px 0 13px;position:relative;background:repeating-linear-gradient(to right,#e1e8dd 0,#e1e8dd 1px,transparent 1px,transparent calc(100% / var(--months)));border-bottom:1px solid #e7eddf}
+  .history-chart-row .event-label{position:relative;display:block;width:max-content;max-width:calc(100% - 16px);margin-left:var(--label-left,8px);font-size:16px;line-height:1.65;white-space:normal;overflow-wrap:anywhere;background:white;padding:0 3px;border-bottom:5px solid var(--underline);color:#294334}.history-chart-row .event-label strong{font-weight:600}.history-chart-row .event-date{font-variant-numeric:tabular-nums;white-space:nowrap}.history-chart-row .event-mark{position:absolute;left:clamp(4px,var(--point),calc(100% - 4px));bottom:11.5px;transform:translateX(-50%);height:8px;width:8px;border-radius:50%;background:#294334;border:1px solid white;box-sizing:border-box;pointer-events:none}
   .history-record{border-top:1px solid #d1dacc}.history-record summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:135px minmax(0,1fr) 20px;gap:12px;padding:16px 0;min-height:56px;align-items:start}.history-record summary::-webkit-details-marker{display:none}.history-record summary:after{content:'＋';color:#516c57}.history-record[open] summary:after{content:'−'}.history-record summary strong{font-weight:600}.history-record time{font-size:16px;color:#526653}.history-record .history-shared{display:block;width:fit-content;font-size:15px;background:#eef2e9;padding:2px 8px;margin-top:5px;border-radius:3px;color:#435e42}.history-record .record-snippet{display:block;font-size:16px;font-weight:400;margin-top:3px;white-space:pre-wrap}.history-record-body{padding:0 0 18px 147px}.history-record-body p{margin:0 0 14px;white-space:pre-wrap}.history-actions{display:flex;gap:10px;flex-wrap:wrap}.history-confirm{background:#fff7ef;padding:16px;border:1px solid #d5ad94;border-radius:5px;margin-top:12px}.history-confirm p{margin:0 0 12px}.history-view .history-more{display:block;margin:16px auto 0}
-  .layout-keeper{margin:20px 0 4px;padding:18px 20px;background:#fff;border:1px solid #c7d1c6;border-radius:7px}.layout-keeper p{margin:10px 0 0;font-size:16px}.history-layout{background:#fff;border:1px solid #bdcbbb;border-radius:8px;margin-bottom:20px;padding:20px}.history-layout>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:20px;min-height:72px}.history-layout>summary::-webkit-details-marker{display:none}.history-layout>summary strong,.history-layout>summary span{display:block}.history-layout>summary .layout-link{margin-top:6px;text-decoration:underline;text-underline-offset:4px}.history-thumb{flex:0 0 100px;max-width:30%}.history-thumb svg{width:100%!important;height:auto!important;max-height:110px}.history-layout-map{max-width:620px;margin:22px auto;background:#faf8f1;padding:12px}.history-layout-map svg{width:100%!important;height:auto!important;max-height:600px}.history-layout dl{margin:16px 0}.history-layout dt{font-size:16px;color:#526653}.history-layout dd{margin:0 0 12px;white-space:pre-wrap}.history-layout-beds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;padding:0;list-style:none;margin:16px 0}.history-layout-beds li{padding:8px 12px;background:#f2f5ed}.history-layout-beds strong{display:block}
+  .history-layout{background:#fff;border:1px solid #bdcbbb;border-radius:8px;margin-bottom:20px;padding:20px}.history-layout>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:20px;min-height:72px}.history-layout>summary::-webkit-details-marker{display:none}.history-layout>summary strong,.history-layout>summary span{display:block}.history-layout>summary .layout-link{margin-top:6px;text-decoration:underline;text-underline-offset:4px}.history-thumb{flex:0 0 100px;max-width:30%}.history-thumb svg{width:100%!important;height:auto!important;max-height:110px}.history-layout-map{max-width:620px;margin:22px auto;background:#faf8f1;padding:12px}.history-layout-map svg{width:100%!important;height:auto!important;max-height:600px}.history-layout dl{margin:16px 0}.history-layout dt{font-size:16px;color:#526653}.history-layout dd{margin:0 0 12px;white-space:pre-wrap}.history-layout-beds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;padding:0;list-style:none;margin:16px 0}.history-layout-beds li{padding:8px 12px;background:#f2f5ed}.history-layout-beds strong{display:block}
   .history-view.is-small .history-bed{padding:16px}.history-view.is-small .history-record summary{grid-template-columns:minmax(0,1fr) 20px;gap:4px 8px}.history-view.is-small .history-record time{grid-column:1}.history-view.is-small .history-record summary>div{grid-column:1}.history-view.is-small .history-record summary:after{grid-column:2;grid-row:1 / span 2}.history-view.is-small .history-record-body{padding-left:0}.history-view.is-small .history-layout{padding:14px}.history-view.is-small .history-layout>summary{gap:12px;align-items:flex-start}.history-view.is-small .history-thumb{flex-basis:66px}.history-view.is-small .history-nav{gap:6px}.history-view.is-small .history-intro{padding:14px}.history-view.is-small .history-bed h2{gap:8px;font-size:20px}
 `}</style>;}
+function HistoryChartEvent({entry:e,start,count}){
+  const row=useRef(null),label=useRef(null),[left,setLeft]=useState(8),t=DIARY_LABELS;
+  const category=e.kind.startsWith('green')?'green':e.kind;
+  const color={plant:'#b5d7ae',fertilizer:'#efd18d',green:'#efd18d',harvest:'#efb4a8',end:'#d0d0cb',note:'#bcd4e4'}[category]||'#bcd4e4';
+  const point=(e.month-start+(e.day?(e.day-.5)/new Date(e.year,e.month,0).getDate():.5))/count*100;
+  // Fit real text inside the row. Never move the recorded date, shrink the font or truncate a name.
+  React.useLayoutEffect(()=>{
+    function measure(){if(!row.current||!label.current)return;const width=row.current.clientWidth,textWidth=label.current.offsetWidth;setLeft(Math.max(8,Math.min(width*point/100+8,width-textWidth-8)));}
+    measure();const observer=new ResizeObserver(measure);observer.observe(row.current);observer.observe(label.current);return()=>observer.disconnect();
+  },[point,e.name,e.kind,e.month,e.day]);
+  return <div ref={row} className="history-chart-row" data-chart-entry={e.id} style={{'--point':point+'%','--label-left':left+'px','--underline':color}}>
+    <span ref={label} className="event-label"><span className="event-date">{cropDate(null,e.month,e.day)}</span>{' · '}{e.name&&<><strong>{e.name}</strong>{' · '}</>}{t.verbs[category]||t.record}</span><i className="event-mark"/>
+  </div>;
+}
 function HistoryCalendar({entries,small}){
   const parts=small?[[1,6],[7,12]]:[[1,12]], lang=document.documentElement.lang||'ja';
   return <div aria-hidden="true">{parts.map(([start,end])=>{
     const dated=entries.filter(e=>e.month>=start&&e.month<=end),n=end-start+1;
     return <div className="history-calendar" key={start} style={{'--months':n}}>
-      <div className="history-months">{Array.from({length:n},(_,i)=><span key={i} title={new Intl.DateTimeFormat(lang,{month:'long'}).format(new Date(2024,start+i-1,1))}>{start+i}</span>)}</div>
-      {dated.map(e=>{const point=(e.month-start+(e.day?(e.day-.5)/new Date(e.year,e.month,0).getDate():.5))/n*100;return <div className="history-chart-row" key={e.source+':'+e.id} style={{'--point':point+'%','--label':(point>50?point-52:Math.max(point-2,0))+'%','--color':historyEventColor(e)}}><span className="event-label" style={{width:"52%",textAlign:point>50?"right":"left"}}>{e.name?e.name+" · "+(WORK_TYPES[e.kind]||DIARY_LABELS.note):historyEventTitle(e)}</span><i className="event-mark"/></div>;})}
+      <div className="history-months">{Array.from({length:n},(_,i)=><span key={i} title={new Intl.DateTimeFormat(lang,{month:'long'}).format(new Date(2024,start+i-1,1))}>{small?start+i:new Intl.DateTimeFormat(lang,{month:'short'}).format(new Date(2024,start+i-1,1))}</span>)}</div>
+      {dated.map(e=><HistoryChartEvent key={e.source+':'+e.id} entry={e} start={start} count={n}/>)}
     </div>;
   })}</div>;
 }
@@ -2654,6 +2666,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   function closeSheet(){ setSelRid(null); setTab("plant"); }
 
   function saveSnapshot(note) {
+    if(hasSavedLayout){if(saveError)setSnapshots(prev=>({...prev}));return;}
     const snap = {
       id: "snap_"+Date.now(),
       ts: Date.now(),
@@ -2667,14 +2680,13 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       const fd = prev[fid] || [];
       return Object.assign({}, prev, {[fid]: [snap].concat(fd)});
     });
-    showToast(HISTORY_LABELS.savedNotice);
+    showToast(HISTORY_LABELS.savedNotice,function(){});
   }
 
-  /* 最新スナップと現在の状態が同じかどうか判定 */
-  const isSameAsLastSnap = (function(){
+  /* 保存済みの図と現在の状態が同じかどうか判定 */
+  const hasSavedLayout = (function(){
     var snaps = snapshots[fid] || [];
-    if (snaps.length === 0) return false;
-    var last = snaps[0];
+    return snaps.some(function(last){
     if (Number(last.year) !== Number(year)) return false;
     if (!last.farm || last.farm.name !== farm.name) return false;
     if(!last.farm||JSON.stringify(FARM_GEOMETRY.map(k=>last.farm[k]))!==JSON.stringify(FARM_GEOMETRY.map(k=>farm[k])))return false;
@@ -2691,6 +2703,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     /* Include notes and past crops; a changed record must be retainable too. */
     function stable(value){if(Array.isArray(value))return value.map(stable);if(value&&typeof value==="object")return Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])]));return value;}
     return JSON.stringify(stable(farmPlant))===JSON.stringify(stable(last.plantings||{}));
+    });
   })();
 
   function delSnapshot(sid) {
@@ -2716,7 +2729,8 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   };
 
   /* ── ボトムバーの高さ（畝モード時は高くなる） ── */
-  var bottomBarH = 80;
+  const bottomBarRef=useRef(null),[bottomBarH,setBottomBarH]=useState(80);
+  useEffect(()=>{const el=bottomBarRef.current;if(!el)return;const measure=()=>setBottomBarH(el.offsetHeight);measure();const ro=new ResizeObserver(measure);ro.observe(el);return()=>ro.disconnect();},[]);
 
   return (
     <div className={"notebook-page ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
@@ -2933,10 +2947,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
               );
             })()}
 
-            <div className="layout-keeper" onClick={e=>e.stopPropagation()}>
-              <button onClick={()=>saveSnapshot()} disabled={isSameAsLastSnap}>{isSameAsLastSnap?HISTORY_LABELS.saved:year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}</button>
-              <p>{HISTORY_LABELS.saveHelp}</p>
-            </div>
+
 
             {/* 畝が0のヒント */}
             {ridgeCount===0 && !s1 && (
@@ -3005,7 +3016,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       </div>
 
       </div>
-      <div className="ledger-bottom" onClick={e=>e.stopPropagation()}>
+      <div ref={bottomBarRef} className="ledger-bottom" onClick={e=>e.stopPropagation()}>
         {toast && !showRidgePicker && !workDraft && !editFarm && !editBed && !selRid && <div className="action-notice">
           <span role="status">{saveError&&toast.undo?"この端末に保存できていません。バックアップで記録を残してください。":toast.msg}</span>
           <button aria-label="通知を閉じる" onClick={()=>setToast(null)}>×</button>
@@ -3017,6 +3028,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           {mainTab==="map"&&ridgeCount===0&&<button className="journal-primary" onClick={openRidgePicker}>＋ 畝を作る</button>}
           <button className={mainTab==="map"&&ridgeCount===0?"":"journal-primary"} onClick={()=>openWork(null)}>＋ 作業を記録</button>
           {mainTab==="map"&&<button onClick={()=>{closeSheet();setEditMode(true);}}>畑を編集</button>}
+          {mainTab==="map"&&(!hasSavedLayout||saveError)&&<button className="layout-save-button" onClick={()=>{saveSnapshot();requestAnimationFrame(()=>{const first=bottomBarRef.current&&bottomBarRef.current.querySelector(".journal-toolbar button");if(first)first.focus({preventScroll:true});});}}>{year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}</button>}
           </>}
         </div>
       </div>
@@ -3195,7 +3207,7 @@ const FAQ_DATA = [
         "q": "入力した記録は、そのまま閉じても残りますか？",
         "a": [
           "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。「保存しました（この端末）」を確認できれば、そのまま閉じて大丈夫です。入力途中の内容はまだ保存されていません。",
-          "「畑のようす」の「この配置を取っておく」を押すと、あとで配置を変えても、その図を見返せます。通常の保存のために押す必要はありません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。",
+          "「畑のようす」の画面下にある「配置図を保存」を押すと、あとで配置を変えても、その図を見返せます。通常の保存のために押す必要はありません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。",
           "「これまでの記録」では、年を選ぶと畝ごとの記録が表示されます。下線は記録した時期を表し、記録を押すと詳しい内容を確認できます。畑全体への施肥やメモは各畝に表示し、量は全体の合計として扱います。",
           "作付け・作業・畑の図は同じ端末内に保存されます。端末の故障や機種変更に備え、「バックアップ」で控えも残しておくと安心です。"
         ]
