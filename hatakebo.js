@@ -3173,10 +3173,11 @@ const FAQ_DATA = [
       {
         "q": "畑の図を紙に印刷して持っていきたいです",
         "a": [
-          "「メニュー」→「印刷する」で畑の図と作付け一覧を確認し、プレビュー下部の「印刷する」を押してください。「これまでの記録」に残した配置も印刷できます。",
-          "畑の図は、縦横の比率を保って用紙に収まる大きさに調整します。横には畑の寸法・面積・畝や区画の数を載せます。面積は登録した形から計算し、使わないマスは含みません。野菜の名前などは、図の下の畝一覧でも確認できます。",
-          "ブラウザの印刷画面で保存先に「PDF」が選べる場合は、紙に印刷せずファイルとして残せます。畝が多い場合は、一覧が次のページに続きます。",
-          "印刷用のページが開かないときは、このサイトのポップアップを許可してお試しください。アプリ内で開いている場合は、普段お使いのChromeやEdgeなどから開く方法もあります。"
+          "「メニュー」→「印刷する」を開きます。畑の名前・年・図を確認して、下の「印刷する」を押してください。",
+          "A4横向きの、図と一覧を見比べやすいレイアウトで印刷できます。加筆に使える薄い5mm方眼付きです。カラー・白黒はプリンターの設定で選べます。タイトルやmemoは添えたいときだけ。畑の記録そのものは変わりません。",
+          "印刷するのは選んだ年の畑の図と作付け一覧です。作業の履歴や肥料の記録は含みません。図の番号と一覧を見比べて使えます。畑の寸法・面積も載り、畝が多い場合は一覧が次のページへ続きます。",
+          "「これまでの記録」に保存した配置も印刷できます。保存時の作付けを使い、現在の連作判定は混ぜません。古い記録に畑の形が残っていない場合は、その年の形を使用し、印刷物に説明を添えます。",
+          "ブラウザの印刷画面でPDF保存が選べれば、紙の代わりにPDFでも残せます。用紙の向きと改ページを確認してください。画面が開かないときはポップアップを許可し、開いたページの「印刷する」やブラウザの印刷メニューをお試しください。印刷・PDFは閲覧用で、アプリに戻すバックアップとは別です。"
         ]
       },
       {
@@ -3617,372 +3618,147 @@ function printFieldInfo(farm) {
   return {width:format(farm.cols*metres),height:format(farm.rows*metres),area:format(cells*metres*metres)};
 }
 
-function PrintModal({ farm, year, farms, plantings, ridges, soil, snapOverride, onClose }) {
-  const [selYear, setSelYear] = useState(snapOverride ? snapOverride.year : year);
+/* One local document is shared by the embedded preview and browser printing. */
+const PRINT_LABELS = {
+  scope:"畑の図と、選んだ年の作付け一覧を印刷します。作業の履歴や肥料の記録は含みません。",
+  options:"タイトル・memoを添える（任意）", title:"印刷のタイトル", memo:"memo", year:"印刷する年",
+  dimensions:"幅 × 奥行き", details:"畑の情報", area:"畑の面積", beds:"畝・区画の数",
+  numbers:"図の番号と、一覧の番号が対応しています。",
+  number:"番号", bed:"畝名", crop:"作物", family:"科", date:"植付日", rotation:"連作", list:"畝一覧",
+  handwriting:"書き込み欄", empty:"まだ畝がありません。図を印刷して、これからの配置を書き込めます。",
+  snapshot:"保存した配置", snapshotNote:"保存当時の配置です。連作判定は再計算せず「—」で表示します。",
+  legacyNote:"この古い記録には畑の形が保存されていないため、図にはその年の畑の形を使用しています。",
+  preview:"印刷プレビュー", previewNote:"用紙はA4横向きです。改ページはブラウザの印刷画面で確認できます。",
+  open:"大きく見る", print:" 印刷する", close:"とじる", popup:"印刷用のウィンドウを開けませんでした。このサイトのポップアップを許可して、もう一度お試しください。アプリ内ブラウザで開いている場合は、ChromeやEdgeなど通常のブラウザでお試しください。",
+  fallback:"印刷画面が開かない場合は、このページの「印刷する」か、ブラウザの印刷メニューをお使いください。",
+  unknown:"判定対象外", danger:"同じ科が連続", caution:"前年と同じ科", created:"印刷日", saved:"記録日"
+};
 
-  /* snapOverride があれば固定、なければ年選択 */
-  var isSnap = !!snapOverride;
-  farm=isSnap&&snapOverride.farm?snapOverride.farm:geometryAt(farms.find(f=>f.id===farm.id)||farm,selYear);
-  var activeRidges = isSnap ? (snapOverride.ridges || {}) : bedsAt(ridges[farm.id],selYear);
-  var activePlantings = isSnap ? (snapOverride.plantings || {}) : ((plantings[farm.id] && plantings[farm.id][selYear]) || {});
-  var activeYear = isSnap ? snapOverride.year : selYear;
-
-  /* スナップの記録日表示用 */
-  var snapDateStr = "";
-  if (isSnap) {
-    var sd = new Date(snapOverride.ts);
-    snapDateStr = cropDate(sd.getFullYear(),sd.getMonth()+1,sd.getDate());
+function printMapSVG(farm, beds, width, height) {
+  const e=escapePrint, pad=32, scale=Math.min((width-pad*2)/farm.cols,(height-pad*2)/farm.rows);
+  const ox=(width-farm.cols*scale)/2, oy=(height-farm.rows*scale)/2;
+  const ground="#eee4d4", soil="#c7a279";
+  let p=['<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+e(farm.name)+'" viewBox="0 0 '+width+' '+height+'" width="'+width+'" height="'+height+'"><rect width="100%" height="100%" fill="white"/>'];
+  const line=(x1,y1,x2,y2)=>'<path d="M'+x1+' '+y1+'L'+x2+' '+y2+'" stroke="#353c36" stroke-width="1.2"/>';
+  farm.grid.forEach((row,r)=>row.forEach((active,c)=>{
+    if(!active)return;
+    const x=ox+c*scale,y=oy+r*scale;
+    p.push('<rect x="'+x+'" y="'+y+'" width="'+(scale+.15)+'" height="'+(scale+.15)+'" fill="'+ground+'"/>');
+  }));
+  farm.grid.forEach((row,r)=>row.forEach((active,c)=>{
+    if(!active)return;const x=ox+c*scale,y=oy+r*scale;
+    if(!farm.grid[r-1]||!farm.grid[r-1][c])p.push(line(x,y,x+scale,y));
+    if(!farm.grid[r+1]||!farm.grid[r+1][c])p.push(line(x,y+scale,x+scale,y+scale));
+    if(!row[c-1])p.push(line(x,y,x,y+scale));
+    if(!row[c+1])p.push(line(x+scale,y,x+scale,y+scale));
+  }));
+  beds.forEach(b=>{
+    const rw=b.ridgeW||RWIDTH, w=(b.orientation==="H"?b.gl:rw)*scale, h=(b.orientation==="H"?rw:b.gl)*scale;
+    p.push('<rect x="'+(ox+b.gx*scale-w/2)+'" y="'+(oy+b.gy*scale-h/2)+'" width="'+w+'" height="'+h+'" rx="2" fill="'+soil+'" stroke="#484439" stroke-width="1"/>');
+  });
+  /* Readable numbers, with leader lines when adjacent labels need room. */
+  const placed=[];
+  function placeLabel(cx,cy,label){
+    const bw=Math.max(25,String(label).length*10+10),bh=25;
+    let x=cx,y=cy;
+    const candidates=[[0,0]];
+    for(let d=29;d<=174;d+=29)for(let j=0;j<16;j++)candidates.push([Math.cos(j*Math.PI/8)*d,Math.sin(j*Math.PI/8)*d]);
+    const remaining=[];for(let ty=16;ty<height-16;ty+=29)for(let tx=bw/2+3;tx<width-bw/2-3;tx+=bw+5)remaining.push([tx-cx,ty-cy]);
+    remaining.sort((a,b)=>a[0]*a[0]+a[1]*a[1]-b[0]*b[0]-b[1]*b[1]);candidates.push(...remaining);
+    for(const [dx,dy]of candidates){const tx=cx+dx,ty=cy+dy;if(tx-bw/2<2||tx+bw/2>width-2||ty-bh/2<2||ty+bh/2>height-2)continue;if(placed.every(a=>Math.abs(a.x-tx)>(a.w+bw)/2+2||Math.abs(a.y-ty)>bh+2)){x=tx;y=ty;break;}}
+    placed.push({x,y,w:bw});
+    if(x!==cx||y!==cy)p.push(line(cx,cy,x,y),'<circle cx="'+cx+'" cy="'+cy+'" r="2" fill="#252b27"/>');
+    return {x,y,bw,bh};
   }
+  beds.forEach((b,i)=>{
+    const {x,y,bw,bh}=placeLabel(ox+b.gx*scale,oy+b.gy*scale,i+1);
+    p.push('<g class="bed-number" data-bed-number="'+(i+1)+'"><rect x="'+(x-bw/2)+'" y="'+(y-bh/2)+'" width="'+bw+'" height="'+bh+'" rx="5" fill="white" stroke="#303b32"/><text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="700" fill="#17231b">'+(i+1)+'</text></g>');
+  });
+  /* Landmarks use stable letter keys; their full user names remain in the legend. */
+  Object.entries(farm.landmarks||{}).forEach(([key,item],i)=>{
+    const a=key.split('-'), n=Number(a[1]),v=Number(a[2]);let x,y;
+    if(a[0]==="top"){x=ox+(n+.5)*scale;y=oy-16;}
+    else if(a[0]==="bot"){x=ox+(n+.5)*scale;y=oy+farm.rows*scale+16;}
+    else if(a[0]==="lft"){x=ox-16;y=oy+(n+.5)*scale;}
+    else if(a[0]==="rgt"){x=ox+farm.cols*scale+16;y=oy+(n+.5)*scale;}
+    else if(a[0]==="inner"){x=ox+(v+.5)*scale;y=oy+(n+.5)*scale;}else return;
+    const letter=String.fromCharCode(65+i%26)+(i>=26?Math.floor(i/26):''),point=placeLabel(x,y,letter);
+    p.push('<g class="landmark-key"><rect x="'+(point.x-point.bw/2)+'" y="'+(point.y-point.bh/2)+'" width="'+point.bw+'" height="'+point.bh+'" fill="white" stroke="#596359" stroke-dasharray="2 2"/><text x="'+point.x+'" y="'+(point.y+5)+'" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="16" fill="#303b32">'+letter+'</text></g>');
+  });
+  return p.join('')+'</svg>';
+}
 
-  const allYears = (function(){
-    const ys = new Set();
-    farms.forEach(function(f){
-      const fd = plantings[f.id] || {};
-      Object.keys(fd).forEach(function(y){ ys.add(parseInt(y)); });
-    });
-    ys.add(year);
-    return Array.from(ys).sort(function(a,b){ return b-a; });
-  })();
+function printDocument(model, title, memo) {
+  const t=PRINT_LABELS,e=escapePrint,farm=model.farm,beds=Object.values(model.ridges),info=printFieldInfo(farm),wide=true;
+  const compact=wide&&beds.length<=6&&beds.every(b=>String(b.name).length<80&&String((model.plantings[b.id]||{}).note||'').length<160);
+  const dense=beds.length>12;
+  const lang=document.documentElement.lang||"ja",width=compact?520:wide?790:650,height=dense?500:compact?380:wide?235:240;
+  const imageDefs=new Map();
+  function icon(id){return vegetableMarkup(id,28).replace(/<image href="([^"]+)" width="([^"]+)" height="([^"]+)"\/>/g,function(_,src,w,h){if(!imageDefs.has(src))imageDefs.set(src,{id:"print-image-"+imageDefs.size,w,h});const ref=imageDefs.get(src);return '<use href="#'+ref.id+'"/>';});}
+  const head='<tr>'+[t.number,t.bed,t.crop,t.date,t.rotation].map((s,i)=>'<th scope="col"'+(i===0?' class="number"':'')+'>'+e(s)+'</th>').join('')+'</tr>';
+  const rows=beds.map((b,i)=>{
+    const pl=model.plantings[b.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
+    const warn=model.snapshot?null:checkRot(farm.id,b.id,model.year,model.history,model.soil,model.ridges);
+    const warning=model.snapshot?"—":vg&&vg.custom?t.unknown:warn==="danger"?t.danger:warn==="caution"?t.caution:"—";
+    const crop=vg?icon(vg.id)+'<span>'+e(vg.name)+'<small>'+e(vg.family||'')+'</small>'+(pl&&pl.note?'<small class="crop-note">'+e(pl.note)+'</small>':'')+'</span>':vid?e(vid):'—';
+    return '<tr class="bed-row" data-bed="'+e(b.id)+'"><td class="number">'+(i+1)+'</td><td>'+e(b.name)+'</td><td><div class="crop">'+crop+'</div></td><td>'+e(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td><td>'+e(warning)+'</td></tr>';
+  }).join('');
+  const landmarkLegend=Object.entries(farm.landmarks||{}).map(([k,item],i)=>'<li><b>'+String.fromCharCode(65+i%26)+(i>=26?Math.floor(i/26):'')+'</b> '+e(item.memo||item.label||'')+'</li>').join('');
+  const stats='<aside class="field-info"><h2>'+e(t.details)+'</h2><dl><div><dt>'+e(t.dimensions)+'</dt><dd>'+info.width+' m × '+info.height+' m</dd></div><div><dt>'+e(t.area)+'</dt><dd>'+info.area+' m²</dd></div><div><dt>'+e(t.beds)+'</dt><dd>'+beds.length+'</dd></div></dl></aside>';
+  const safeTitle=(title.trim()||farm.name),recordDate=model.snapshot?new Date(model.snapshot.ts):new Date();
+  const stamp=(model.snapshot?t.saved:t.created)+' · '+recordDate.toLocaleDateString('ja-JP');
+  return '<!doctype html><html lang="'+e(lang)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' — Hatakebo</title><style>'+`
+    *{box-sizing:border-box}html,body{margin:0;padding:0}body{font:11pt/1.4 Arial,"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;color:#26382e;background:#e9ece8}h1,h2,p,dl,dd,figure{margin:0}button{font:inherit;cursor:pointer}h1{font-size:25pt;line-height:1.3;font-weight:600;overflow-wrap:anywhere;white-space:pre-wrap}h2{font-size:12pt;font-weight:700}small{display:block;font-size:10pt;color:#4c564e}.sheet{width:${wide?'297':'210'}mm;min-height:${wide?'210':'297'}mm;padding:${wide?'12mm':'18mm 16mm 18mm 28mm'};margin:0 auto;background:white}.toolbar{padding:12px;position:sticky;top:0;background:white;border-bottom:1px solid #748477;z-index:1;max-width:100%;overflow-wrap:anywhere}.toolbar button{padding:10px 24px;background:#263f31;color:white;border:0;border-radius:4px}.toolbar p{font-size:14px;margin-top:8px}.eyebrow{display:flex;justify-content:space-between;gap:12px;font-size:10pt;letter-spacing:.03em;margin-bottom:8px}.document-header{border-bottom:2px solid #506551;padding-bottom:14px;margin-bottom:12px}.subtitle{margin-top:8px;overflow-wrap:anywhere;white-space:pre-wrap}.field-area{display:${wide?'grid':'block'};${wide?'grid-template-columns:minmax(0,3.4fr) minmax(0,1fr);gap:7mm;':''}break-inside:avoid;margin-bottom:16px}.map svg{display:block;width:100%;height:auto}.north{font-size:10pt;margin-bottom:4px}.field-info h2{margin-bottom:6px}.field-info dl{display:${wide?'block':'flex'};gap:20px;flex-wrap:wrap}.field-info dl>div{margin-bottom:8px}dt{font-size:10pt;color:#4c564e}dd{font-size:13pt;font-weight:600}.field-info{${wide?'padding-top:24px;':'border-bottom:1px solid #89958a;padding:10px 0 4px;margin-bottom:12px;'}}.legend{padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px 18px;margin:6px 0 10px;font-size:10pt}.legend li{overflow-wrap:anywhere;max-width:100%}.legend b{border:1px solid #687669;padding:0 4px}.notes{font-size:10pt;color:#4c564e;margin-bottom:18px}.notes p+p{margin-top:3px}.section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid #506551;padding:0 0 7px;margin-bottom:4px;break-after:avoid}.section-heading p{font-size:10pt}.crop{display:flex;align-items:center;gap:7px}.crop>svg{flex:0 0 28px}.crop span{min-width:0}.crop-note{white-space:pre-wrap}.crop small{margin-top:2px}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:11pt}thead{display:table-header-group}th{font-size:10pt;text-align:left;border-bottom:1.5px solid #516452;padding:8px 6px}td{padding:7px 6px;border-bottom:1px solid #b4bcb4;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}tr{break-inside:avoid}th.number,td.number{width:10%;font-weight:bold;text-align:center}th:nth-child(2){width:21%}th:nth-child(3){width:31%}th:nth-child(4){width:18%}th:nth-child(5){width:20%}.memo{margin-top:14px;border-top:1.5px solid #516452;padding:12px 0;break-inside:avoid}.memo p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}.writing-row td{padding:1px 6px 10px;font-size:10pt;color:#4c564e}.writing-line{height:6mm;border-bottom:1px solid #919b91}footer{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #919b91;margin-top:20px;padding-top:8px;font-size:9pt;color:#4c564e;overflow-wrap:anywhere;break-inside:avoid}.empty{padding:16px 0}.screen-hidden{display:none}.compact .overview{float:left;width:46%;padding-right:4mm}.compact .field-area{display:block}.compact .field-info{padding-top:6px}.compact .field-info dl{display:flex;gap:16px}.compact footer{clear:both}.compact .section-heading{display:flex;align-items:baseline;gap:12px}.section-heading h2{flex-shrink:0}.compact .section-heading p{margin:0;text-align:right}.compact .notes{font-size:10pt}
 
-  const fid = farm.id;
-  const ridgeList = Object.values(activeRidges);
-  const yp = activePlantings;
-  const fieldInfo = printFieldInfo(farm);
+    .sheet{position:relative;isolation:isolate}.paper-grid{position:absolute;top:${wide?'12mm':'18mm'};left:${wide?'12mm':'28mm'};width:calc(100% - ${wide?'24mm':'44mm'});height:calc(100% - ${wide?'24mm':'36mm'});z-index:-1;pointer-events:none}
+    .document-header,.field-info,.section-heading,.bed-row,thead,footer{background:white}
+    .compact .records{margin-left:50%}
+    .notes:empty{display:none}.memo h2{display:table;background:white;padding-right:4mm}.memo p{background:white;padding:2mm 0}.legend li,.notes p{background:white}
+    @page{size:A4 ${wide?'landscape':'portrait'};margin:12mm}
+    @media print{html,body{background:white}.toolbar{display:none!important}.sheet{width:auto;min-height:0;padding:0;margin:0}.paper-grid{position:fixed;inset:0;width:100%;height:100%;z-index:-1}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.document-header{break-inside:avoid}a{color:inherit;text-decoration:none}footer{margin-top:3px;padding-top:2px;font-size:8.5pt;line-height:1.2;break-before:avoid}}
+  `+'</style></head><body>'+('<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+Array.from(imageDefs.entries()).map(([src,a])=>'<image id="'+a.id+'" href="'+src+'" width="'+a.w+'" height="'+a.h+'"/>').join('')+'</defs></svg>')+'<div class="toolbar screen-hidden"><button type="button" id="print-again">'+e(t.print.trim())+'</button><p>'+e(t.fallback)+'</p></div><main class="sheet '+'practical'+(compact?' compact':'')+(dense?' dense':'')+'"><svg class="paper-grid" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><pattern id="paper-squares" width="5mm" height="5mm" patternUnits="userSpaceOnUse"><path d="M18.89764 0H0V18.89764" fill="none" stroke="#d9ded5" stroke-width="0.6"/></pattern></defs><rect width="100%" height="100%" fill="url(#paper-squares)"/></svg><header class="document-header"><div class="eyebrow"><span>'+model.year+'</span></div><h1>'+e(safeTitle)+'</h1>'+(safeTitle!==farm.name?'<p class="subtitle">'+e(farm.name)+'</p>':'')+'</header><div class="overview"><section class="field-area"><figure><div class="map">'+printMapSVG(farm,beds,width,height)+'</div></figure>'+stats+'</section>'+(landmarkLegend?'<ul class="legend">'+landmarkLegend+'</ul>':'')+'<div class="notes">'+(model.snapshot?'<p>'+e(t.snapshotNote)+'</p>':'')+(model.snapshot&&!model.snapshot.farm?'<p>'+e(t.legacyNote)+'</p>':'')+'</div></div><div class="records">'+(beds.length?'<section><div class="section-heading"><h2>'+e(t.list)+'</h2><p>'+e(t.numbers)+'</p></div><table><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></section>':'<p class="empty">'+e(t.empty)+'</p>')+(memo.trim()?'<section class="memo"><h2>'+e(t.memo)+'</h2><p>'+e(memo.trim())+'</p></section>':'')+'</div><footer><span>Hatakebo</span><span>'+e(stamp)+'</span></footer></main></body></html>';
+}
 
-  /* SVGフィールドを文字列で組み立て（印刷用） */
-  function buildSVG() {
-    var CS2 = 54; /* 印刷用グリッドサイズ（px） */
-    /* RW2 は per-ridge で計算 */
-    var lm = farm.landmarks || {};
-    var PAD = 42;
-    var padT=0, padB=0, padL=0, padR=0;
-    for (var c=0; c<farm.cols; c++) { if(lm["top-"+c]){padT=PAD;break;} }
-    for (var c=0; c<farm.cols; c++) { if(lm["bot-"+c]){padB=PAD;break;} }
-    for (var r=0; r<farm.rows; r++) { if(lm["lft-"+r]){padL=PAD;break;} }
-    for (var r=0; r<farm.rows; r++) { if(lm["rgt-"+r]){padR=PAD;break;} }
-    var W = farm.cols * CS2, H = farm.rows * CS2;
-    var SVG_W = padL + W + padR, SVG_H = padT + H + padB;
+function PrintDocumentPreview({html,wide}) {
+  const frame=useRef(null),host=useRef(null),[box,setBox]=useState({scale:1,height:500});
+  const width=(wide?297:210)*96/25.4;
+  function measure(){if(!host.current||!frame.current||!frame.current.contentDocument)return;const scale=Math.min(1,host.current.clientWidth/width),sheet=frame.current.contentDocument.querySelector('.sheet');if(sheet)setBox({scale,height:Math.ceil(sheet.scrollHeight*scale)+2});}
+  useEffect(()=>{const ro=new ResizeObserver(measure);if(host.current)ro.observe(host.current);return()=>ro.disconnect();},[width,html]);
+  return <div ref={host} style={{width:"100%",overflow:"hidden",height:box.height,background:"white",border:"1px solid #abb7ac"}}><iframe ref={frame} title={PRINT_LABELS.preview} srcDoc={html} sandbox="allow-same-origin" onLoad={measure} style={{display:"block",border:0,width:width,height:Math.max(1200,box.height/box.scale),transform:"scale("+box.scale+")",transformOrigin:"top left",pointerEvents:"none"}} tabIndex={-1}/></div>;
+}
 
-    var parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+SVG_W+' '+SVG_H+'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">'];
-    /* 背景 */
-    parts.push('<rect width="'+SVG_W+'" height="'+SVG_H+'" fill="#f2edd8"/>');
-    /* 土 */
-    parts.push('<rect x="'+padL+'" y="'+padT+'" width="'+W+'" height="'+H+'" fill="#e9dcc7"/>');
-    /* 非活性マスク */
-    farm.grid.forEach(function(row,r){
-      row.forEach(function(active,c){
-        if(!active) parts.push('<rect x="'+(padL+c*CS2)+'" y="'+(padT+r*CS2)+'" width="'+CS2+'" height="'+CS2+'" fill="#f2edd8" opacity="0.9"/>');
-      });
-    });
-    /* 非活性区画の目印（inner-r-c） */
-    farm.grid.forEach(function(row,r){
-      row.forEach(function(active,c){
-        if(active) return;
-        var it = lm["inner-"+r+"-"+c];
-        if(!it) return;
-        var cx2=padL+c*CS2+CS2/2, cy2=padT+r*CS2+CS2/2;
-        var fs=Math.min(CS2*0.52,24);
-        parts.push(landmarkMarkup(it,fs,cx2,cy2));
-        parts.push('<text x="'+cx2+'" y="'+(cy2+fs*0.62)+'" text-anchor="middle" font-size="'+Math.min(CS2*0.18,8)+'" fill="#8a7a60" font-family="serif">'+(it.memo||it.label)+'</text>');
-      });
-    });
-    /* 外周境界線 */
-    farm.grid.forEach(function(row,r){
-      row.forEach(function(active,c){
-        if(!active) return;
-        var x1=padL+c*CS2, y1=padT+r*CS2, x2=padL+(c+1)*CS2, y2=padT+(r+1)*CS2;
-        if(r===0||!farm.grid[r-1][c])                           parts.push('<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y1+'" stroke="#1c1408" stroke-width="1.5"/>');
-        if(r===farm.rows-1||!farm.grid[r+1]||!farm.grid[r+1][c]) parts.push('<line x1="'+x1+'" y1="'+y2+'" x2="'+x2+'" y2="'+y2+'" stroke="#1c1408" stroke-width="1.5"/>');
-        if(c===0||!farm.grid[r][c-1])                           parts.push('<line x1="'+x1+'" y1="'+y1+'" x2="'+x1+'" y2="'+y2+'" stroke="#1c1408" stroke-width="1.5"/>');
-        if(c===farm.cols-1||!farm.grid[r][c+1])                 parts.push('<line x1="'+x2+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#1c1408" stroke-width="1.5"/>');
-      });
-    });
-    /* 畝 */
-    ridgeList.forEach(function(ridge){
-      var pl = yp[ridge.id], vid = extractVid(pl), vg = vid?VM[vid]:null;
-      var rr;
-      var RW2=ridge.ridgeW||RWIDTH;
-      if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2, y:padT+(ridge.gy-RW2/2)*CS2, w:ridge.gl*CS2, h:RW2*CS2};
-      else rr={x:padL+(ridge.gx-RW2/2)*CS2, y:padT+(ridge.gy-ridge.gl/2)*CS2, w:RW2*CS2, h:ridge.gl*CS2};
-      var cx=rr.x+rr.w/2, cy=rr.y+rr.h/2;
-      var sz=Math.min(rr.w,rr.h);
-      parts.push('<rect x="'+rr.x+'" y="'+rr.y+'" width="'+rr.w+'" height="'+rr.h+'" fill="#cda77d" stroke="#1c1408" stroke-width="1" rx="2"/>');
-      if(vg) {
-        var nameFontSize = Math.min(sz*0.28, 9);
-        var nameText = mapCropName(vg.name,rr.w-4,nameFontSize);
-        /* 野菜名：中央に白背景付きで黒文字。モノクロ印刷でも読みやすい */
-        var nameW = nameText.length * nameFontSize * 0.72 + 4;
-        var nameH = nameFontSize + 3;
-        parts.push('<rect x="'+(cx-nameW/2)+'" y="'+(cy-nameH/2)+'" width="'+nameW+'" height="'+nameH+'" fill="white" opacity="0.85" rx="1"/>');
-        parts.push('<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-size="'+nameFontSize+'" fill="#1c1408" font-family="serif" font-weight="bold">'+escapePrint(nameText)+'</text>');
-        /* 絵文字は小さく左上隅に添える */
-        if(sz > 22) {
-          var emFs = Math.min(sz*0.28, 11);
-          parts.push(vegetableMarkup(vg.id,Math.min(sz*0.45,22),rr.x+2,rr.y+2));
-        }
-      } else {
-        /* 野菜未設定の畝名 */
-        var ridgeNameFs = Math.min(sz*0.25, 8);
-        parts.push('<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-size="'+ridgeNameFs+'" fill="#7a6848" font-family="serif">'+ridge.name+'</text>');
-      }
-    });
-    /* 目印 */
-    var LF = Math.min(PAD*0.5, 18);
-    var LLF = Math.min(PAD*0.18, 8);
-    function lmCell(item, cx, cy) {
-      parts.push(landmarkMarkup(item,LF,cx,cy-2));
-      parts.push('<text x="'+cx+'" y="'+(cy+LF*0.6)+'" text-anchor="middle" font-size="'+LLF+'" fill="#8a7a60" font-family="serif">'+(item.memo||item.label)+'</text>');
-    }
-    if(padT>0) { for(var c=0;c<farm.cols;c++){var it=lm["top-"+c];if(it)lmCell(it,padL+c*CS2+CS2/2,padT/2);} }
-    if(padB>0) { for(var c=0;c<farm.cols;c++){var it=lm["bot-"+c];if(it)lmCell(it,padL+c*CS2+CS2/2,padT+H+padB/2);} }
-    if(padL>0) { for(var r=0;r<farm.rows;r++){var it=lm["lft-"+r];if(it)lmCell(it,padL/2,padT+r*CS2+CS2/2);} }
-    if(padR>0) { for(var r=0;r<farm.rows;r++){var it=lm["rgt-"+r];if(it)lmCell(it,padL+W+padR/2,padT+r*CS2+CS2/2);} }
-    /* 目印区切り線 */
-    if(padT>0) parts.push('<line x1="'+padL+'" y1="'+padT+'" x2="'+(padL+W)+'" y2="'+padT+'" stroke="#c8b888" stroke-width="0.8" stroke-dasharray="3 2"/>');
-    if(padB>0) parts.push('<line x1="'+padL+'" y1="'+(padT+H)+'" x2="'+(padL+W)+'" y2="'+(padT+H)+'" stroke="#c8b888" stroke-width="0.8" stroke-dasharray="3 2"/>');
-    if(padL>0) parts.push('<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(padT+H)+'" stroke="#c8b888" stroke-width="0.8" stroke-dasharray="3 2"/>');
-    if(padR>0) parts.push('<line x1="'+(padL+W)+'" y1="'+padT+'" x2="'+(padL+W)+'" y2="'+(padT+H)+'" stroke="#c8b888" stroke-width="0.8" stroke-dasharray="3 2"/>');
-
-    parts.push('</svg>');
-    return parts.join('');
+function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}) {
+  const t=PRINT_LABELS,[selYear,setSelYear]=useState(snapOverride?snapOverride.year:year),[title,setTitle]=useState(""),[memo,setMemo]=useState(snapOverride?snapOverride.note||"":""),dialog=useRef(null);
+  const source=farms.find(f=>f.id===farm.id)||farm,activeFarm=snapOverride&&snapOverride.farm?snapOverride.farm:geometryAt(source,selYear);
+  const model={farm:activeFarm,year:selYear,ridges:snapOverride?snapOverride.ridges||{}:bedsAt(ridges[farm.id],selYear),plantings:snapOverride?snapOverride.plantings||{}:(plantings[farm.id]||{})[selYear]||{},snapshot:snapOverride,history:plantings,soil};
+  const years=Array.from(new Set([year,selYear,...Object.keys(plantings[farm.id]||{}).map(Number),...Object.keys(source.versions||{}).map(Number).filter(y=>y>=1900)])).sort((a,b)=>b-a);
+  const html=printDocument(model,title,memo);
+  useEffect(()=>{const old=document.activeElement;dialog.current.focus();function keys(e){if(e.key==="Escape")onClose();if(e.key!=="Tab")return;const list=Array.from(dialog.current.querySelectorAll('button,input,select,textarea,summary')).filter(el=>el.getClientRects().length);const first=list[0],last=list[list.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===dialog.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}const el=dialog.current;el.addEventListener('keydown',keys);return()=>{el.removeEventListener('keydown',keys);if(old&&old.isConnected)old.focus();};},[]);
+  async function openPrint(autoPrint){
+    const w=window.open('','_blank','width=1120,height=800');if(!w){alert(t.popup);return;}
+    w.document.open();w.document.write(html);w.document.close();
+    w.document.querySelector('.toolbar').classList.remove('screen-hidden');
+    const print=()=>{try{w.focus();w.print();}catch(err){w.document.querySelector('.toolbar p').textContent=t.fallback;}};
+    w.document.getElementById('print-again').addEventListener('click',print);
+    /* Embedded SVG images are data URLs. Wait for decoding before invoking print. */
+    await Promise.all(Array.from(w.document.querySelectorAll('svg image')).map(el=>new Promise(resolve=>{const img=new w.Image();img.onload=img.onerror=resolve;img.src=el.getAttribute('href')||el.getAttribute('xlink:href');if(img.complete)resolve();})));
+    if(w.document.fonts)await w.document.fonts.ready;
+    if(!w.closed){w.document.documentElement.dataset.printReady='true';if(autoPrint)w.requestAnimationFrame(()=>w.requestAnimationFrame(print));}
   }
-
-  function doPrint() {
-    var svgStr = buildSVG();
-
-    /* 畝テーブルHTML */
-    var tableRows = ridgeList.map(function(ridge){
-      var pl=yp[ridge.id], vid=extractVid(pl), vg=vid?VM[vid]:null;
-      var warn = checkRot(fid, ridge.id, activeYear, plantings, soil, activeRidges);
-      var warnTd = vg&&vg.custom ? '<td>'+escapePrint("判定対象外")+'</td>' : warn==="danger" ? '<td class="wd">同じ科が連続</td>' : warn==="caution" ? '<td class="wc">前年と同じ科</td>' : '<td>—</td>';
-      return '<tr><td>'+escapePrint(ridge.name)+'</td><td>'+(vg?vegetableMarkup(vg.id,24)+' '+escapePrint(vg.name):'—')+'</td><td>'+(vg?escapePrint(vg.family):'')+'</td><td>'+(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td>'+warnTd+'</tr>';
-    }).join('');
-
-    var titleRight = isSnap
-      ? ('ハタケボ 作付け帳　　'+activeYear+'年　　これまでの記録：'+snapDateStr)
-      : ('ハタケボ 作付け帳　　'+activeYear+'年　　印刷日：'+new Date().toLocaleDateString('ja-JP'));
-
-    var w = window.open('','_blank','width=900,height=700');
-    if(!w){alert("印刷用のウィンドウを開けませんでした。このサイトのポップアップを許可して、もう一度お試しください。アプリ内ブラウザで開いている場合は、ChromeやEdgeなど通常のブラウザでお試しください。");return;}
-    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>ハタケボ — '+farm.name+'</title>');
-    w.document.write('<style>');
-    w.document.write('*{box-sizing:border-box;margin:0;padding:0;}');
-    w.document.write('body{font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;color:#1c1408;background:#fff;font-size:10pt;}');
-    w.document.write('@page{size:A4;margin:16mm 14mm;}');
-    w.document.write('.page{width:100%;max-width:178mm;margin:0 auto;}');
-    w.document.write('header{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2pt solid #1c1408;padding-bottom:8pt;margin-bottom:14pt;}');
-    w.document.write('header h1{font-size:20pt;letter-spacing:6pt;font-weight:normal;}');
-    w.document.write('header .meta{font-size:9pt;color:#7a6848;letter-spacing:1pt;}');
-    if(document.documentElement.lang!=="ja")w.document.write('header h1,header .meta,.north,th,.section-title{letter-spacing:normal!important}header h1{overflow-wrap:anywhere}');
-    w.document.write('.field-area{display:grid;grid-template-columns:minmax(0,120mm) minmax(0,1fr);align-items:start;gap:6mm;margin-bottom:14pt;break-inside:avoid;}');
-    w.document.write('.field-map{width:100%;height:120mm;min-width:0;}.field-map>svg{display:block;width:100%;height:100%;}.field-info{font-size:11pt;line-height:1.7;overflow-wrap:anywhere;}.field-info h2{font-size:12pt;margin-bottom:8pt;}.field-info dt{font-size:9pt;color:#7a6848;margin-top:8pt;}.field-info dd{margin:0;}.field-note{font-size:9pt;line-height:1.6;margin-top:12pt;color:#7a6848;}thead{display:table-header-group;}tr{break-inside:avoid;}');
-    w.document.write('.north{font-size:8pt;color:#3d4f8c;letter-spacing:2pt;margin-bottom:6pt;display:flex;align-items:center;gap:4pt;}');
-    w.document.write('.north .arrow{font-size:16pt;display:inline-block;line-height:1;}');
-    w.document.write('table{width:100%;border-collapse:collapse;font-size:9pt;}');
-    w.document.write('th{text-align:left;border-bottom:1pt solid #1c1408;padding:4pt 6pt;font-size:8pt;letter-spacing:1pt;color:#7a6848;font-weight:normal;}');
-    w.document.write('td{padding:5pt 6pt;border-bottom:0.5pt solid #c8b898;vertical-align:middle;overflow-wrap:anywhere;}table{table-layout:fixed;}');
-    w.document.write('td.wd{color:#8c2a2a;font-weight:bold;}td.wc{color:#8a5010;}');
-    w.document.write('.section-title{font-size:11pt;letter-spacing:3pt;font-weight:normal;margin:0 0 8pt;padding-bottom:4pt;border-bottom:0.5pt solid #c8b898;}');
-    w.document.write('footer{margin-top:14pt;border-top:0.5pt solid #c8b898;padding-top:5pt;font-size:7pt;color:#b09060;display:flex;justify-content:space-between;}');
-    w.document.write('</style></head><body>');
-    w.document.write('<div class="page">');
-    w.document.write('<header><h1>'+farm.name+'</h1><div class="meta">'+titleRight+'</div></header>');
-    w.document.write('<div class="north"><span class="arrow">↑</span><span>北</span></div>');
-    w.document.write('<div class="field-area">');
-    w.document.write('<div class="field-map">'+svgStr+'</div>');
-    w.document.write('<aside class="field-info"><h2>畑の情報</h2><dl><dt>幅 × 奥行き</dt><dd>'+fieldInfo.width+'m × '+fieldInfo.height+'m</dd><dt>畑の面積</dt><dd>'+fieldInfo.area+'㎡</dd><dt>畝・区画の数</dt><dd>'+ridgeList.length+'</dd></dl><p class="field-note">面積は登録した形から計算しています。使わないマスは含みません。</p><p class="field-note">図は用紙に合わせて縮尺を調整しています。</p></aside>');
-    w.document.write('</div>');
-    if(ridgeList.length > 0){
-      w.document.write('<p class="section-title">畝一覧</p>');
-      w.document.write('<table><thead><tr><th>畝名</th><th>作物</th><th>科</th><th>植付日</th><th>連作</th></tr></thead><tbody>'+tableRows+'</tbody></table>');
-    }
-    w.document.write('<footer><span>ハタケボ 畑の帳簿'+(isSnap?' — これまでの記録':'')+'</span><span>'+farm.name+'　'+activeYear+'年</span></footer>');
-    w.document.write('</div></body></html>');
-    w.document.close();
-    setTimeout(function(){
-      try { w.focus(); w.print(); }
-      catch(e) { alert("印刷画面を開けませんでした。開いた印刷用ページで、ブラウザのメニューから「印刷」を選んでください。"); }
-    }, 400);
-  }
-
-  /* プレビュー用SVG（React版） */
-  function PreviewField() {
-    var CS2 = 48;
-    /* RW2 は per-ridge で計算 */
-    var lm = farm.landmarks || {};
-    var PAD = 36;
-    var padT=0, padB=0, padL=0, padR=0;
-    for (var c=0; c<farm.cols; c++) { if(lm["top-"+c]){padT=PAD;break;} }
-    for (var c=0; c<farm.cols; c++) { if(lm["bot-"+c]){padB=PAD;break;} }
-    for (var r=0; r<farm.rows; r++) { if(lm["lft-"+r]){padL=PAD;break;} }
-    for (var r=0; r<farm.rows; r++) { if(lm["rgt-"+r]){padR=PAD;break;} }
-    var W = farm.cols*CS2, H = farm.rows*CS2;
-    var SVG_W = padL+W+padR, SVG_H = padT+H+padB;
-    var LF = Math.min(PAD*0.5,16);
-
-    return (
-      <svg viewBox={"0 0 "+SVG_W+" "+SVG_H} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style={{display:"block",width:"100%",height:"100%"}}>
-        <rect width={SVG_W} height={SVG_H} fill={C.paper2}/>
-        <rect x={padL} y={padT} width={W} height={H} fill="#e9dcc7"/>
-        {farm.grid.flatMap(function(row,r){ return row.map(function(active,c){
-          if(active) return null;
-          return <rect key={"m"+r+c} x={padL+c*CS2} y={padT+r*CS2} width={CS2} height={CS2} fill={C.paper} opacity={0.9}/>;
-        }).filter(Boolean); })}
-        {/* 非活性区画の目印 */}
-        {farm.grid.flatMap(function(row,r){ return row.map(function(active,c){
-          if(active) return null;
-          var it=lm["inner-"+r+"-"+c]; if(!it) return null;
-          var cx2=padL+c*CS2+CS2/2,cy2=padT+r*CS2+CS2/2,fs=Math.min(CS2*0.52,22);
-          return (<g key={"lmI"+r+c}><LandmarkImage item={it} x={cx2} y={cy2} size={fs}/><text x={cx2} y={cy2+fs*0.62} textAnchor="middle" fontSize={Math.min(CS2*0.18,8)} fill={C.inkFaint} fontFamily={SERIF}>{it.memo||it.label}</text></g>);
-        }).filter(Boolean); })}
-        {farm.grid.flatMap(function(row,r){ var ls=[]; row.forEach(function(active,c){
-          if(!active) return;
-          var x1=padL+c*CS2,y1=padT+r*CS2,x2=padL+(c+1)*CS2,y2=padT+(r+1)*CS2;
-          if(r===0||!farm.grid[r-1][c]) ls.push(<line key={"t"+r+c} x1={x1} y1={y1} x2={x2} y2={y1} stroke={C.ink} strokeWidth={1.5}/>);
-          if(r===farm.rows-1||!farm.grid[r+1]||!farm.grid[r+1][c]) ls.push(<line key={"b"+r+c} x1={x1} y1={y2} x2={x2} y2={y2} stroke={C.ink} strokeWidth={1.5}/>);
-          if(c===0||!farm.grid[r][c-1]) ls.push(<line key={"l"+r+c} x1={x1} y1={y1} x2={x1} y2={y2} stroke={C.ink} strokeWidth={1.5}/>);
-          if(c===farm.cols-1||!farm.grid[r][c+1]) ls.push(<line key={"r"+r+c} x1={x2} y1={y1} x2={x2} y2={y2} stroke={C.ink} strokeWidth={1.5}/>);
-        }); return ls; }).flat().filter(Boolean)}
-        {ridgeList.map(function(ridge){
-          var pl=yp[ridge.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
-          var rr;
-          var RW2=ridge.ridgeW||RWIDTH;
-          if(ridge.orientation==="H") rr={x:padL+(ridge.gx-ridge.gl/2)*CS2,y:padT+(ridge.gy-RW2/2)*CS2,w:ridge.gl*CS2,h:RW2*CS2};
-          else rr={x:padL+(ridge.gx-RW2/2)*CS2,y:padT+(ridge.gy-ridge.gl/2)*CS2,w:RW2*CS2,h:ridge.gl*CS2};
-          var cx=rr.x+rr.w/2,cy=rr.y+rr.h/2,sz=Math.min(rr.w,rr.h);
-          var nameFontSize = Math.min(sz*0.28, 9);
-          var nameText = mapCropName(vg ? vg.name : ridge.name,rr.w-4,nameFontSize);
-          var nameW = nameText.length * nameFontSize * 0.75 + 4;
-          var nameH = nameFontSize + 3;
-          return (
-            <g key={ridge.id}>
-              <rect x={rr.x} y={rr.y} width={rr.w} height={rr.h} fill="#cda77d" stroke={C.inkBorder} strokeWidth={1} rx={2}/>
-              {/* 野菜名：白背景付き黒文字でモノクロ対応 */}
-              <rect x={cx-nameW/2} y={cy-nameH/2} width={nameW} height={nameH} fill="white" opacity={0.85} rx={1}/>
-              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={nameFontSize} fill={C.ink} fontFamily={SERIF} fontWeight="bold">{nameText}</text>
-              {/* 絵文字は小さく左上隅に */}
-              {vg&&sz>22&&<VegetableImage id={vg.id} size={Math.min(sz*0.45,22)} x={rr.x+2} y={rr.y+2}/>}
-            </g>
-          );
-        })}
-        {/* 目印 */}
-        {padT>0&&Array.from({length:farm.cols},function(_,c){var it=lm["top-"+c];if(!it)return null;var cx=padL+c*CS2+CS2/2;return(<g key={c}><LandmarkImage item={it} x={cx} y={padT/2} size={LF}/><text x={cx} y={padT/2+LF*0.6} textAnchor="middle" fontSize={Math.min(PAD*0.17,7)} fill={C.inkFaint} fontFamily={SERIF}>{it.memo||it.label}</text></g>);}).filter(Boolean)}
-        {padB>0&&Array.from({length:farm.cols},function(_,c){var it=lm["bot-"+c];if(!it)return null;var cx=padL+c*CS2+CS2/2,cy=padT+H+PAD/2;return(<g key={c}><LandmarkImage item={it} x={cx} y={cy} size={LF}/><text x={cx} y={cy+LF*0.6} textAnchor="middle" fontSize={Math.min(PAD*0.17,7)} fill={C.inkFaint} fontFamily={SERIF}>{it.memo||it.label}</text></g>);}).filter(Boolean)}
-        {padL>0&&Array.from({length:farm.rows},function(_,r){var it=lm["lft-"+r];if(!it)return null;var cy=padT+r*CS2+CS2/2;return(<g key={r}><LandmarkImage item={it} x={padL/2} y={cy} size={LF}/><text x={padL/2} y={cy+LF*0.6} textAnchor="middle" fontSize={Math.min(PAD*0.17,7)} fill={C.inkFaint} fontFamily={SERIF}>{it.memo||it.label}</text></g>);}).filter(Boolean)}
-        {padR>0&&Array.from({length:farm.rows},function(_,r){var it=lm["rgt-"+r];if(!it)return null;var cy=padT+r*CS2+CS2/2,cx=padL+W+PAD/2;return(<g key={r}><LandmarkImage item={it} x={cx} y={cy} size={LF}/><text x={cx} y={cy+LF*0.6} textAnchor="middle" fontSize={Math.min(PAD*0.17,7)} fill={C.inkFaint} fontFamily={SERIF}>{it.memo||it.label}</text></g>);}).filter(Boolean)}
-        {padT>0&&<line x1={padL} y1={padT} x2={padL+W} y2={padT} stroke={C.inkLine} strokeWidth={0.8} strokeDasharray="3 2"/>}
-        {padB>0&&<line x1={padL} y1={padT+H} x2={padL+W} y2={padT+H} stroke={C.inkLine} strokeWidth={0.8} strokeDasharray="3 2"/>}
-        {padL>0&&<line x1={padL} y1={padT} x2={padL} y2={padT+H} stroke={C.inkLine} strokeWidth={0.8} strokeDasharray="3 2"/>}
-        {padR>0&&<line x1={padL+W} y1={padT} x2={padL+W} y2={padT+H} stroke={C.inkLine} strokeWidth={0.8} strokeDasharray="3 2"/>}
-      </svg>
-    );
-  }
-
-
-  return (
-    <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,20,8,0.55)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"24px 16px"}}
-      onClick={onClose}>
-      <div style={{background:C.paper,border:"2px solid "+C.ink,width:"100%",maxWidth:680,boxShadow:"6px 6px 0 "+C.inkFaint,display:"flex",flexDirection:"column",maxHeight:"calc(92dvh / var(--ui-scale, 1))"}}
-        onClick={function(e){e.stopPropagation();}}>
-
-        {/* ヘッダー */}
-        <div style={{padding:"16px 20px",borderBottom:"2px solid "+C.ink,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,color:C.inkFaint,letterSpacing:3,fontFamily:HAND}}>
-              {isSnap ? "これまでの記録 — 印刷プレビュー" : "印刷プレビュー"}
-            </div>
-            <div style={{fontSize:17,letterSpacing:3,marginTop:2}}>{farm.name}</div>
-            {isSnap && (
-              <div style={{fontSize:14,color:C.indigo,fontFamily:HAND,marginTop:3,letterSpacing:1}}>
-                {snapDateStr}　{activeYear}年
-              </div>
-            )}
-          </div>
-          {/* 年選択（通常印刷のみ） */}
-          {!isSnap && (
-            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {allYears.map(function(y){
-                var sel = selYear === y;
-                return (
-                  <button key={y} onClick={function(){setSelYear(y);}}
-                    style={{padding:"5px 12px",border:"1px solid "+(sel?C.ink:C.inkLine),background:sel?C.ink:"transparent",color:sel?C.paper:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF}}>
-                    {y}年
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:C.inkFaint,flexShrink:0}}>×</button>
-        </div>
-
-        {/* プレビュー本体 */}
-        <div style={{flex:1,overflowY:"auto",padding:"20px 20px 0"}}>
-
-          <div style={{marginBottom:10}}>
-            <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND}}>{activeYear}年の作付け</span>
-          </div>
-
-          {/* 畑の図 */}
-          <div style={{display:"flex",flexWrap:"wrap",alignItems:"flex-start",gap:20,marginBottom:16}}>
-            <div style={{flex:"1 1 260px",maxWidth:454,aspectRatio:"1 / 1",minWidth:0}}><PreviewField/></div>
-            <aside style={{flex:"1 1 145px",fontSize:14,lineHeight:1.8}}>
-              <div style={{fontSize:16,marginBottom:8}}>畑の情報</div>
-              <div>幅 × 奥行き<br/>{fieldInfo.width}m × {fieldInfo.height}m</div>
-              <div style={{marginTop:8}}>畑の面積　{fieldInfo.area}㎡</div>
-              <div>畝・区画の数　{ridgeList.length}</div>
-              <p style={{fontSize:14,color:C.inkFaint,marginTop:12}}>面積は登録した形から計算しています。使わないマスは含みません。</p>
-              <p style={{fontSize:14,color:C.inkFaint,marginTop:8}}>図は用紙に合わせて縮尺を調整しています。</p>
-            </aside>
-          </div>
-
-          {/* 畝一覧テーブル */}
-          {ridgeList.length > 0 && (
-            <div style={{marginBottom:20}}>
-              <div style={{fontSize:14,letterSpacing:3,color:C.inkFaint,fontFamily:HAND,marginBottom:8,borderBottom:"1px solid "+C.inkLine,paddingBottom:4}}>畝一覧</div>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:14,fontFamily:HAND}}>
-                <thead>
-                  <tr>
-                    {["畝名","作物","科","植付日","連作"].map(function(h){
-                      return <th key={h} style={{textAlign:"left",padding:"5px 8px",borderBottom:"1px solid "+C.ink,fontSize:14,color:C.inkFaint,letterSpacing:1,fontWeight:"normal"}}>{h}</th>;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ridgeList.map(function(ridge){
-                    var pl=yp[ridge.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
-                    var warn=checkRot(fid,ridge.id,activeYear,plantings,soil,activeRidges);
-                    return (
-                      <tr key={ridge.id}>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{ridge.name}</td>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{vg?<><VegetableImage id={vg.id} size={24}/> {vg.name}</>:"—"}</td>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:C.inkFaint}}>{vg?vg.family:""}</td>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine}}>{pl&&pl.month?cropDate(null,pl.month,pl.day):"—"}</td>
-                        <td style={{padding:"5px 8px",borderBottom:"1px solid "+C.inkLine,color:warn==="danger"?C.red:warn==="caution"?C.orange:"",fontWeight:warn?"bold":"normal"}}>
-                          {vg&&vg.custom?"判定対象外":warn==="danger"?"同じ科が連続":warn==="caution"?"前年と同じ科":"—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* フッターボタン */}
-        <div style={{borderTop:"1px solid "+C.inkLine,display:"flex",gap:10,padding:"14px 20px",flexShrink:0}}>
-          <button onClick={onClose}
-            style={{flex:1,padding:"12px",border:"1px solid "+C.inkBorder,background:"transparent",color:C.inkFaint,fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:1}}>
-            とじる
-          </button>
-          <button onClick={doPrint}
-            style={{flex:2,padding:"12px",border:"2px solid "+C.ink,background:C.ink,color:C.paper,fontSize:14,cursor:"pointer",fontFamily:SERIF,letterSpacing:2,boxShadow:"3px 3px 0 "+C.inkFaint,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <span>🖨</span> 印刷する
-          </button>
-        </div>
+  const button={minHeight:44,padding:"10px 18px",border:"1px solid "+C.inkBorder,background:"white",color:C.ink,fontSize:16,cursor:"pointer",borderRadius:5};
+  return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,32,26,.55)",display:"flex",justifyContent:"center",alignItems:"center",padding:"12px"}}>
+    <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="print-heading" tabIndex={-1} onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1000,maxHeight:"calc(96dvh / var(--ui-scale, 1))",display:"flex",flexDirection:"column",background:C.paper,color:C.ink,borderRadius:8,boxShadow:"0 12px 45px #0004",minHeight:0}}>
+      <header style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid "+C.inkLine,flexShrink:0}}><h2 id="print-heading" style={{fontSize:20,margin:0,flex:1}}>{t.preview}</h2><button style={button} onClick={onClose} aria-label={t.close}>×</button></header>
+      <div style={{overflowY:"auto",padding:"16px 18px",minHeight:0}}>
+        <p style={{margin:"0 0 14px",fontSize:15,lineHeight:1.7}}>{t.scope}</p>
+        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:12}}><span style={{fontSize:16,overflowWrap:"anywhere"}}>{activeFarm.name}</span>{!snapOverride?<label style={{display:"flex",alignItems:"center",gap:8,fontSize:15}}>{t.year}<select style={{...button,padding:"8px"}} value={selYear} onChange={e=>setSelYear(Number(e.target.value))}>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>:<span>{selYear} · {t.snapshot}</span>}</div>
+        <details style={{borderTop:"1px solid "+C.inkLine,borderBottom:"1px solid "+C.inkLine,padding:"12px 0",marginBottom:16}}><summary style={{cursor:"pointer",fontSize:16}}>{t.options}</summary><label style={{display:"block",fontSize:15,marginTop:12}}>{t.title}<input maxLength={100} value={title} placeholder={activeFarm.name} onChange={e=>setTitle(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4}}/></label><label style={{display:"block",fontSize:15,marginTop:12}}>{t.memo}<textarea maxLength={400} rows={3} value={memo} onChange={e=>setMemo(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4,resize:"vertical"}}/></label></details>
+        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,marginBottom:12}}><p style={{flex:"1 1 150px",minWidth:0,fontSize:14,lineHeight:1.6,margin:0}}>{t.previewNote}</p><button style={button} onClick={()=>openPrint(false)}>{t.open}</button></div>
+        <PrintDocumentPreview html={html} wide={true}/>
       </div>
+      <footer style={{padding:"12px 18px",borderTop:"1px solid "+C.inkLine,display:"flex",gap:10,flexShrink:0}}><button style={{...button,flex:1}} onClick={onClose}>{t.close}</button><button style={{...button,flex:2,background:C.ink,color:"white",fontWeight:"bold"}} onClick={()=>openPrint(true)}>{t.print}</button></footer>
     </div>
-  );
+  </div>;
 }
 
 
