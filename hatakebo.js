@@ -1,5 +1,5 @@
 
-    const { useState, Fragment, useEffect, useRef } = React;
+    const { useState, Fragment, useEffect, useRef, useMemo } = React;
 
 /* ══════════════════════════════════════
    ハタケボ — 畑の帳簿
@@ -457,7 +457,7 @@ function normalizeRidges(raw){
 }
 function bedsAt(beds,year){return Object.fromEntries(Object.entries(beds||{}).filter(([id,r])=>(!r.addedFrom||r.addedFrom<=year)&&(!r.deletedFrom||r.deletedFrom>year)).map(([id,r])=>[id,geometryAt(r,year)]));}
 function localDate(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-const WORK_TYPES={plant:"野菜を植えた",fertilizer:"肥料・堆肥を入れた",greenSow:"緑肥をまいた",greenCut:"緑肥を刈った",greenMix:"緑肥を土に混ぜた",harvest:"収穫した",end:"栽培を終えた",note:"メモを残す"};
+const WORK_TYPES={plant:"野菜を植えた",fertilizer:"肥料・堆肥を入れた",green:"緑肥の記録",greenSow:"緑肥をまいた",greenCut:"緑肥を刈った",greenMix:"緑肥を土に混ぜた",harvest:"収穫した",end:"栽培を終えた",note:"メモを残す"};
 function landTimeline(farm,beds,plantings) {
   var entries=(farm.journal||[]).map(e=>Object.assign({},e,{source:"journal"}));
   Object.entries(plantings||{}).forEach(([yr,ps])=>Object.entries(ps||{}).forEach(([rid,raw])=>{
@@ -549,7 +549,8 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
   }
   return <EditDialog title={initial.id?"作業の記録を訂正":"作業を記録"} onClose={onClose}><form className="journal-form" onSubmit={submit}>
     <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
-    <label>何をした<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+    <label>何をした<select value={kind.startsWith("green")?"green":kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>!["greenSow","greenCut","greenMix"].includes(k)&&(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+    {kind.startsWith("green")&&kind!=="green"&&<span className="journal-help" style={{marginTop:-12}}>{WORK_TYPES[kind]}</span>}
     {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
     {kind==="plant"&&<CustomCropInput value={vid} onChange={setVid}/>}
     {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
@@ -3112,7 +3113,7 @@ const FAQ_DATA = [
         "a": [
           "「作業を記録」で場所と作業を選びます。畑全体への堆肥入れなら、畝を作る前でも「畑全体」に残せます。",
           "肥料・堆肥は名前を書かなくても記録できます。「量・メモを追加」を開けば、「ひと袋」「ひと握り」など分かる範囲の量も残せます。",
-          "緑肥は「緑肥をまいた」「緑肥を刈った」「緑肥を土に混ぜた」を、その都度記録できます。同じ場所と緑肥名で残すと、育てた流れを振り返りやすくなります。"
+          "緑肥は「緑肥の記録」を選ぶだけで残せます。まいた・刈った・土に混ぜたなど、覚えておきたいことがあればメモに添えてください。名前やメモは空欄でも大丈夫です。以前の記録もそのまま残ります。"
         ]
       },
       {
@@ -3174,9 +3175,9 @@ const FAQ_DATA = [
         "q": "畑の図を紙に印刷して持っていきたいです",
         "a": [
           "「メニュー」→「印刷する」を開きます。畑の名前・年・図を確認して、下の「印刷する」を押してください。",
-          "A4横向きの、図と一覧を見比べやすいレイアウトで印刷できます。加筆に使える薄い5mm方眼付きです。カラー・白黒はプリンターの設定で選べます。タイトルやmemoは添えたいときだけ。畑の記録そのものは変わりません。",
-          "印刷するのは選んだ年の畑の図と作付け一覧です。作業の履歴や肥料の記録は含みません。図の番号と一覧を見比べて使えます。畑の寸法・面積も載り、畝が多い場合は一覧が次のページへ続きます。",
-          "「これまでの記録」に保存した配置も印刷できます。保存時の作付けを使い、現在の連作判定は混ぜません。古い記録に畑の形が残っていない場合は、その年の形を使用し、印刷物に説明を添えます。",
+          "「ハタケボ シンプル」は図と一覧を見比べやすいA4横向き。「ハタケボ ダイアリー」は野菜ごとに書き込める記録欄と畝別の年間記録をまとめたA4縦向きです。どちらも薄い方眼付きで、カラー・白黒は印刷画面で選べます。タイトルとmemoは任意です。",
+          "シンプルには選んだ年の図・作付け一覧・連作の目安を載せ、作業履歴は含めません。ダイアリーには選んだ年の作付けと作業履歴を載せ、肥料やメモなどの共通記録も各畝に反映します。連作判定は含めません。どちらも記録が多い場合はページを追加します。",
+          "「これまでの記録」に保存した配置も印刷できます。保存時の作付けを使い、現在の連作判定は混ぜません。古い記録に畑の形が残っていない場合は、その年の形を使用し、印刷物に説明を添えます。 保存した配置に含まれる記録だけを印刷します。現在の作業履歴は追加しません。",
           "ブラウザの印刷画面でPDF保存が選べれば、紙の代わりにPDFでも残せます。用紙の向きと改ページを確認してください。画面が開かないときはポップアップを許可し、開いたページの「印刷する」やブラウザの印刷メニューをお試しください。印刷・PDFは閲覧用で、アプリに戻すバックアップとは別です。"
         ]
       },
@@ -3688,6 +3689,229 @@ function printMapSVG(farm, beds, width, height) {
   return p.join('')+'</svg>';
 }
 
+const DIARY_LABELS = {
+  "simple": "ハタケボ シンプル",
+  "diary": "ハタケボ ダイアリー",
+  "choose": "印刷のデザイン",
+  "simpleHint": "図と一覧を見比べる · A4横",
+  "diaryHint": "野菜ごとに書き込む · A4縦",
+  "scope": "畑の図、野菜ごとの記録欄、畝ごとの年間記録を印刷します。肥料やメモなどの共通の記録は各畝に掲載します。連作判定は含みません。",
+  "previewNote": "用紙はA4縦向きです。記録が多い場合はページを追加します。カラー・白黒は印刷画面で選べます。",
+  "snapshotScope": "保存した配置に含まれる記録だけを印刷します。現在の作業履歴は追加しません。",
+  "loading": "印刷の準備をしています…",
+  "error": "印刷の準備ができませんでした。シンプルを選ぶか、もう一度お試しください。",
+  "retry": "もう一度試す",
+  "mapPage": "畑のページ",
+  "map": "畑の見取り図",
+  "beds": "畝・区画",
+  "mapHint": "図の番号で、野菜を植えた畝を確認できます。",
+  "crops": "野菜の記録",
+  "crop": "野菜名",
+  "bed": "畝",
+  "date": "日付",
+  "record": "記録",
+  "plant": "植え付け",
+  "fertilizerGreen": "肥料・緑肥",
+  "fertilizer": "肥料",
+  "green": "緑肥",
+  "harvest": "収穫",
+  "end": "栽培の終了",
+  "note": "メモ",
+  "continued": "続き",
+  "shared": "共通",
+  "whole": "畑全体",
+  "amount": "量",
+  "total": "全区画合計",
+  "unknownDate": "月日不明",
+  "unknownDay": "日不明",
+  "missingPlace": "場所未記入",
+  "blank": "未記入",
+  "yearHelp": "下線は記録した時点です。栽培期間は推測せず、記録のある月に表示しています。",
+  "chartLabel": "1月から12月の記録。下線は記録した時点を示します。",
+  "verbs": {
+    "plant": "植付",
+    "fertilizer": "肥料",
+    "green": "緑肥",
+    "harvest": "収穫",
+    "end": "終了",
+    "note": "メモ"
+  }
+};
+
+/* Local-only Diary renderer. No storage writes or external services. */
+async function buildHatakeboDiary(model, helpers, title="", memo="") {
+  const t=DIARY_LABELS, lang=document.documentElement.lang||"ja", safeTitle=title.trim()||model.farm.name;
+  const monthName=m=>new Intl.DateTimeFormat(lang,{month:"short"}).format(new Date(2024,m-1,1));
+  const e=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const farm=model.farm, year=Number(model.year), beds=Object.values(model.ridges), info=helpers.fieldInfo(farm);
+  const landmarkKey=i=>String.fromCharCode(65+i%26)+(i>=26?Math.floor(i/26):'');
+  const images=new Map();
+  function icon(id,size=40,x=0,y=0){return helpers.icon(id,size,x,y).replace(/<image href="([^"]+)" width="([^"]+)" height="([^"]+)"\/>/g,(_,src,w,h)=>{if(!images.has(src))images.set(src,{id:'diary-art-'+images.size,w,h});return '<use href="#'+images.get(src).id+'"/>';});}
+  const crop=b=>{const p=model.plantings[b.id],id=helpers.vid(p),v=id?helpers.vegetable(id):null;return {id,name:v?v.name:id||'',plant:p};};
+  const knownEntries=helpers.timeline(farm,model.allRidges||model.ridges,model.history||{}).filter(x=>x.year===year).map((x,i)=>({...x,_order:i}));
+  const entryOrder=(a,b)=>(a.month||13)-(b.month||13)||(a.day||32)-(b.day||32)||(a.createdAt||0)-(b.createdAt||0)||a._order-b._order;
+  knownEntries.sort(entryOrder);
+  function date(x){if(!x.month)return t.unknownDate;return cropDate(null,x.month,x.day)+(x.day?'':' ('+t.unknownDay+')');}
+  const logDate=x=>x.month&&!x.day?'<span>'+e(monthName(x.month))+'</span><small>'+e(t.unknownDay)+'</small>':'<span>'+e(date(x))+'</span>';
+  function map(){
+    const w=beds.length>10?650:380,h=beds.length>10?490:235;
+    const doc=new DOMParser().parseFromString(helpers.mapSVG(farm,beds,w,h),'image/svg+xml'),svg=doc.documentElement;
+    const bg=svg.querySelector('rect');if(bg&&bg.getAttribute('width')==='100%')bg.remove();
+    svg.querySelectorAll('[fill="#eee4d4"]').forEach(n=>n.setAttribute('fill','#f5f1e4'));
+    svg.querySelectorAll('[fill="#c7a279"]').forEach(n=>n.setAttribute('fill','#e5d4b5'));
+    const scale=Math.min((w-64)/farm.cols,(h-64)/farm.rows),ox=(w-farm.cols*scale)/2,oy=(h-farm.rows*scale)/2;
+    // Sparse maps carry one crop illustration per bed, not a claim about plant counts.
+    if(beds.length<=6){
+      beds.forEach((b,i)=>{
+        const rw=b.ridgeW||.6,bw=(b.orientation==='H'?b.gl:rw)*scale,bh=(b.orientation==='H'?rw:b.gl)*scale;
+        const p=crop(b),cx=ox+b.gx*scale,cy=oy+b.gy*scale;
+        if(bw<125||bh<32)return; // Small beds retain their readable number and full legend.
+        const badge=svg.querySelector('[data-bed-number="'+(i+1)+'"]');if(badge)badge.remove();
+        const group=doc.createElementNS('http://www.w3.org/2000/svg','g');group.setAttribute('class','diary-bed-crop');group.setAttribute('data-bed',b.id);
+        const short=Array.from(p.name).length<=12?p.name:'',size=Math.min(44,bh-4),art=icon(p.id,size,cx-(short?64:size/2),cy-size/2);
+        group.innerHTML='<circle cx="'+(cx-bw/2+15)+'" cy="'+cy+'" r="10" fill="white" stroke="#86917c"/><text x="'+(cx-bw/2+15)+'" y="'+(cy+4)+'" font-size="12" text-anchor="middle" font-family="sans-serif">'+(i+1)+'</text>'+art+(short?'<text x="'+(cx-9)+'" y="'+(cy+5)+'" font-family="sans-serif" font-size="16" fill="#294334">'+e(short)+'</text>':'');svg.append(group);
+      });
+    }
+    return new XMLSerializer().serializeToString(svg);
+  }
+  const mapHTML=map();
+  const landmarks=Object.values(farm.landmarks||{}).map((v,i)=>'<span><b>'+landmarkKey(i)+'</b> '+e(v.memo||v.label||'')+'</span>').join('');
+  const plantingIds=new Map();
+  for(const [rid,raw] of Object.entries((model.history||{})[year]||model.plantings||{})){
+    const rec=typeof raw==='string'?{vid:raw}:raw;if(!rec)continue;
+    (rec.past||[]).concat(rec.vid?[rec]:[]).forEach((p,i)=>{if(p.vid)plantingIds.set('crop-'+year+'-'+rid+'-'+i,p.vid);});
+  }
+  const planted=knownEntries.filter(x=>x.kind==='plant').map(x=>({...x,art:icon(plantingIds.get(x.id)||x.vid,46),bedNumber:beds.findIndex(b=>b.id===x.rid)+1}));
+  const grid='<svg class="grid" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><pattern id="squares" width="5mm" height="5mm" patternUnits="userSpaceOnUse"><path d="M18.89764 0H0V18.89764" fill="none" stroke="#d5ddcd" stroke-width="0.55"/></pattern></defs><rect width="100%" height="100%" fill="url(#squares)"/></svg>';
+  const style=`
+    *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#e7ebe4;color:#294334;font:11pt/1.5 "Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif}h1,h2,p,figure,ol{margin:0}h1,h2{font-family:"Yu Mincho","Hiragino Mincho ProN",Georgia,serif;font-weight:600}h1{font-size:25pt;line-height:1.35;overflow-wrap:anywhere}h2{font-size:14pt}button{font:inherit;cursor:pointer}
+    .toolbar{padding:18px 24px;background:white;display:flex;align-items:center;justify-content:space-between;gap:16px}.toolbar p{font-size:14px}.toolbar button{padding:12px 22px;background:#294334;color:white;border:0;border-radius:5px}.spread{display:block;padding:0}.paper{margin:0 auto 18px}.screen-hidden{display:none!important}.memo-text{background:white;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10pt}
+    .paper{position:relative;isolation:isolate;flex:none;width:210mm;height:297mm;padding:17mm 16mm 15mm 24mm;background:white;display:flex;flex-direction:column;break-after:page;overflow:hidden}.paper:last-child{break-after:auto}.grid{position:absolute;left:24mm;top:17mm;width:170mm;height:265mm;z-index:-1;pointer-events:none}
+    .pagehead{flex:none;background:white;padding-bottom:5mm;border-bottom:1px solid #82937d;margin-bottom:5mm}.overline{font-size:10pt;letter-spacing:.07em;display:flex;justify-content:space-between;gap:4mm;margin-bottom:2mm}.overline span:last-child{font-size:9pt;color:#53634d;letter-spacing:0}.pagebody{flex:1;min-height:0;position:relative}.pagefoot{flex:none;display:flex;justify-content:space-between;align-items:baseline;gap:4mm;padding-top:3mm;border-top:1px solid #a7b29c;background:white;font-size:8.5pt;color:#53634d}.pagefoot .folio{font:italic 12pt Georgia,serif}
+    .meta{display:flex;gap:7mm;flex-wrap:wrap;font-size:10pt;padding:0 0 2mm;background:white}.garden-map{margin:2mm 0 1mm}.garden-map svg{display:block;width:100%;height:auto}.landmarks{display:flex;flex-wrap:wrap;gap:2mm 5mm;font-size:9pt}.landmarks span{background:white}.landmarks b{font-weight:600}.map-caption{font-size:9pt;color:#53634d;margin-top:2mm;display:table;background:white}
+    .plant-key{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4mm;margin-top:6mm;background:white}.plant-key li{display:flex;gap:2mm;overflow-wrap:anywhere}.plant-key b{font:italic 18pt Georgia,serif;line-height:1.2}.plant-key strong{display:block;font-size:10pt;font-weight:600}.plant-key span span{display:block;font-size:9pt}.map-writing{margin-top:7mm;min-height:36mm}.map-writing h2{display:table;background:white;padding-right:3mm;font:italic 16pt Georgia,serif}.map-writing p{display:table;background:white;margin-top:2mm;font-size:9pt;color:#53634d}
+    .log-head,.log-row{display:grid;grid-template-columns:22mm minmax(0,1fr) 48mm;column-gap:4mm}.log-head{background:white;padding:0 0 3mm;font-size:10pt;border-bottom:1px solid #82937d}.log-row{border-bottom:1px solid #b6c0ae;min-height:24mm;padding:3mm 0;break-inside:avoid}.log-date{font-family:"Yu Mincho",Georgia,serif;font-size:13pt;line-height:1.4}.log-date span{background:white}.log-date small{display:table;background:white;font:9pt/1.4 sans-serif;margin-top:1mm}.log-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:10pt;line-height:1.55;align-self:start}.log-text span{background:white;box-decoration-break:clone;-webkit-box-decoration-break:clone}.log-place{display:table;background:white;font-size:9pt;margin-top:1mm;color:#53634d;overflow-wrap:anywhere}.blank-date{font:12pt Georgia,serif;color:#7b8870}.blank-row{height:28mm}.empty-note{font-size:10pt;background:white;padding:3mm 0}.continued{font-size:9pt;color:#53634d}.free-note{margin-top:5mm}.free-note h2{display:table;background:white;padding-right:4mm;font:italic 15pt Georgia,serif}.free-note p{font-size:9pt;display:table;background:white;color:#53634d}.legend-page .plant-key{grid-template-columns:repeat(2,minmax(0,1fr));gap:5mm}.legend-page li{min-height:12mm}
+    .plant-key b{flex:none;white-space:nowrap}.plant-key li>span{min-width:0}
+    .year-key{display:flex;gap:4mm;flex-wrap:wrap;background:white;font-size:9pt;margin-bottom:2mm}.year-key span{border-bottom:2mm solid var(--mark);line-height:1.3}.year-help{font-size:8.5pt;background:white;margin-bottom:4mm;color:#53634d}
+    .bed-year{margin-bottom:4mm}.bed-year h2{font-size:12pt;background:white;padding:1mm 0;border-bottom:1px solid #82937d;display:flex;align-items:baseline;gap:3mm}.bed-year h2 em{font:italic 15pt Georgia,serif}.bed-year h2 small{font:9pt sans-serif;color:#53634d}.year-chart{display:block;width:100%;height:auto;background:#fff}.year-details{background:white;padding:1mm 0 2mm}.year-details .log-row{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:2mm;min-height:0;padding:1mm 0;border:0}.year-details .log-date{font:9pt/1.5 sans-serif}.year-details .log-date small{font-size:8.5pt;margin:0}.year-details .log-text{font-size:9pt;line-height:1.5}.calendar-memo{margin-top:4mm}.calendar-memo h2{font:italic 15pt Georgia,serif;background:white;display:table;padding-right:3mm}
+    .bed-year{margin-bottom:2mm}.year-help{margin-bottom:3mm}
+    .map-page .pagehead{padding-bottom:3mm;margin-bottom:3mm}.map-page h1{font-size:23pt}.garden-overview{display:grid;grid-template-columns:100mm minmax(0,1fr);gap:6mm;margin-bottom:4mm;background:white;align-items:center}.garden-overview .garden-map{margin:0}.garden-overview .garden-map svg{max-height:63mm}.overview-info{font-size:10pt;line-height:1.65;min-width:0;overflow-wrap:anywhere}.overview-info h2{font-size:12pt;margin-bottom:2mm}.overview-size{font:14pt Georgia,serif;margin-bottom:1mm}.overview-info .landmarks{margin-top:3mm;font-size:9pt}.overview-info .map-caption{font-size:8.5pt;margin-top:3mm}
+    .crop-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:3mm;background:white;padding-bottom:2mm;margin-bottom:2mm;border-bottom:1px solid #82937d}.crop-section-head h2{font-size:13pt}.crop-section-head p{font-size:8.5pt;color:#53634d}.crop-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3mm}.crop-card{height:72mm;min-width:0;border:1px solid #a7b29c;padding:3mm;background:white;display:flex;flex-direction:column;overflow:hidden}.crop-card-head{display:flex;align-items:center;gap:2mm;min-height:12mm;flex:none}.crop-card-head>svg{flex:none;width:12mm;height:12mm}.crop-card h3{font:600 12pt/1.4 "Yu Mincho",serif;margin:0;overflow-wrap:anywhere;min-width:0}.crop-card .crop-location{font-size:8.5pt;line-height:1.4;overflow-wrap:anywhere;margin:1mm 0}.crop-card .crop-planted{font-size:8.5pt;margin-bottom:2mm}.crop-card .crop-note{font-size:9pt;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:2mm}.crop-card .crop-continued{font-size:8pt;color:#53634d}.crop-writing{flex:1;min-height:22mm;position:relative}.crop-writing svg{position:absolute;inset:0;width:100%;height:100%}.crop-writing-head{display:grid;grid-template-columns:12mm 1fr;font-size:8.5pt;line-height:5mm;color:#53634d;background:white;position:relative}.crop-writing-head span:last-child{padding-left:2mm}.crop-card.blank h3{font-size:10pt;font-weight:400;color:#53634d}.crop-page .crop-grid{margin-top:2mm}
+    .crop-card{height:47mm;padding:2.5mm}.crop-card-head{min-height:7mm;gap:2mm}.crop-card-head>svg{width:7mm;height:7mm;background:#f4ecd4}.crop-card h3{font-size:10.5pt}.crop-card.blank h3{font-size:9pt}.crop-writing{min-height:16mm}.crop-card .crop-planted{margin-bottom:1mm}.crop-card.tall{height:110mm}.crop-note,.crop-location,.crop-planted{flex:none}
+    .garden-overview.dense-map{grid-template-columns:1fr;gap:2mm}.dense-map .garden-map svg{max-height:none}.dense-map .overview-info h2{display:none}.dense-map .overview-info{display:flex;align-items:baseline;gap:3mm;flex-wrap:wrap}.dense-map .landmarks,.dense-map .map-caption{margin-top:0}
+    @page{size:A4 portrait;margin:0}@media print{html,body{background:white}.toolbar{display:none}.spread{display:block;padding:0}.paper{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none}}
+    @media screen and (max-width:830px){.toolbar{flex-wrap:wrap}.spread{display:block;padding:0;overflow-x:auto}.paper{margin-bottom:18px}}
+  `;
+  const artDefs=()=>'<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+Array.from(images,([src,a])=>'<image id="'+a.id+'" href="'+src+'" width="'+a.w+'" height="'+a.h+'"/>').join('')+'</defs></svg>';
+  const htmlStart=()=>'<html lang="'+e(lang)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' | '+e(t.diary)+'</title><style>'+style+'</style></head><body>'+artDefs();
+  const paper=(heading,kind,content)=>'<section class="paper '+kind+'">'+grid+'<header class="pagehead"><div class="overline"><span>'+year+'</span><span>'+e(kind==='map-page'?t.mapPage:farm.name)+'</span></div>'+(heading?'<h1>'+e(heading)+'</h1>':'')+'</header><main class="pagebody">'+content+'</main><footer class="pagefoot"><span>Hatakebo</span><span class="folio"></span></footer></section>';
+  const pages=[];
+  const overview=(model.snapshot?'<p class="empty-note">'+e(t.snapshotScope)+(model.snapshot.farm?'':' '+e(PRINT_LABELS.legacyNote))+'</p>':'')+'<section class="garden-overview'+(beds.length>10?' dense-map':'')+'"><figure class="garden-map">'+mapHTML+'</figure><div class="overview-info"><h2>'+e(t.map)+'</h2><p class="overview-size">'+info.width+' m × '+info.height+' m</p><p>'+info.area+' m² · '+beds.length+' '+e(t.beds)+'</p><div class="landmarks">'+landmarks+'</div>'+(beds.length?'<p class="map-caption">'+e(t.mapHint)+'</p>':'')+'</div></section>';
+  const cropHeading='<div class="crop-section-head"><h2>'+e(t.crops)+'</h2></div>';
+  const writing='<div class="crop-writing"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><pattern id="crop-lines" width="100%" height="6mm" patternUnits="userSpaceOnUse"><path d="M0 22.677H1000" stroke="#d5ddcd" stroke-width=".7"/></pattern></defs><rect width="100%" height="100%" fill="url(#crop-lines)"/><path d="M45.35 0V1000" stroke="#c8d2c0" stroke-width=".7"/></svg><div class="crop-writing-head"><span>'+e(t.date)+'</span><span>'+e(t.record)+'</span></div></div>';
+  function cropCard(entry,note='',part=0){const tall=entry&&(Array.from(entry.name||'').length>28||Array.from(entry.place||'').length>28);return '<article class="crop-card'+(entry?'':' blank')+(tall?' tall':'')+'"'+(entry?' data-planting="'+e(entry.source+':'+entry.id)+'" data-card-part="'+part+'"':'')+'><div class="crop-card-head">'+(entry?entry.art:'')+'<h3>'+e(entry?entry.name:t.crop)+'</h3></div><p class="crop-location">'+(entry?(entry.bedNumber?String(entry.bedNumber).padStart(2,'0')+' · ':'')+e(entry.place||t.missingPlace):(t.bed+':'))+'</p><p class="crop-planted">'+(entry?(t.plant+' · ')+e(date(entry)):(t.plant+':　　 /　　 '))+(part?' <span class="crop-continued">'+e(t.continued)+'</span>':'')+'</p>'+(note?'<p class="crop-note">'+e(note)+'</p>':'')+writing+'</article>';}
+  // Measure real typography on A4; paginate records instead of shrinking or losing them.
+  const frame=document.createElement('iframe');frame.setAttribute('aria-hidden','true');frame.setAttribute('tabindex','-1');frame.style.cssText='position:fixed;left:-10000px;top:0;width:1200px;height:1400px;border:0';document.body.append(frame);
+  const fd=frame.contentDocument;fd.open();fd.write(htmlStart()+'<div id="measure"></div></body></html>');fd.close();await fd.fonts.ready;
+  const host=fd.getElementById('measure');
+  function fits(content,title='',kind='log-page') {host.innerHTML=paper(title,kind,content);const body=host.querySelector('.pagebody');return body.scrollHeight<=body.clientHeight+1;}
+  function logRow(entry,bodyText,part){return '<article class="log-row" data-entry="'+e(entry.source+':'+entry.id)+'" data-shared="'+!!entry.shared+'" data-part="'+part+'"><div class="log-date">'+logDate(entry)+(entry.shared?'<small>'+e(t.shared)+'</small>':'')+(part?'<small>'+e(t.continued)+'</small>':'')+'</div><p class="log-text"><span>'+e(bodyText)+'</span></p></article>';}
+  const colors={plant:'#b5d7ae',fertilizer:'#efd18d',green:'#efd18d',harvest:'#efb4a8',end:'#d0d0cb',note:'#bcd4e4'};
+  const category=x=>x.kind.startsWith('green')?'green':x.kind;
+  function yearChart(parts){
+    const width=640,step=width/12,top=23,lane=26,height=top+Math.max(1,parts.length)*lane+5;
+    let svg='<svg class="year-chart" viewBox="0 0 '+width+' '+height+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+e(t.chartLabel)+'">';
+    for(let m=0;m<=12;m++){const x=m*step;svg+='<path d="M'+x+' 0V'+height+'" stroke="#d9dfd3" stroke-width="0.8"/>';if(m<12)svg+='<text x="'+(x+step/2)+'" y="15" font-size="11" text-anchor="middle" fill="#53634d">'+e(monthName(m+1))+'</text>';}
+    for(let i=0;i<=Math.max(1,parts.length);i++)svg+='<path d="M0 '+(top+i*lane)+'H640" stroke="#e3e7de" stroke-width="0.7"/>';
+    parts.forEach((p,i)=>{
+      const x=p.entry,cat=category(x),y=top+i*lane+17,col=colors[cat]||colors.note;
+      const verb=t.verbs[cat]||t.record;
+      const name=x.name?Array.from(x.name).slice(0,10).join('')+(Array.from(x.name).length>10?'…':''):'';
+      const label=(name?name+' · ':'')+verb+(p.part?' ('+t.continued+')':'');
+      const tw=Array.from(label).reduce((n,c)=>n+(/[\x00-\x7f]/.test(c)?6:11),0);
+      if(!x.month){svg+='<rect x="0" y="'+(y-15)+'" width="640" height="24" fill="white"/><text x="5" y="'+y+'" font-size="11" fill="#53634d">'+e(t.unknownDate)+' · '+e(label)+'</text>';return;}
+      const days=new Date(year,x.month,0).getDate(),pos=(x.month-1+(x.day?(x.day-.5)/days:.5))*step;
+      const tx=Math.max(4,Math.min(pos+7,width-tw-4));
+      svg+='<path d="M'+tx+' '+(y+4)+'h'+tw+'" stroke="'+col+'" stroke-width="5"/><circle cx="'+pos+'" cy="'+(y+4)+'" r="3" fill="#294334"/><text x="'+tx+'" y="'+y+'" font-size="11" fill="#294334">'+e(label)+'</text>';
+    });return svg+'</svg>';
+  }
+  const isWhole=place=>!place||[t.whole,String.fromCharCode(30033,20840,20307),"Whole garden","Seluruh kebun","Ca\u0142y ogr\u00f3d","Bustani nzima"].includes(place);
+  const groups=beds.map((b,i)=>({key:'bed:'+b.id,name:b.name,num:String(i+1).padStart(2,'0'),entries:[]}));
+  const sharedEntries=[];
+  for(const entry of knownEntries){
+    if(!entry.rid&&isWhole(entry.place)){sharedEntries.push({...entry,shared:true});continue;}
+    // Resolve real bed IDs first. A legacy name is grouped only when unambiguous.
+    const matches=entry.rid?groups.filter(g=>g.key==='bed:'+entry.rid):!isWhole(entry.place)?groups.filter(g=>g.name===entry.place):[];
+    let group=matches.length===1?matches[0]:null;
+    if(!group){const key=entry.rid?'past:'+entry.rid:!isWhole(entry.place)?'place:'+entry.place:'whole';group=groups.find(g=>g.key===key);if(!group){group={key,name:entry.place||t.whole,num:'',entries:[]};groups.push(group);}}
+    group.entries.push(entry);
+  }
+  // Print shared events alongside every bed; never duplicate or rewrite stored records.
+  // With no beds yet, retain the events without inventing a bed or an extra heading.
+  if(!groups.length&&sharedEntries.length)groups.push({key:'unassigned',name:'',num:'',entries:[]});
+  for(const group of groups)group.entries=group.entries.concat(sharedEntries).sort(entryOrder);
+  function groupHTML(group,parts,continued){return '<section class="bed-year" data-group="'+e(group.key)+'">'+(group.name?'<h2>'+(group.num?'<em>'+group.num+'</em>':'')+e(group.name)+(continued?'<small>'+e(t.continued)+'</small>':'')+'</h2>':'')+yearChart(parts)+'<div class="year-details">'+parts.map(p=>logRow(p.entry,p.text,p.part)).join('')+'</div></section>';}
+  try {
+    // A separate writing card per planting instance; previous crops are not collapsed.
+    function cardFits(html){host.innerHTML='<div class="crop-grid" style="width:170mm">'+html+'</div>';const card=host.querySelector('.crop-card');return card.scrollHeight<=card.clientHeight+1;}
+    const cards=[];
+    for(const entry of planted){
+      let rest=Array.from(entry.note||''),part=0;
+      do{
+        if(cardFits(cropCard(entry,rest.join(''),part))){cards.push(cropCard(entry,rest.join(''),part));break;}
+        let lo=1,hi=rest.length,best=0;
+        while(lo<=hi){const mid=(lo+hi)>>1;if(cardFits(cropCard(entry,rest.slice(0,mid).join(''),part))){best=mid;lo=mid+1;}else hi=mid-1;}
+        if(!best)throw Error('Planting heading is too large for a writing card: '+entry.id);
+        cards.push(cropCard(entry,rest.slice(0,best).join(''),part++));rest=rest.slice(best);
+      }while(rest.length);
+    }
+    // Keep spare writable cards on the first sheet without adding empty pages.
+    while(cards.length<9||cards.length%3)cards.push(cropCard(null));
+    let cardContent='',firstCardPage=true;
+    const cardPageBody=items=>(firstCardPage?overview:'')+cropHeading+'<div class="crop-grid">'+items+'</div>';
+    const flushCards=()=>{pages.push(paper(firstCardPage?safeTitle:'',firstCardPage?'map-page':'crop-page',cardPageBody(cardContent)));cardContent='';firstCardPage=false;};
+    for(let i=0;i<cards.length;i+=3){const row=cards.slice(i,i+3).join('');if(cardContent&&!fits(cardPageBody(cardContent+row),firstCardPage?safeTitle:'',firstCardPage?'map-page':'crop-page'))flushCards();if(firstCardPage&&!cardContent&&!fits(cardPageBody(row),safeTitle,'map-page')){pages.push(paper(safeTitle,'map-page',overview));firstCardPage=false;}if(!fits(cardPageBody(cardContent+row),firstCardPage?safeTitle:'',firstCardPage?'map-page':'crop-page'))throw Error('Crop row overflow');cardContent+=row;}
+    if(cardContent)flushCards();
+    const head='<div class="year-key"><span style="--mark:#b5d7ae">'+e(t.plant)+'</span><span style="--mark:#efd18d">'+e(t.fertilizerGreen)+'</span><span style="--mark:#efb4a8">'+e(t.harvest)+'</span><span style="--mark:#bcd4e4">'+e(t.note)+'</span><span style="--mark:#d0d0cb">'+e(t.end)+'</span></div><p class="year-help">'+e(t.yearHelp)+'</p>';
+    let content=head;
+    const flush=()=>{pages.push(paper('','log-page',content));content=head;};
+    for(const group of groups){
+      let parts=[],continued=false;
+      const appendGroup=()=>{content+=groupHTML(group,parts,continued);parts=[];continued=true;};
+      for(const entry of group.entries){
+        const full=(helpers.workTypes[entry.kind]||t.record)+(entry.name?'：'+entry.name:'')+(entry.amount?' （'+(entry.shared?t.total:t.amount)+'：'+entry.amount+'）':'')+(entry.note?'\n'+entry.note:'');
+        let rest=Array.from(full),part=0;
+        while(rest.length){
+          const next={entry,text:rest.join(''),part};
+          if(fits(content+groupHTML(group,parts.concat(next),continued))){parts.push(next);break;}
+          if(parts.length){appendGroup();flush();continue;}
+          if(content!==head){flush();continue;}
+          let lo=1,hi=rest.length,best=0;
+          while(lo<=hi){const mid=(lo+hi)>>1;if(fits(content+groupHTML(group,[{entry,text:rest.slice(0,mid).join(''),part}],continued))){best=mid;lo=mid+1;}else hi=mid-1;}
+          if(!best)throw Error('Record cannot fit on A4: '+entry.id);
+          parts.push({entry,text:rest.slice(0,best).join(''),part:part++});rest=rest.slice(best);appendGroup();flush();
+        }
+      }
+      if(!parts.length&&group.entries.length)continue;
+      if(!fits(content+groupHTML(group,parts,continued)))flush();
+      appendGroup();
+    }
+    if(memo.trim()){
+      let rest=Array.from(memo.trim());
+      while(rest.length){let lo=1,hi=rest.length,best=0;while(lo<=hi){const mid=(lo+hi)>>1;if(fits(content+'<section class="calendar-memo"><h2>memo</h2><p class="memo-text">'+e(rest.slice(0,mid).join(''))+'</p></section>')){best=mid;lo=mid+1;}else hi=mid-1;}
+        if(!best){if(content===head)throw Error('Memo overflow');flush();continue;}
+        content+='<section class="calendar-memo"><h2>memo</h2><p class="memo-text">'+e(rest.slice(0,best).join(''))+'</p></section>';rest=rest.slice(best);if(rest.length)flush();
+      }
+    }
+    if(!memo.trim()&&fits(content+'<section class="calendar-memo" style="min-height:18mm"><h2>memo</h2></section>'))content+='<section class="calendar-memo"><h2>memo</h2></section>';
+    if(content!==head)flush();
+    const numbered=pages.map((s,i)=>s.replace('<span class="folio"></span>','<span class="folio">'+(i+1)+' / '+pages.length+'</span>'));
+    // Final strict overflow check, including the map and legends.
+    for(const s of numbered){host.innerHTML=s;const body=host.querySelector('.pagebody');if(body.scrollHeight>body.clientHeight+1)throw Error('Page overflow');}
+    return '<!doctype html>'+htmlStart()+'<nav class="toolbar screen-hidden"><button type="button" id="print-again">'+e(PRINT_LABELS.print.trim())+'</button><p>'+e(PRINT_LABELS.fallback)+'</p></nav><div class="spread">'+numbered.join('')+'</div></body></html>';
+  } finally {frame.remove();}
+}
+
 function printDocument(model, title, memo) {
   const t=PRINT_LABELS,e=escapePrint,farm=model.farm,beds=Object.values(model.ridges),info=printFieldInfo(farm),wide=true;
   const compact=wide&&beds.length<=6&&beds.every(b=>String(b.name).length<80&&String((model.plantings[b.id]||{}).note||'').length<160);
@@ -3719,22 +3943,30 @@ function printDocument(model, title, memo) {
   `+'</style></head><body>'+('<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+Array.from(imageDefs.entries()).map(([src,a])=>'<image id="'+a.id+'" href="'+src+'" width="'+a.w+'" height="'+a.h+'"/>').join('')+'</defs></svg>')+'<div class="toolbar screen-hidden"><button type="button" id="print-again">'+e(t.print.trim())+'</button><p>'+e(t.fallback)+'</p></div><main class="sheet '+'practical'+(compact?' compact':'')+(dense?' dense':'')+'"><svg class="paper-grid" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><pattern id="paper-squares" width="5mm" height="5mm" patternUnits="userSpaceOnUse"><path d="M18.89764 0H0V18.89764" fill="none" stroke="#d9ded5" stroke-width="0.6"/></pattern></defs><rect width="100%" height="100%" fill="url(#paper-squares)"/></svg><header class="document-header"><div class="eyebrow"><span>'+model.year+'</span></div><h1>'+e(safeTitle)+'</h1>'+(safeTitle!==farm.name?'<p class="subtitle">'+e(farm.name)+'</p>':'')+'</header><div class="overview"><section class="field-area"><figure><div class="map">'+printMapSVG(farm,beds,width,height)+'</div></figure>'+stats+'</section>'+(landmarkLegend?'<ul class="legend">'+landmarkLegend+'</ul>':'')+'<div class="notes">'+(model.snapshot?'<p>'+e(t.snapshotNote)+'</p>':'')+(model.snapshot&&!model.snapshot.farm?'<p>'+e(t.legacyNote)+'</p>':'')+'</div></div><div class="records">'+(beds.length?'<section><div class="section-heading"><h2>'+e(t.list)+'</h2><p>'+e(t.numbers)+'</p></div><table><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></section>':'<p class="empty">'+e(t.empty)+'</p>')+(memo.trim()?'<section class="memo"><h2>'+e(t.memo)+'</h2><p>'+e(memo.trim())+'</p></section>':'')+'</div><footer><span>Hatakebo</span><span>'+e(stamp)+'</span></footer></main></body></html>';
 }
 
+function diaryPrintDocument(model,title,memo) {
+  const diaryModel={...model,history:model.snapshot?{[model.year]:model.plantings}:model.history[model.farm.id]||{},farm:model.snapshot?{...model.farm,journal:model.snapshot.farm?.journal||[]}:model.farm};
+  return buildHatakeboDiary(diaryModel,{fieldInfo:printFieldInfo,mapSVG:printMapSVG,icon:vegetableMarkup,vid:extractVid,vegetable:id=>VM[id],timeline:landTimeline,workTypes:WORK_TYPES},title,memo);
+}
+
 function PrintDocumentPreview({html,wide}) {
   const frame=useRef(null),host=useRef(null),[box,setBox]=useState({scale:1,height:500});
   const width=(wide?297:210)*96/25.4;
-  function measure(){if(!host.current||!frame.current||!frame.current.contentDocument)return;const scale=Math.min(1,host.current.clientWidth/width),sheet=frame.current.contentDocument.querySelector('.sheet');if(sheet)setBox({scale,height:Math.ceil(sheet.scrollHeight*scale)+2});}
+  function measure(){if(!host.current||!frame.current||!frame.current.contentDocument)return;const scale=Math.min(1,host.current.clientWidth/width),sheet=frame.current.contentDocument.querySelector('.sheet,.spread');if(sheet)setBox({scale,height:Math.ceil(sheet.scrollHeight*scale)+2});}
   useEffect(()=>{const ro=new ResizeObserver(measure);if(host.current)ro.observe(host.current);return()=>ro.disconnect();},[width,html]);
   return <div ref={host} style={{width:"100%",overflow:"hidden",height:box.height,background:"white",border:"1px solid #abb7ac"}}><iframe ref={frame} title={PRINT_LABELS.preview} srcDoc={html} sandbox="allow-same-origin" onLoad={measure} style={{display:"block",border:0,width:width,height:Math.max(1200,box.height/box.scale),transform:"scale("+box.scale+")",transformOrigin:"top left",pointerEvents:"none"}} tabIndex={-1}/></div>;
 }
 
 function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}) {
-  const t=PRINT_LABELS,[selYear,setSelYear]=useState(snapOverride?snapOverride.year:year),[title,setTitle]=useState(""),[memo,setMemo]=useState(snapOverride?snapOverride.note||"":""),dialog=useRef(null);
+  const t=PRINT_LABELS,d=DIARY_LABELS,[selYear,setSelYear]=useState(snapOverride?snapOverride.year:year),[title,setTitle]=useState(""),[memo,setMemo]=useState(snapOverride?snapOverride.note||"":""),[design,setDesign]=useState("practical"),[retry,setRetry]=useState(0),[prepared,setPrepared]=useState(null),dialog=useRef(null);
   const source=farms.find(f=>f.id===farm.id)||farm,activeFarm=snapOverride&&snapOverride.farm?snapOverride.farm:geometryAt(source,selYear);
-  const model={farm:activeFarm,year:selYear,ridges:snapOverride?snapOverride.ridges||{}:bedsAt(ridges[farm.id],selYear),plantings:snapOverride?snapOverride.plantings||{}:(plantings[farm.id]||{})[selYear]||{},snapshot:snapOverride,history:plantings,soil};
-  const years=Array.from(new Set([year,selYear,...Object.keys(plantings[farm.id]||{}).map(Number),...Object.keys(source.versions||{}).map(Number).filter(y=>y>=1900)])).sort((a,b)=>b-a);
-  const html=printDocument(model,title,memo);
+  const model=useMemo(()=>({farm:activeFarm,year:selYear,ridges:snapOverride?snapOverride.ridges||{}:bedsAt(ridges[farm.id],selYear),allRidges:snapOverride?snapOverride.ridges||{}:ridges[farm.id]||{},plantings:snapOverride?snapOverride.plantings||{}:(plantings[farm.id]||{})[selYear]||{},snapshot:snapOverride,history:plantings,soil}),[source,selYear,snapOverride,ridges,plantings,soil]);
+  const years=Array.from(new Set([year,selYear,...Object.keys(plantings[farm.id]||{}).map(Number),...(source.journal||[]).map(entry=>Number(entry.year)).filter(y=>Number.isInteger(y)&&y>=1900),...Object.keys(source.versions||{}).map(Number).filter(y=>y>=1900)])).sort((a,b)=>b-a);
+  const request=useMemo(()=>({model,design,title,memo,retry}),[model,design,title,memo,retry]);
+  const html=prepared?.request===request?prepared.html:"",failed=prepared?.request===request&&prepared.error;
+  useEffect(()=>{let cancelled=false;const timer=setTimeout(async()=>{try{const html=design==="diary"?await diaryPrintDocument(model,title,memo):printDocument(model,title,memo);if(!cancelled)setPrepared({request,html});}catch(error){if(!cancelled)setPrepared({request,html:"",error:true});}},80);return()=>{cancelled=true;clearTimeout(timer);};},[request]);
   useEffect(()=>{const old=document.activeElement;dialog.current.focus();function keys(e){if(e.key==="Escape")onClose();if(e.key!=="Tab")return;const list=Array.from(dialog.current.querySelectorAll('button,input,select,textarea,summary')).filter(el=>el.getClientRects().length);const first=list[0],last=list[list.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===dialog.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}const el=dialog.current;el.addEventListener('keydown',keys);return()=>{el.removeEventListener('keydown',keys);if(old&&old.isConnected)old.focus();};},[]);
   async function openPrint(autoPrint){
+    if(!html)return;
     const w=window.open('','_blank','width=1120,height=800');if(!w){alert(t.popup);return;}
     w.document.open();w.document.write(html);w.document.close();
     w.document.querySelector('.toolbar').classList.remove('screen-hidden');
@@ -3750,13 +3982,14 @@ function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}
     <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="print-heading" tabIndex={-1} onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1000,maxHeight:"calc(96dvh / var(--ui-scale, 1))",display:"flex",flexDirection:"column",background:C.paper,color:C.ink,borderRadius:8,boxShadow:"0 12px 45px #0004",minHeight:0}}>
       <header style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid "+C.inkLine,flexShrink:0}}><h2 id="print-heading" style={{fontSize:20,margin:0,flex:1}}>{t.preview}</h2><button style={button} onClick={onClose} aria-label={t.close}>×</button></header>
       <div style={{overflowY:"auto",padding:"16px 18px",minHeight:0}}>
-        <p style={{margin:"0 0 14px",fontSize:15,lineHeight:1.7}}>{t.scope}</p>
-        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:12}}><span style={{fontSize:16,overflowWrap:"anywhere"}}>{activeFarm.name}</span>{!snapOverride?<label style={{display:"flex",alignItems:"center",gap:8,fontSize:15}}>{t.year}<select style={{...button,padding:"8px"}} value={selYear} onChange={e=>setSelYear(Number(e.target.value))}>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>:<span>{selYear} · {t.snapshot}</span>}</div>
-        <details style={{borderTop:"1px solid "+C.inkLine,borderBottom:"1px solid "+C.inkLine,padding:"12px 0",marginBottom:16}}><summary style={{cursor:"pointer",fontSize:16}}>{t.options}</summary><label style={{display:"block",fontSize:15,marginTop:12}}>{t.title}<input maxLength={100} value={title} placeholder={activeFarm.name} onChange={e=>setTitle(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4}}/></label><label style={{display:"block",fontSize:15,marginTop:12}}>{t.memo}<textarea maxLength={400} rows={3} value={memo} onChange={e=>setMemo(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4,resize:"vertical"}}/></label></details>
-        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,marginBottom:12}}><p style={{flex:"1 1 150px",minWidth:0,fontSize:14,lineHeight:1.6,margin:0}}>{t.previewNote}</p><button style={button} onClick={()=>openPrint(false)}>{t.open}</button></div>
-        <PrintDocumentPreview html={html} wide={true}/>
+        <fieldset style={{border:0,padding:0,margin:"0 0 14px",minWidth:0}}><legend style={{fontSize:16,marginBottom:8}}>{d.choose}</legend><div style={{display:"flex",flexWrap:"wrap",gap:10}}>{["practical","diary"].map(value=><label key={value} style={{flex:"1 1 230px",minWidth:0,display:"flex",alignItems:"center",gap:10,padding:12,border:"2px solid "+(design===value?C.ink:C.inkLine),borderRadius:6,background:"white",cursor:"pointer"}}><input type="radio" name="print-design" value={value} checked={design===value} onChange={()=>setDesign(value)} style={{width:20,height:20,flexShrink:0}}/><svg width="56" height="52" viewBox="0 0 64 56" aria-hidden="true" style={{flexShrink:0}}><rect x={value==="diary"?14:3} y="3" width={value==="diary"?36:58} height="48" fill="#faf9f3" stroke="#85917d"/>{value==="diary"?<g stroke="#a7b29c" fill="none"><rect x="18" y="8" width="13" height="12"/>{[25,33,41].map(y=>[18,28,38].map(x=><rect key={x+":"+y} x={x} y={y} width="8" height="6"/>))}</g>:<g stroke="#a7b29c" fill="none"><rect x="8" y="10" width="24" height="30"/>{[15,24,33].map(y=><path key={y} d={"M11 "+y+"h18 M37 "+y+"h18"}/>)}</g>}</svg><span style={{minWidth:0,overflowWrap:"anywhere"}}><strong style={{display:"block",fontSize:16}}>{value==="diary"?d.diary:d.simple}</strong><span style={{display:"block",fontSize:13,lineHeight:1.5,marginTop:4}}>{value==="diary"?d.diaryHint:d.simpleHint}</span></span></label>)}</div></fieldset>
+        <p style={{margin:"0 0 14px",fontSize:15,lineHeight:1.7}}>{design==="diary"?(snapOverride?d.snapshotScope:d.scope):t.scope}</p>
+        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:12}}><span style={{fontSize:16,overflowWrap:"anywhere"}}>{activeFarm.name}</span>{!snapOverride?<label style={{display:"flex",alignItems:"center",gap:8,fontSize:15}}>{t.year}<select aria-label={t.year} style={{...button,padding:"8px"}} value={selYear} onChange={e=>setSelYear(Number(e.target.value))}>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>:<span>{selYear} · {t.snapshot}</span>}</div>
+        <details style={{borderTop:"1px solid "+C.inkLine,borderBottom:"1px solid "+C.inkLine,padding:"12px 0",marginBottom:16}}><summary style={{cursor:"pointer",fontSize:16}}>{t.options}</summary><label style={{display:"block",fontSize:15,marginTop:12}}>{t.title}<input maxLength={100} value={title} placeholder={activeFarm.name} onChange={e=>setTitle(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4}}/></label><label style={{display:"block",fontSize:15,marginTop:12}}>{t.memo}<textarea aria-label={t.memo} maxLength={400} rows={3} value={memo} onChange={e=>setMemo(e.target.value)} style={{display:"block",width:"100%",fontSize:16,padding:10,marginTop:4,resize:"vertical"}}/></label></details>
+        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,marginBottom:12}}><p style={{flex:"1 1 150px",minWidth:0,fontSize:14,lineHeight:1.6,margin:0}}>{design==="diary"?d.previewNote:t.previewNote}</p><button style={{...button,opacity:html?1:.5}} disabled={!html} onClick={()=>openPrint(false)}>{t.open}</button></div>
+        {html?<PrintDocumentPreview key={design} html={html} wide={design==="practical"}/>:<div role={failed?"alert":"status"} style={{padding:20}}>{failed?d.error:d.loading}{failed&&<button style={{...button,display:"block",marginTop:12}} onClick={()=>setRetry(x=>x+1)}>{d.retry}</button>}</div>}
       </div>
-      <footer style={{padding:"12px 18px",borderTop:"1px solid "+C.inkLine,display:"flex",gap:10,flexShrink:0}}><button style={{...button,flex:1}} onClick={onClose}>{t.close}</button><button style={{...button,flex:2,background:C.ink,color:"white",fontWeight:"bold"}} onClick={()=>openPrint(true)}>{t.print}</button></footer>
+      <footer style={{padding:"12px 18px",borderTop:"1px solid "+C.inkLine,display:"flex",gap:10,flexShrink:0}}><button style={{...button,flex:1}} onClick={onClose}>{t.close}</button><button style={{...button,flex:2,background:C.ink,color:"white",fontWeight:"bold",opacity:html?1:.5}} disabled={!html} onClick={()=>openPrint(true)}>{t.print}</button></footer>
     </div>
   </div>;
 }
