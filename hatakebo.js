@@ -89,6 +89,7 @@ function LedgerStyle(){return <style>{`
   .ledger-bottom>div{padding-left:0!important;padding-right:0!important}.ledger-bottom button{font-family:${SANS}!important;font-size:16px!important}
   .ledger-status{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-top:1px solid ${C.inkLine};padding:8px 0!important;font:14px/1.6 ${SANS}}
   .ledger-status .faq-link{margin:0;padding:8px 0;border:0;background:transparent;color:${C.ink};font-size:14px;text-decoration:underline;text-underline-offset:4px}
+  .setup-offline{box-sizing:border-box;max-width:520px;width:calc(100% - 24px);margin:0 auto 24px;padding:0 20px;text-align:center;background:${C.paper};font-family:${SERIF};line-height:1.7}
   .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
   .action-notice{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:8px;padding:8px 12px;background:${C.indigoPale};border-left:3px solid ${C.indigo};font-size:14px;line-height:1.5}
   .action-notice>span{flex:1 1 180px;overflow-wrap:anywhere}.action-notice button{padding:4px 8px;background:${C.paper};color:${C.ink};border:1px solid ${C.inkBorder}}
@@ -866,7 +867,6 @@ function HatakeApp() {
       <div style={{zoom:uiScale,"--ui-scale":uiScale}}>
         <LedgerStyle/>
         <FarmSetup farms={farms} onComplete={onComplete} onSkip={farms.length>0?function(){setScreen("map");}:null}/>
-        <div style={{background:C.paper,padding:"8px 16px"}}><OfflineNotice/></div>
       </div>
     );
   }
@@ -1666,6 +1666,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
           </div>
         )}
       </div>
+      <div className="setup-offline"><OfflineNotice/></div>
     </div>
   );
 }
