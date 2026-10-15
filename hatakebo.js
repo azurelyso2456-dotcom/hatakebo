@@ -3046,7 +3046,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
       {editFarm&&<FarmEdit farm={farm} beds={farmRidges} onSave={function(f){var old=rawFarm;preserveLayout("畑の形・目印を変更する前の図");onUpdateFarm(geometryVersion(rawFarm,f,year,FARM_GEOMETRY));setEditFarm(false);showToast("畑を更新しました",function(){onUpdateFarm(old);});}} onClose={function(){setEditFarm(false);}}/>}
       {editBed&&selRidgeObj&&<BedEdit farm={farm} ridge={selRidgeObj} beds={farmRidges} onSave={function(next){var old=selRidgeObj;preserveLayout("畝の寸法・位置を変更する前の図");setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:geometryVersion(p[fid][old.id],next,year,BED_GEOMETRY)}};});setEditBed(false);showToast("畝を更新しました",function(){setRidges(function(p){return {...p,[fid]:{...p[fid],[old.id]:old}};});});}} onClose={function(){setEditBed(false);}}/>}
-      <div className="ledger-status" style={{color:saveError?C.red:C.inkFaint}}><div><div role="status">{saveError?"この端末に保存できていません":"保存しました（この端末）"}</div><OfflineNotice/></div><button className="faq-link" onClick={function(e){e.stopPropagation();onShowFaq();}}>よくある質問</button></div>
+      <div className="ledger-status" style={{color:saveError?C.red:C.inkFaint}}><div>{saveError&&<div role="status">この端末に保存できていません</div>}<OfflineNotice/></div><button className="faq-link" onClick={function(e){e.stopPropagation();onShowFaq();}}>よくある質問</button></div>
       {/* 畝ボトムシート */}
 
       {showGuide && <WelcomeGuide onClose={closeGuide} isTouchDevice={isTouchDevice}/>}
@@ -3217,7 +3217,7 @@ const FAQ_DATA = [
       {
         "q": "入力した記録は、そのまま閉じても残りますか？",
         "a": [
-          "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。「保存しました（この端末）」を確認できれば、そのまま閉じて大丈夫です。入力途中の内容はまだ保存されていません。",
+          "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。入力途中の内容はまだ保存されていません。",
           "「作業を記録」を開き、画面下の「配置図を保存」を押すと、あとで配置を変えても、その図を見返せます。作業内容の入力は不要です。同じ配置図が保存済みなら、このボタンは表示されません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。通常の記録は自動保存されます。",
           "「これまでの記録」では、年を選ぶと畝ごとの記録が表示されます。下線は記録した時期を表し、記録を押すと詳しい内容を確認できます。畑全体への施肥やメモは各畝に表示し、量は全体の合計として扱います。",
           "作付け・作業・畑の図は同じ端末内に保存されます。端末の故障や機種変更に備え、「バックアップ」で控えも残しておくと安心です。"
@@ -3283,7 +3283,7 @@ const FAQ_DATA = [
         "q": "改善されたはずの画面が、前のままです",
         "a": [
           "インターネットにつながる場所でハタケボを開き、しばらくお待ちください。新しい版は自動で読み込みます。作業中の画面が急に切り替わらないよう、今開いている画面はそのままにしています。",
-          "「保存しました（この端末）」を確認してから、ハタケボを開いているタブをすべて閉じ、いつものアドレスから開き直してみてください。複数のタブで開いていると、前の版が使われ続けることがあります。",
+          "入力中の内容を保存してから、ハタケボを開いているタブをすべて閉じ、いつものアドレスから開き直してみてください。複数のタブで開いていると、前の版が使われ続けることがあります。",
           "更新のためにブラウザのデータを消す必要はありません。記録まで消えることがあるので、消さずにお試しください。変わらない場合は、電波のある場所からお問い合わせください。"
         ]
       },
