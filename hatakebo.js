@@ -550,7 +550,7 @@ const HISTORY_LABELS = {
   "savedNotice": "配置図を保存しました。",
   "pastSave": "{year}年の配置図を保存",
   "layoutEmpty": "この年に取っておいた畑の図はありません",
-  "layoutHelp": "「畑のようす」で「配置図を保存」を押すと、ここで見返せます。配置の変更前に自動で残した図も表示します。",
+  "layoutHelp": "「作業を記録」を開き、画面下の「配置図を保存」を押すと、ここで見返せます。配置の変更前に自動で残した図も表示します。",
   "openLayout": "図を見る",
   "layoutYear": "{year}年の配置",
   "savedOn": "保存した日時",
@@ -671,7 +671,10 @@ function HistoryView({allBeds,entries,year,view,onView,snapshots,farm,small,onEd
   </div>;
 }
 
-function WorkForm({farm,beds,initial,onSave,onClose}) {
+function WorkForm({farm,beds,initial,onSave,onClose,onSaveLayout,canSaveLayout,layoutSaveLabel,layoutSaveError}) {
+  const [layoutAttempted,setLayoutAttempted]=useState(false);
+  const layoutNoticeRef=useRef(null);
+  useEffect(()=>{if(layoutAttempted&&!canSaveLayout&&layoutNoticeRef.current)layoutNoticeRef.current.focus({preventScroll:true});},[layoutAttempted,canSaveLayout]);
   const [kind,setKind]=useState(initial.kind||"fertilizer");
   const legacyPlace=!!initial.id&&!initial.rid&&!historyWholePlace(initial.place);
   const [rid,setRid]=useState(initial.rid||(legacyPlace?"__legacy_place__":""));
@@ -706,7 +709,12 @@ function WorkForm({farm,beds,initial,onSave,onClose}) {
     {!!initial.id&&!!initial.month&&!initial.day&&!unknown&&<label className="journal-check"><input type="checkbox" checked={monthOnly} onChange={e=>setMonthOnly(e.target.checked)}/>{DIARY_LABELS.unknownDay}</label>}
     <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea aria-label="メモ" maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
     {error&&<p role="alert">{error}</p>}<div className="journal-actions"><button type="button" onClick={onClose}>やめる</button><button className="journal-primary" type="submit">{initial.id?"訂正を保存":"記録を残す"}</button></div>
-  </form></EditDialog>;
+  </form>
+  {!initial.id&&onSaveLayout&&(canSaveLayout||layoutAttempted)&&<div className="work-layout-save" style={{borderTop:"1px solid "+C.inkLine,marginTop:24,paddingTop:16}}>
+    {canSaveLayout&&<div className="journal-actions" style={{marginTop:0}}><button type="button" className="layout-save-button" style={{minHeight:48,maxWidth:"100%",whiteSpace:"normal",overflowWrap:"anywhere"}} onClick={()=>{setLayoutAttempted(true);onSaveLayout();}}>{layoutSaveLabel}</button></div>}
+    {layoutAttempted&&<p ref={layoutNoticeRef} tabIndex={-1} role="status" style={{marginBottom:0}}>{layoutSaveError?"この端末に保存できていません。バックアップで記録を残してください。":!canSaveLayout?HISTORY_LABELS.savedNotice:""}</p>}
+  </div>}
+  </EditDialog>;
 }
 function HatakeApp() {
   const [activeFarmId,setActiveFarmId] = useState(null);
@@ -3028,7 +3036,6 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           {mainTab==="map"&&ridgeCount===0&&<button className="journal-primary" onClick={openRidgePicker}>＋ 畝を作る</button>}
           <button className={mainTab==="map"&&ridgeCount===0?"":"journal-primary"} onClick={()=>openWork(null)}>＋ 作業を記録</button>
           {mainTab==="map"&&<button onClick={()=>{closeSheet();setEditMode(true);}}>畑を編集</button>}
-          {mainTab==="map"&&(!hasSavedLayout||saveError)&&<button className="layout-save-button" onClick={()=>{saveSnapshot();requestAnimationFrame(()=>{const first=bottomBarRef.current&&bottomBarRef.current.querySelector(".journal-toolbar button");if(first)first.focus({preventScroll:true});});}}>{year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}</button>}
           </>}
         </div>
       </div>
@@ -3056,7 +3063,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         />
       )}
 
-      {workDraft&&<WorkForm farm={rawFarm} beds={ridges[fid]||{}} initial={workDraft} onSave={saveWork} onClose={()=>setWorkDraft(null)}/> }
+      {workDraft&&<WorkForm farm={rawFarm} beds={ridges[fid]||{}} initial={workDraft} onSave={saveWork} onClose={()=>setWorkDraft(null)} onSaveLayout={saveSnapshot} canSaveLayout={!hasSavedLayout||saveError} layoutSaveError={saveError} layoutSaveLabel={year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}/> }
       {selRid && selRidgeObj && (
         <RidgeSheet key={selRid}
           editable={editMode} entries={timeline.filter(e=>entryAtBed(e,selRid,ridges[fid]||{}))} onRecord={kind=>openWork(selRid,kind)} onEditEntry={e=>{closeSheet();setWorkDraft(e);}} onRemoveEntry={removeWork}
@@ -3207,7 +3214,7 @@ const FAQ_DATA = [
         "q": "入力した記録は、そのまま閉じても残りますか？",
         "a": [
           "作業は「記録を残す」、訂正は「訂正を保存」で確定します。畑や畝の変更も確定すると自動で保存します。「保存しました（この端末）」を確認できれば、そのまま閉じて大丈夫です。入力途中の内容はまだ保存されていません。",
-          "「畑のようす」の画面下にある「配置図を保存」を押すと、あとで配置を変えても、その図を見返せます。通常の保存のために押す必要はありません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。",
+          "「作業を記録」を開き、画面下の「配置図を保存」を押すと、あとで配置を変えても、その図を見返せます。作業内容の入力は不要です。同じ配置図が保存済みなら、このボタンは表示されません。「これまでの記録」→「以前の畑の図」で年を選んで確認できます。通常の記録は自動保存されます。",
           "「これまでの記録」では、年を選ぶと畝ごとの記録が表示されます。下線は記録した時期を表し、記録を押すと詳しい内容を確認できます。畑全体への施肥やメモは各畝に表示し、量は全体の合計として扱います。",
           "作付け・作業・畑の図は同じ端末内に保存されます。端末の故障や機種変更に備え、「バックアップ」で控えも残しておくと安心です。"
         ]
