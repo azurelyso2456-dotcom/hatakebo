@@ -23,9 +23,13 @@ const C = {
   greenPale:"#e4f0e0",
   stamp:    "#c83030",   /* 朱印 */
 };
-const SERIF  = "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif";
-const SANS   = "'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif";
-const HAND   = SANS;
+// Use the same locally installed ledger typeface in setup, records and controls.
+const UI_FONT = document.documentElement.lang === "ja"
+  ? "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif"
+  : "Georgia, 'Times New Roman', serif";
+const SERIF = UI_FONT;
+const SANS = UI_FONT;
+const HAND = UI_FONT;
 // One quiet ruled-paper surface for all screens; dense answers and controls stay solid.
 const PAPER_LINES = "repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(112,124,110,.13) 31px,rgba(112,124,110,.13) 32px)";
 
@@ -34,7 +38,12 @@ function LanguageSwitch(){
   return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"},{lang:"pl",href:"pl.html",name:"Polski"},{lang:"sw",href:"sw.html",name:"Kiswahili"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
 }
 function LedgerStyle(){return <style>{`
-  .notebook-page{background-color:${C.paper};background-image:${PAPER_LINES}!important;font-family:${SANS};color:${C.ink}}
+  body{font-family:${UI_FONT};background-color:${C.paper};background-image:${PAPER_LINES};background-position:0 0}
+  button,input,select,textarea{font-family:${UI_FONT}}
+  body>footer{font-family:${UI_FONT}!important}
+  #root .language-nav{font-family:${UI_FONT}}
+  /* A single unscaled paper surface prevents seams at container edges and at large text sizes. */
+  .notebook-page{background:transparent!important;font-family:${UI_FONT};color:${C.ink}}
   .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;font-family:${SANS}!important}
   .ledger-app button{min-height:44px;box-shadow:none!important;border-radius:2px;letter-spacing:normal!important;font-family:${SANS}!important;line-height:1.5}
   .ledger-app button:focus-visible{outline:3px solid ${C.orange};outline-offset:3px}
@@ -92,7 +101,7 @@ function LedgerStyle(){return <style>{`
   .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr) 80px;gap:12px 8px!important}.ledger-tight .ledger-menu-button{width:80px;min-width:80px!important}.ledger-tight .ledger-yearnav{grid-template-columns:44px minmax(0,1fr) 44px;gap:0}.ledger-tight .year-number{font-size:16px}.ledger-tight .year-caption{white-space:normal}.ledger-tight .ledger-navtabs{gap:12px}.ledger-tight .ledger-navtabs button{font-size:15px!important}
   .ledger-narrow .ledger-navrow{grid-template-columns:minmax(0,1fr)}.ledger-narrow .ledger-menu-wrap{grid-column:1}.ledger-narrow .ledger-menu-button{width:100%}.ledger-narrow .ledger-yearnav{grid-column:1}.ledger-narrow .ledger-navtabs{flex-wrap:wrap}
   @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-fieldbox{max-height:440px!important}}
-  .faq-screen{position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
+  .faq-screen{background:${C.paper}!important;position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
   .faq-header{position:sticky;top:0;z-index:10;background:${C.paper};border-bottom:1px solid ${C.inkLine}}
   .faq-header-inner{max-width:760px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:12px}.faq-header h1{font:600 22px/1.4 ${SANS}}
   .faq-back{min-width:44px;height:44px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};font-size:24px;cursor:pointer}
@@ -868,7 +877,7 @@ function HatakeApp() {
       {recoveryLimited&&<div role="status" style={{padding:12,fontSize:14}}>今の記録は保存しました。空き容量が少ないため、一部の取り消し履歴を残せませんでした。「バックアップ」で控えを保存してください。</div>}
       {saveError && (
         <div style={{position:"fixed",top:0,left:0,right:0,zIndex:200,background:"#b3382c",color:"#fff",
-          padding:"12px 16px",fontSize:14,fontFamily:"'Hiragino Mincho ProN','Yu Mincho',serif",
+          padding:"12px 16px",fontSize:14,fontFamily:UI_FONT,
           textAlign:"center",letterSpacing:1,lineHeight:1.7}}>
           ⚠ データを保存できません。プライベートモードを解除するか、<br/>
           「⋯」メニューからバックアップを取ってください。
@@ -1369,9 +1378,8 @@ function FarmSetup({ farms, onComplete, onSkip }) {
 
   /* 帳簿風の外枠スタイル */
   const pageStyle = {
-    minHeight:"100vh", background:C.paper,
+    minHeight:"100vh",
     fontFamily:SERIF, color:C.ink,
-    backgroundImage:"repeating-linear-gradient(transparent, transparent 27px, " + C.inkLine + "40 27px, " + C.inkLine + "40 28px)",
   };
 
   return (
@@ -2732,16 +2740,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const [renamingFarm, setRenamingFarm] = useState(false);
   const [renameVal, setRenameVal] = useState("");
 
-  const pageLines = {
-    backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,"+C.inkLine+"30 27px,"+C.inkLine+"30 28px)",
-  };
-
   /* ── ボトムバーの高さ（畝モード時は高くなる） ── */
   const bottomBarRef=useRef(null),[bottomBarH,setBottomBarH]=useState(80);
   useEffect(()=>{const el=bottomBarRef.current;if(!el)return;const measure=()=>setBottomBarH(el.offsetHeight);measure();const ro=new ResizeObserver(measure);ro.observe(el);return()=>ro.disconnect();},[]);
 
   return (
-    <div className={"notebook-page ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={Object.assign({minHeight:"100vh",background:C.paper,fontFamily:SERIF,color:C.ink,userSelect:"none"},pageLines)}
+    <div className={"notebook-page ledger-app"+(ledgerDesktop?"":" ledger-compact")+(viewportWidth/(uiScale||1)<350?" ledger-tight":"")+(viewportWidth/(uiScale||1)<260?" ledger-narrow":"")} style={{minHeight:"100vh",fontFamily:SERIF,color:C.ink,userSelect:"none"}}
       onClick={function(){ closeSheet(); if(s1){setS1(null);setHov(null);} setMenuOpen(false); }}>
 
       {/* ══ ヘッダー（シンプル） ══ */}
@@ -2804,6 +2808,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:C.ink,borderBottom:"1px solid "+C.inkLine,textAlign:"left"}}>
                   <span>❓</span> よくある質問
                 </button>
+                
                 <div style={{padding:"12px 16px",borderBottom:"1px solid "+C.inkLine}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                     <span>🔍</span>
@@ -4029,6 +4034,8 @@ function PrintDocumentPreview({html,wide}) {
   return <div ref={host} style={{width:"100%",overflow:"hidden",height:box.height,background:"white",border:"1px solid #abb7ac"}}><iframe ref={frame} title={PRINT_LABELS.preview} srcDoc={html} sandbox="allow-same-origin" onLoad={measure} style={{display:"block",border:0,width:width,height:Math.max(1200,box.height/box.scale),transform:"scale("+box.scale+")",transformOrigin:"top left",pointerEvents:"none"}} tabIndex={-1}/></div>;
 }
 
+
+
 function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}) {
   const t=PRINT_LABELS,d=DIARY_LABELS,[selYear,setSelYear]=useState(snapOverride?snapOverride.year:year),[title,setTitle]=useState(""),[memo,setMemo]=useState(snapOverride?snapOverride.note||"":""),[design,setDesign]=useState("practical"),[retry,setRetry]=useState(0),[prepared,setPrepared]=useState(null),dialog=useRef(null);
   const source=farms.find(f=>f.id===farm.id)||farm,activeFarm=snapOverride&&snapOverride.farm?snapOverride.farm:geometryAt(source,selYear);
@@ -4036,8 +4043,8 @@ function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}
   const years=Array.from(new Set([year,selYear,...Object.keys(plantings[farm.id]||{}).map(Number),...(source.journal||[]).map(entry=>Number(entry.year)).filter(y=>Number.isInteger(y)&&y>=1900),...Object.keys(source.versions||{}).map(Number).filter(y=>y>=1900)])).sort((a,b)=>b-a);
   const request=useMemo(()=>({model,design,title,memo,retry}),[model,design,title,memo,retry]);
   const html=prepared?.request===request?prepared.html:"",failed=prepared?.request===request&&prepared.error;
-  useEffect(()=>{let cancelled=false;const timer=setTimeout(async()=>{try{const html=design==="diary"?await diaryPrintDocument(model,title,memo):printDocument(model,title,memo);if(!cancelled)setPrepared({request,html});}catch(error){if(!cancelled)setPrepared({request,html:"",error:true});}},80);return()=>{cancelled=true;clearTimeout(timer);};},[request]);
-  useEffect(()=>{const old=document.activeElement;dialog.current.focus();function keys(e){if(e.key==="Escape")onClose();if(e.key!=="Tab")return;const list=Array.from(dialog.current.querySelectorAll('button,input,select,textarea,summary')).filter(el=>el.getClientRects().length);const first=list[0],last=list[list.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===dialog.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}const el=dialog.current;el.addEventListener('keydown',keys);return()=>{el.removeEventListener('keydown',keys);if(old&&old.isConnected)old.focus();};},[]);
+  useEffect(()=>{  let cancelled=false;const timer=setTimeout(async()=>{try{const html=design==="diary"?await diaryPrintDocument(model,title,memo):printDocument(model,title,memo);if(!cancelled)setPrepared({request,html});}catch(error){if(!cancelled)setPrepared({request,html:"",error:true});}},80);return()=>{cancelled=true;clearTimeout(timer);};},[request]);
+  useEffect(()=>{  const old=document.activeElement;dialog.current.focus();function keys(e){if(e.key==="Escape")onClose();if(e.key!=="Tab")return;const list=Array.from(dialog.current.querySelectorAll('button,input,select,textarea,summary')).filter(el=>el.getClientRects().length);const first=list[0],last=list[list.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===dialog.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}const el=dialog.current;el.addEventListener('keydown',keys);return()=>{el.removeEventListener('keydown',keys);if(old&&old.isConnected)old.focus();};},[]);
   async function openPrint(autoPrint){
     if(!html)return;
     const w=window.open('','_blank','width=1120,height=800');if(!w){alert(t.popup);return;}
@@ -4050,6 +4057,7 @@ function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}
     if(w.document.fonts)await w.document.fonts.ready;
     if(!w.closed){w.document.documentElement.dataset.printReady='true';if(autoPrint)w.requestAnimationFrame(()=>w.requestAnimationFrame(print));}
   }
+  
   const button={minHeight:44,padding:"10px 18px",border:"1px solid "+C.inkBorder,background:"white",color:C.ink,fontSize:16,cursor:"pointer",borderRadius:5};
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:"rgba(28,32,26,.55)",display:"flex",justifyContent:"center",alignItems:"center",padding:"12px"}}>
     <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="print-heading" tabIndex={-1} onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1000,maxHeight:"calc(96dvh / var(--ui-scale, 1))",display:"flex",flexDirection:"column",background:C.paper,color:C.ink,borderRadius:8,boxShadow:"0 12px 45px #0004",minHeight:0}}>
