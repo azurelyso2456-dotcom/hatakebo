@@ -13,7 +13,7 @@
 @media(max-width:520px){.getting-started .steps li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px 12px}.getting-started .steps li::before{float:none;grid-row:1/3;margin:0}.getting-started .steps strong{margin:0}.getting-started .steps li>span{grid-column:2}}
 .features .feature{display:block}.features .feature p{margin:0}
 /* Ledger lettering for the brand and data notice; introduction body layout stays unchanged. */
-:root{--ledger-font:Georgia,'Times New Roman',serif}
+:root{--ledger-font:Cambria,'Times New Roman',serif}
 :root:lang(ja){--ledger-font:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',Georgia,serif}
 .brand{font-family:var(--ledger-font)}
 body.privacy-page,body.privacy-page h1,body.privacy-page h2,body.privacy-page h3,body.privacy-page .language-nav{font-family:var(--ledger-font)}

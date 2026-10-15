@@ -1,4 +1,6 @@
 .language-nav{margin-left:auto;display:flex;flex:0 0 auto;align-items:center;font:15px/1.5 Arial,sans-serif;color:#20372e}
+html:not([lang=ja]){font-variant-numeric:lining-nums}
+html:not([lang=ja]) .section-label span,html:not([lang=ja]) .feature-number,html:not([lang=ja]) .steps li::before{font-family:Cambria,'Times New Roman',serif;font-variant-numeric:lining-nums}
 /* The notebook mark belongs to the last footer row, outside the work controls. */
 .app-footer-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0}
 .app-footer-row .app-footer-links{margin:0;min-width:0;overflow-wrap:anywhere}

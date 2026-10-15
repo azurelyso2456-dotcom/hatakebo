@@ -26,7 +26,7 @@ const C = {
 // Use the same locally installed ledger typeface in setup, records and controls.
 const UI_FONT = document.documentElement.lang === "ja"
   ? "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif"
-  : "Georgia, 'Times New Roman', serif";
+  : "Cambria, 'Times New Roman', serif";
 const SERIF = UI_FONT;
 const SANS = UI_FONT;
 const HAND = UI_FONT;
@@ -42,6 +42,26 @@ function LedgerStyle(){return <style>{`
   button,input,select,textarea{font-family:${UI_FONT}}
   body>footer{font-family:${UI_FONT}!important}
   #root .language-nav{font-family:${UI_FONT}}
+  html:not([lang=ja]) #root{font-variant-numeric:lining-nums}
+  html:not([lang=ja]) #root *{letter-spacing:normal!important}
+  html:not([lang=ja]) #root .year-number,html:not([lang=ja]) #root .event-date,html:not([lang=ja]) #root .history-months{font-variant-numeric:lining-nums tabular-nums}
+  html:not([lang=ja]) #root .history-bed-number{font-family:${UI_FONT};font-style:normal;font-variant-numeric:lining-nums}
+  .landmark-heading{margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid ${C.inkLine}}
+  .landmark-heading .landmark-step{font-size:14px;color:${C.inkFaint};margin:0 0 8px;line-height:1.5}
+  .landmark-heading h2{font-size:24px;font-weight:600;margin:0 0 8px;line-height:1.3;overflow-wrap:break-word}
+  .landmark-heading p{font-size:15px;color:${C.inkFaint};line-height:1.6;margin:0}
+  .landmark-editor{font-size:16px;line-height:1.5;text-align:left}
+  .landmark-help{margin:0 0 20px;font-size:15px;line-height:1.6;color:${C.inkFaint};max-width:48ch}
+  .landmark-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+  .landmark-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;margin:0}
+  .landmark-fields input,.landmark-fields select{display:block;min-width:0;color:${C.ink};border-radius:2px;line-height:1.4}
+  .landmark-add{margin:20px 0 0;cursor:pointer}
+  .landmark-saved{display:grid;gap:12px;margin-top:20px}
+  .landmark-saved:empty{display:none}
+  .landmark-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:8px 12px;padding-top:12px;border-top:1px solid ${C.inkLine}}
+  .landmark-item-side{font-size:14px;color:${C.inkFaint};line-height:1.4;overflow-wrap:break-word}
+  .landmark-item input{grid-column:1/3;grid-row:2;min-width:0}
+  .landmark-item button{grid-column:3;grid-row:2;min-height:48px;padding:8px 10px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};font-size:16px;cursor:pointer}
   /* A single unscaled paper surface prevents seams at container edges and at large text sizes. */
   .notebook-page{background:transparent!important;font-family:${UI_FONT};color:${C.ink}}
   .ledger-app{max-width:920px;min-height:0!important;margin:auto;padding:0 24px!important;font-family:${SANS}!important}
@@ -1013,13 +1033,15 @@ function SimpleLandmarks({rows,cols,landmarks,onChange}) {
     var t=LM_TYPES.find(t=>t.id===type);
     onChange({...landmarks,[side+"-"+pos]:{...t,memo:name.trim().slice(0,20)}});setName("");
   }
-  return <div style={{fontSize:16}}>
-    <p>目印は大まかな位置に置きます。名前は地図にも表示されます。</p>
+  return <div className="landmark-editor">
+    <p className="landmark-help">目印は大まかな位置に置きます。名前は地図にも表示されます。</p>
+    <div className="landmark-fields">
     <label>種類<select style={EDIT_STYLE} value={type} onChange={e=>setType(e.target.value)}>{LM_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></label>
     <label>名前（任意）<input style={EDIT_STYLE} value={name} maxLength={20} placeholder="例：田中さんの家" onChange={e=>setName(e.target.value)}/></label>
     <label>畑のどちら側？<select style={EDIT_STYLE} value={side} onChange={e=>setSide(e.target.value)}>{Object.entries(sides).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-    <button style={{...EDIT_STYLE,margin:"12px 0"}} onClick={add}>目印を追加</button>
-    {Object.entries(landmarks).map(([k,l])=><div key={k} style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}><LandmarkImage item={l} size={36}/><span>{sides[k.split("-")[0]]||"畑の中"}</span><input aria-label="目印の名前" style={{...EDIT_STYLE,flex:1,width:80}} value={l.memo||""} placeholder={l.label} maxLength={20} onChange={e=>onChange({...landmarks,[k]:{...l,memo:e.target.value}})}/><button aria-label={(l.memo||l.label)+"を削除"} style={{minHeight:48}} onClick={()=>{if(!confirm("この目印を削除しますか？"))return;var next={...landmarks};delete next[k];onChange(next);}}>削除</button></div>)}
+    </div>
+    <button className="landmark-add" style={EDIT_STYLE} onClick={add}>目印を追加</button>
+    <div className="landmark-saved">{Object.entries(landmarks).map(([k,l])=><div key={k} className="landmark-item"><LandmarkImage item={l} size={36}/><span className="landmark-item-side">{sides[k.split("-")[0]]||"畑の中"}</span><input aria-label="目印の名前" style={EDIT_STYLE} value={l.memo||""} placeholder={l.label} maxLength={20} onChange={e=>onChange({...landmarks,[k]:{...l,memo:e.target.value}})}/><button aria-label={(l.memo||l.label)+"を削除"} onClick={()=>{if(!confirm("この目印を削除しますか？"))return;var next={...landmarks};delete next[k];onChange(next);}}>削除</button></div>)}</div>
   </div>;
 }
 function EditDialog({title,children,onClose}) {
@@ -1398,7 +1420,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
             <button onClick={onSkip} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:C.inkFaint, fontFamily:SERIF }}>とじる</button>
           )}
           {step > 0 && step < SETUP_STEPS.length-1 && (
-            <span style={{ fontSize:14, color:C.inkFaint, fontFamily:SANS }}>
+            <span style={{ fontSize:14, color:C.inkFaint, fontFamily:SANS,whiteSpace:"nowrap",flexShrink:0,fontVariantNumeric:"lining-nums tabular-nums" }}>
               {step} / {SETUP_STEPS.length-2}
             </span>
           )}
@@ -1567,10 +1589,10 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {/* ━━ 目印 ━━ */}
         {sn === "landmarks" && (
           <div>
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記（補） —</div>
-              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>周囲の目印</h2>
-              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.9 }}>方角と周りの目印を記録します（省略可）</p>
+            <div className="landmark-heading">
+              <div className="landmark-step">第二記（補） —</div>
+              <h2>周囲の目印</h2>
+              <p>方角と周りの目印を記録します（省略可）</p>
             </div>
 
             <SimpleLandmarks rows={rows} cols={cols} landmarks={landmarks} onChange={setLandmarks}/>
