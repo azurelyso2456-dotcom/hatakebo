@@ -1065,15 +1065,25 @@ function FarmEdit({farm,beds,onSave,onClose}) {
   }
   return <EditDialog title="畑・目印を編集" onClose={onClose}><p>左上を基準に大きさを変えます。畝や作付け記録は引き継ぎます。</p><label>よこ幅（m）<input type="number" min="0.5" max="15" step="0.25" style={EDIT_STYLE} value={w} onChange={e=>setW(e.target.value)}/></label><label>たて幅（m）<input type="number" min="0.5" max="15" step="0.25" style={EDIT_STYLE} value={h} onChange={e=>setH(e.target.value)}/></label><p>寸法は登録時のマス単位に丸めます。</p><details style={{margin:"16px 0"}}><summary style={{minHeight:44,fontSize:16}}>使わない場所・畑の形を変更</summary><p>升を押すと使う／使わないを切り替えます。畝がある場所は保存時に確認します。</p><div style={{overflow:"auto",maxHeight:300}}><div style={{display:"grid",gridTemplateColumns:"repeat("+farm.cols+",44px)",gap:2}}>{shape.flatMap((row,ri)=>row.map((active,ci)=><button key={ri+"-"+ci} aria-label={(ri+1)+"段目 "+(ci+1)+"番目"} aria-pressed={!!active} onClick={()=>setShape(old=>old.map((line,r)=>r===ri?line.map((v,c)=>c===ci?!v:v):line))} style={{height:44,background:active?C.green:C.paper2,border:"1px solid "+C.inkLine,color:active?C.paper:C.ink}}>{active?"●":"—"}</button>))}</div></div></details><SimpleLandmarks rows={farm.rows} cols={farm.cols} landmarks={lm} onChange={setLm}/><button style={EDIT_STYLE} onClick={()=>{try{save();}catch(e){alert(e.message);}}}>変更を保存</button></EditDialog>;
 }
+// Show centimetre-scale values without rewriting untouched stored geometry.
+function bedMetricText(value){return String(Number(Number(value).toFixed(2)));}
+function bedMetricValue(value,original){
+  if(String(value).trim()===""||!Number.isFinite(Number(value)))return NaN;
+  var rounded=Number(bedMetricText(value));
+  return rounded===Number(bedMetricText(original))?original:rounded;
+}
 function BedEdit({farm,ridge,beds,onSave,onClose}) {
   var cm=farm.cellCm||100,b=ridgeBBox(ridge);
-  const [ori,setOri]=useState(ridge.orientation),[width,setWidth]=useState((ridge.ridgeW||RWIDTH)*cm),[len,setLen]=useState(ridge.gl*cm/100),[left,setLeft]=useState(b.xa*cm/100),[top,setTop]=useState(b.ya*cm/100);
-  var rw=Number(width)/cm,gl=Number(len)*100/cm;
-  var next={...ridge,orientation:ori,ridgeW:rw,gl,gx:Number(left)*100/cm+(ori==="H"?gl:rw)/2,gy:Number(top)*100/cm+(ori==="H"?rw:gl)/2};
+  var original=[(ridge.ridgeW||RWIDTH)*cm,ridge.gl*cm/100,b.xa*cm/100,b.ya*cm/100];
+  const [ori,setOri]=useState(ridge.orientation),[width,setWidth]=useState(bedMetricText(original[0])),[len,setLen]=useState(bedMetricText(original[1])),[left,setLeft]=useState(bedMetricText(original[2])),[top,setTop]=useState(bedMetricText(original[3]));
+  var values=[width,len,left,top].map((v,i)=>bedMetricValue(v,original[i]));
+  var rw=values[0]/cm,gl=values[1]*100/cm;
+  var unchanged=ori===ridge.orientation&&values.every((v,i)=>v===original[i]);
+  var next=unchanged?{...ridge}:{...ridge,orientation:ori,ridgeW:rw,gl,gx:values[2]*100/cm+(ori==="H"?gl:rw)/2,gy:values[3]*100/cm+(ori==="H"?rw:gl)/2};
   var others={...beds};delete others[ridge.id];
-  var error=![width,len,left,top].every(v=>v!==""&&Number.isFinite(Number(v)))||width<30||width>120||len<=0?"幅は30〜120cm、長さは0より大きい数値を入力してください":ridgePlacementError(farm,next,others);
+  var error=!values.every(Number.isFinite)||values[0]<30||values[0]>120||values[1]<=0?"幅は30〜120cm、長さは0より大きい数値を入力してください":ridgePlacementError(farm,next,others);
   var rect=ridgeBBox(next);
-  return <EditDialog title="畝の大きさ・位置" onClose={onClose}><p>作付け記録を残して変更します。位置は畝の左端・上端までの距離です。</p><label>向き<select style={EDIT_STYLE} value={ori} onChange={e=>setOri(e.target.value)}><option value="H">横に長い</option><option value="V">縦に長い</option></select></label>{[["畝幅（cm）",width,setWidth],["長さ（m）",len,setLen],["畑の左端から（m）",left,setLeft],["畑の上端から（m）",top,setTop]].map(([label,value,set])=><label key={label}>{label}<input type="number" step="any" style={EDIT_STYLE} value={value} onChange={e=>set(e.target.value)}/></label>)}<svg viewBox={"0 0 "+farm.cols+" "+farm.rows} style={{width:"100%",height:180,background:C.paper2}}>{Object.values(beds).map(r=>{var b=ridgeBBox(r);return <rect key={r.id} x={b.xa} y={b.ya} width={b.xb-b.xa} height={b.yb-b.ya} fill={C.inkLine}/>;})}{!error&&<rect x={rect.xa} y={rect.ya} width={rect.xb-rect.xa} height={rect.yb-rect.ya} fill={C.green}/>}</svg><p role="status">{error||"この位置に変更できます"}</p><button style={EDIT_STYLE} disabled={!!error} onClick={()=>onSave(next)}>変更を保存</button></EditDialog>;
+  return <EditDialog title="畝の大きさ・位置" onClose={onClose}><p>作付け記録を残して変更します。位置は畝の左端・上端までの距離です。</p><label>向き<select style={EDIT_STYLE} value={ori} onChange={e=>setOri(e.target.value)}><option value="H">横に長い</option><option value="V">縦に長い</option></select></label>{[["畝幅（cm）",width,setWidth],["長さ（m）",len,setLen],["畑の左端から（m）",left,setLeft],["畑の上端から（m）",top,setTop]].map(([label,value,set])=><label key={label}>{label}<input type="number" step={label==="畝幅（cm）"?1:0.01} style={EDIT_STYLE} value={value} onChange={e=>set(e.target.value)} onBlur={()=>set(v=>String(v).trim()!==""&&Number.isFinite(Number(v))?bedMetricText(v):v)}/></label>)}<svg viewBox={"0 0 "+farm.cols+" "+farm.rows} style={{width:"100%",height:180,background:C.paper2}}>{Object.values(beds).map(r=>{var b=ridgeBBox(r);return <rect key={r.id} x={b.xa} y={b.ya} width={b.xb-b.xa} height={b.yb-b.ya} fill={C.inkLine}/>;})}{!error&&<rect x={rect.xa} y={rect.ya} width={rect.xb-rect.xa} height={rect.yb-rect.ya} fill={C.green}/>}</svg><p role="status">{error||"この位置に変更できます"}</p><button style={EDIT_STYLE} disabled={!!error} onClick={()=>onSave(next)}>変更を保存</button></EditDialog>;
 }
 function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmTypes }) {
   var [selSide, setSelSide] = React.useState(null); /* "top"|"bot"|"lft"|"rgt" */
@@ -2165,7 +2175,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
               <label>畝幅<select aria-label="自動配置の畝幅" value={Math.round(effectiveRW*cellCm)} onChange={function(e){setPickerRidgeW(Number(e.target.value)/cellCm);}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[30,60,90,120].map(function(w){return <option key={w} value={w}>{w}cm{w===60?"（初期値）":""}</option>;})}</select></label>
               <label>本数<select aria-label="自動配置の本数" value={batchCount} onChange={function(e){setBatchCount(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from({length:15},function(_,i){return <option key={i+1} value={i+1}>{i+1}本</option>;})}</select></label>
               <label>1本の長さ<select aria-label="自動配置の長さ" value={effectiveLength} onChange={function(e){setBatchLength(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from(new Set([1,2,3,4,5,6,8,10,maxBatchLength].filter(function(n){return n>0&&n<=maxBatchLength;}))).sort(function(a,b){return a-b;}).map(function(n){return <option key={n} value={n}>{n}m{n===maxBatchLength?"（最大）":""}</option>;})}</select></label>
-              <label>畝の間の通路<select aria-label="自動配置の通路幅" value={batchPath} onChange={function(e){setBatchPath(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[40,60,80].map(function(n){return <option key={n} value={n}>{n}cm</option>;})}</select></label>
+              <label>畝の間の通路<select aria-label="自動配置の通路幅" value={batchPath} onChange={function(e){setBatchPath(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[30,40,60,80].map(function(n){return <option key={n} value={n}>{n}cm</option>;})}</select></label>
             </div>
             <label style={{display:"block",fontSize:16,marginTop:12}}>周囲の通路<select value={edgeCm} onChange={e=>setEdgeCm(Number(e.target.value))} style={{minHeight:44,fontSize:16,width:"100%"}}><option value={40}>畑の内側に40cm残す</option><option value={0}>畑の外側に通路がある（余白なし）</option></select></label>
             {(function(){
@@ -3655,7 +3665,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
           {vg&&<details style={{marginTop:16}}><summary>栽培を終える</summary><p>前の野菜を履歴に残し、地図を空欄にします。</p><button onClick={onClear}>栽培を終了する</button></details>}
           <h3 style={{marginTop:24}}>最近の記録</h3><WorkTimeline entries={entries||[]} limit={3}/>
           {!!(entries||[]).length&&<button onClick={()=>onTabChange("history")}>これまでの記録をすべて見る</button>}
-          {editable&&<details style={{marginTop:24}}><summary>この畝を削除</summary><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></details>}
+          {editable&&<div className="ridge-delete" style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.inkLine}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>この畝を削除</h3><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,border:"1px solid "+C.red,background:C.paper,color:C.red,cursor:"pointer"}} onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></div>}
         </div>}
         {tab==="history"&&<div><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
 
