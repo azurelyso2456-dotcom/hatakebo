@@ -16,4 +16,8 @@
 :root{--ledger-font:Cambria,'Times New Roman',serif}
 :root:lang(ja){--ledger-font:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',Georgia,serif}
 .brand{font-family:var(--ledger-font)}
+.use-cases{background:#fffdf7;border-top:1px solid var(--line)}
+.use-case-list{margin:28px 0 0}.use-case-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;padding:20px 0;border-top:1px solid var(--line)}
+.use-case-list dt{font-size:18px;font-weight:700}.use-case-list dd{margin:0;color:var(--muted);font-size:16px}.fit-note{margin:24px 0 0;padding-top:20px;border-top:1px solid var(--line);font-size:16px;color:var(--muted);max-width:60em}
+@media(max-width:600px){.use-case-list>div{grid-template-columns:1fr;gap:8px}.use-case-list dt{font-size:17px}}
 body.privacy-page,body.privacy-page h1,body.privacy-page h2,body.privacy-page h3,body.privacy-page .language-nav{font-family:var(--ledger-font)}
