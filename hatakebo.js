@@ -1072,6 +1072,24 @@ function bedMetricValue(value,original){
   var rounded=Number(bedMetricText(value));
   return rounded===Number(bedMetricText(original))?original:rounded;
 }
+function BedPositionPreview({farm,ridge,beds,invalid}) {
+  const cm=farm.cellCm||100,pad=Math.max(farm.cols,farm.rows)*0.035;
+  const box=ridgeBBox(ridge),validBox=Object.values(box).every(Number.isFinite)&&box.xb>box.xa&&box.yb>box.ya;
+  return <figure className="bed-position-preview" style={{margin:"24px 0 0",padding:"16px 12px",border:"1px solid "+C.inkLine,background:C.paper}}>
+    <figcaption style={{display:"flex",flexWrap:"wrap",gap:"4px 16px",justifyContent:"space-between",fontSize:16,lineHeight:1.5,marginBottom:12}}><strong>畑の見取り図</strong><span>{bedMetricText(farm.cols*cm/100)}m × {bedMetricText(farm.rows*cm/100)}m</span></figcaption>
+    <svg role="img" aria-label="畑と畝の実寸比率プレビュー" viewBox={[-pad,-pad,farm.cols+2*pad,farm.rows+2*pad].join(" ")} style={{display:"block",width:"100%",height:240,background:C.paper2}}>
+      <rect className="preview-field" width={farm.cols} height={farm.rows} fill="#e9dcc7"/>
+      {farm.grid.flatMap((row,r)=>row.map((active,c)=>active?null:<rect key={r+"-"+c} x={c} y={r} width={1} height={1} fill={C.paper2}/>))}
+      <rect width={farm.cols} height={farm.rows} fill="none" stroke={C.inkBorder} strokeWidth={1} vectorEffect="non-scaling-stroke"/>
+      {Object.values(beds).filter(r=>r.id!==ridge.id).map(r=>{const b=ridgeBBox(r);return <rect key={r.id} x={b.xa} y={b.ya} width={b.xb-b.xa} height={b.yb-b.ya} fill="#cda77d" stroke={C.inkBorder} strokeWidth={1} vectorEffect="non-scaling-stroke"/>;})}
+      {validBox&&<rect className="preview-edited-bed" x={box.xa} y={box.ya} width={box.xb-box.xa} height={box.yb-box.ya} fill={invalid?C.redPale:C.indigoPale} stroke={invalid?C.red:C.indigo} strokeWidth={3} strokeDasharray="6 3" vectorEffect="non-scaling-stroke"/>}
+    </svg>
+    <div style={{display:"flex",flexWrap:"wrap",gap:"8px 16px",marginTop:12,fontSize:14,lineHeight:1.5}}>
+      <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span aria-hidden="true" style={{width:18,height:12,background:C.indigoPale,border:"2px dashed "+C.indigo}}/>編集中の畝</span>
+      <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span aria-hidden="true" style={{width:18,height:12,background:"#cda77d",border:"1px solid "+C.inkBorder}}/>ほかの畝</span>
+    </div>
+  </figure>;
+}
 function BedEdit({farm,ridge,beds,onSave,onClose}) {
   var cm=farm.cellCm||100,b=ridgeBBox(ridge);
   var original=[(ridge.ridgeW||RWIDTH)*cm,ridge.gl*cm/100,b.xa*cm/100,b.ya*cm/100];
@@ -1082,8 +1100,16 @@ function BedEdit({farm,ridge,beds,onSave,onClose}) {
   var next=unchanged?{...ridge}:{...ridge,orientation:ori,ridgeW:rw,gl,gx:values[2]*100/cm+(ori==="H"?gl:rw)/2,gy:values[3]*100/cm+(ori==="H"?rw:gl)/2};
   var others={...beds};delete others[ridge.id];
   var error=!values.every(Number.isFinite)||values[0]<30||values[0]>120||values[1]<=0?"幅は30〜120cm、長さは0より大きい数値を入力してください":ridgePlacementError(farm,next,others);
-  var rect=ridgeBBox(next);
-  return <EditDialog title="畝の大きさ・位置" onClose={onClose}><p>作付け記録を残して変更します。位置は畝の左端・上端までの距離です。</p><label>向き<select style={EDIT_STYLE} value={ori} onChange={e=>setOri(e.target.value)}><option value="H">横に長い</option><option value="V">縦に長い</option></select></label>{[["畝幅（cm）",width,setWidth],["長さ（m）",len,setLen],["畑の左端から（m）",left,setLeft],["畑の上端から（m）",top,setTop]].map(([label,value,set])=><label key={label}>{label}<input type="number" step={label==="畝幅（cm）"?1:0.01} style={EDIT_STYLE} value={value} onChange={e=>set(e.target.value)} onBlur={()=>set(v=>String(v).trim()!==""&&Number.isFinite(Number(v))?bedMetricText(v):v)}/></label>)}<svg viewBox={"0 0 "+farm.cols+" "+farm.rows} style={{width:"100%",height:180,background:C.paper2}}>{Object.values(beds).map(r=>{var b=ridgeBBox(r);return <rect key={r.id} x={b.xa} y={b.ya} width={b.xb-b.xa} height={b.yb-b.ya} fill={C.inkLine}/>;})}{!error&&<rect x={rect.xa} y={rect.ya} width={rect.xb-rect.xa} height={rect.yb-rect.ya} fill={C.green}/>}</svg><p role="status">{error||"この位置に変更できます"}</p><button style={EDIT_STYLE} disabled={!!error} onClick={()=>onSave(next)}>変更を保存</button></EditDialog>;
+  return <EditDialog title="畝の大きさ・位置" onClose={onClose}>
+    <p>作付け記録を残して変更します。位置は畝の左端・上端までの距離です。</p>
+    <div className="bed-edit-fields" style={{display:"grid",gap:14}}>
+      <label style={{display:"grid",gap:6}}>向き<select style={EDIT_STYLE} value={ori} onChange={e=>setOri(e.target.value)}><option value="H">横に長い</option><option value="V">縦に長い</option></select></label>
+      {[["畝幅（cm）",width,setWidth],["長さ（m）",len,setLen],["畑の左端から（m）",left,setLeft],["畑の上端から（m）",top,setTop]].map(([label,value,set])=><label key={label} style={{display:"grid",gap:6}}>{label}<input type="number" step={label==="畝幅（cm）"?1:0.01} style={EDIT_STYLE} value={value} onChange={e=>set(e.target.value)} onBlur={()=>set(v=>String(v).trim()!==""&&Number.isFinite(Number(v))?bedMetricText(v):v)}/></label>)}
+    </div>
+    <BedPositionPreview farm={farm} ridge={next} beds={beds} invalid={!!error}/>
+    <p role="status" style={{lineHeight:1.6,color:error?C.red:C.ink}}>{error||"この位置に変更できます"}</p>
+    <button style={EDIT_STYLE} disabled={!!error} onClick={()=>onSave(next)}>変更を保存</button>
+  </EditDialog>;
 }
 function QuickLandmarkEditor({ rows, cols, grid, landmarks, setLandmarks, lmTypes }) {
   var [selSide, setSelSide] = React.useState(null); /* "top"|"bot"|"lft"|"rgt" */
@@ -3664,10 +3690,9 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
           <div className="journal-actions"><button className="journal-primary" onClick={()=>onRecord("plant")}>野菜を植えた</button><button onClick={()=>onRecord("fertilizer")}>作業を記録</button></div>
           {vg&&<details style={{marginTop:16}}><summary>栽培を終える</summary><p>前の野菜を履歴に残し、地図を空欄にします。</p><button onClick={onClear}>栽培を終了する</button></details>}
           <h3 style={{marginTop:24}}>最近の記録</h3><WorkTimeline entries={entries||[]} limit={3}/>
-          {!!(entries||[]).length&&<button onClick={()=>onTabChange("history")}>これまでの記録をすべて見る</button>}
-          {editable&&<div className="ridge-delete" style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.inkLine}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>この畝を削除</h3><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,border:"1px solid "+C.red,background:C.paper,color:C.red,cursor:"pointer"}} onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></div>}
         </div>}
         {tab==="history"&&<div><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
+        <div className="ridge-delete" style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.inkLine}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>この畝を削除</h3><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,border:"1px solid "+C.red,background:C.paper,color:C.red,cursor:"pointer"}} onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></div>
 
       </div>
     </div>
