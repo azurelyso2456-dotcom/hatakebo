@@ -2061,12 +2061,20 @@ function ridgePlacementError(farm, ridge, existing) {
   if(Object.values(existing||{}).some(function(other){return ridgesOverlap(ridge,other);})) return "ほかの畝と重なっています。位置を調整してください";
   return "";
 }
+function batchLengthValue(value) {
+  var text=String(value).trim().replace(",",".");
+  return text!==""&&Number.isFinite(Number(text))?Math.round(Number(text)*100)/100:NaN;
+}
+function steppedBatchLength(value, direction, maximum) {
+  var cm=Number.isFinite(value)?Math.round(value*100):Math.round(Math.min(3,maximum)*100);
+  return Math.max(0,Math.min(Math.floor(maximum*100+0.000001),Math.max(1,cm+direction*10)))/100;
+}
 function plannedRidges(farm, ori, width, count, lengthM, pathCm, edgeCm) {
   var cross=ori==="H"?farm.rows:farm.cols, length=ori==="H"?farm.cols:farm.rows;
   var cell=farm.cellCm||100, gap=(pathCm||40)/cell, margin=(edgeCm===undefined?40:edgeCm)/cell;
   var capacity=Math.max(0,Math.floor((cross-2*margin+gap+0.000001)/(width+gap)));
   var requested=(lengthM===undefined?Math.min(3,(length-2*margin)*cell/100):lengthM)*100/cell;
-  if(!Number.isFinite(width)||width*cell<30||width*cell>120||requested<=0||requested>length-2*margin+0.000001)return [];
+  if(!Number.isFinite(width)||!Number.isFinite(requested)||width*cell<30||width*cell>120||requested<=0||requested>length-2*margin+0.000001)return [];
   if(!Number.isInteger(count)||count<1||count>capacity) return [];
   var used=count*width+(count-1)*gap, start=(cross-used)/2+width/2;
   return Array.from({length:count},function(_,i){var p=start+i*(width+gap);return {orientation:ori,gx:ori==="H"?length/2:p,gy:ori==="H"?p:length/2,gl:requested,ridgeW:width};});
@@ -2075,7 +2083,7 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
   const [batchCount,setBatchCount]=useState(1);
   const [creationMode,setCreationMode]=useState(Object.keys(farmRidges).length?"single":"batch");
   const [edgeCm,setEdgeCm]=useState(40);
-  const [batchLength,setBatchLength]=useState(3);
+  const [batchLength,setBatchLength]=useState(null);
   const [batchPath,setBatchPath]=useState(40);
   var isH = pickerOri === "H";
   var sc = pickerStart - 1;
@@ -2085,8 +2093,8 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
   var maxA  = isH ? farm.rows : farm.cols;
   var maxPos = isH ? farm.cols : farm.rows;
   var cellCm = farm.cellCm || 100; /* 旧データは1マス=100cm相当 */
-  var maxBatchLength=Math.max(0,Math.round((maxPos*cellCm/100-edgeCm*2/100)*100)/100);
-  var effectiveLength=Math.min(batchLength,maxBatchLength);
+  var maxBatchLength=Math.max(0,Math.floor((maxPos*cellCm/100-edgeCm*2/100)*100+0.000001)/100);
+  var effectiveLength=batchLength===null?Math.min(3,maxBatchLength):batchLengthValue(batchLength);
 
   /* 実寸ヘルパー */
   function cmLabel(cells) {
@@ -2200,7 +2208,13 @@ function RidgePicker({ farm, farmRidges, year, pickerOri, setPickerOri, pickerA,
             <div className="bed-batch-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:14}}>
               <label>畝幅<select aria-label="自動配置の畝幅" value={Math.round(effectiveRW*cellCm)} onChange={function(e){setPickerRidgeW(Number(e.target.value)/cellCm);}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[30,60,90,120].map(function(w){return <option key={w} value={w}>{w}cm{w===60?"（初期値）":""}</option>;})}</select></label>
               <label>本数<select aria-label="自動配置の本数" value={batchCount} onChange={function(e){setBatchCount(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from({length:15},function(_,i){return <option key={i+1} value={i+1}>{i+1}本</option>;})}</select></label>
-              <label>1本の長さ<select aria-label="自動配置の長さ" value={effectiveLength} onChange={function(e){setBatchLength(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{Array.from(new Set([1,2,3,4,5,6,8,10,maxBatchLength].filter(function(n){return n>0&&n<=maxBatchLength;}))).sort(function(a,b){return a-b;}).map(function(n){return <option key={n} value={n}>{n}m{n===maxBatchLength?"（最大）":""}</option>;})}</select></label>
+              <div style={{minWidth:0}}><label htmlFor="batch-bed-length">1本の長さ<span> (m)</span></label>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <button type="button" aria-label={"自動配置の長さ"+" −10cm"} disabled={maxBatchLength<0.01||effectiveLength<=0.01} onClick={()=>setBatchLength(String(steppedBatchLength(effectiveLength,-1,maxBatchLength)))} style={{minWidth:44,minHeight:44,fontSize:20}}>−</button>
+                  <input id="batch-bed-length" aria-label="自動配置の長さ" type="text" inputMode="decimal" value={batchLength===null?String(effectiveLength):batchLength} onChange={e=>setBatchLength(e.target.value)} onBlur={()=>{if(Number.isFinite(effectiveLength))setBatchLength(String(effectiveLength));}} style={{width:"100%",minWidth:0,minHeight:44,boxSizing:"border-box",fontSize:16,textAlign:"center"}}/>
+                  <button type="button" aria-label={"自動配置の長さ"+" ＋10cm"} disabled={maxBatchLength<0.01||effectiveLength>=maxBatchLength} onClick={()=>setBatchLength(String(steppedBatchLength(effectiveLength,1,maxBatchLength)))} style={{minWidth:44,minHeight:44,fontSize:20}}>＋</button>
+                </div>
+              </div>
               <label>畝の間の通路<select aria-label="自動配置の通路幅" value={batchPath} onChange={function(e){setBatchPath(Number(e.target.value));}} style={{display:"block",width:"100%",minHeight:44,fontSize:16}}>{[30,40,60,80].map(function(n){return <option key={n} value={n}>{n}cm</option>;})}</select></label>
             </div>
             <label style={{display:"block",fontSize:16,marginTop:12}}>周囲の通路<select value={edgeCm} onChange={e=>setEdgeCm(Number(e.target.value))} style={{minHeight:44,fontSize:16,width:"100%"}}><option value={40}>畑の内側に40cm残す</option><option value={0}>畑の外側に通路がある（余白なし）</option></select></label>
@@ -3222,7 +3236,7 @@ const FAQ_DATA = [
         "q": "収穫が終わった畝に、次の野菜を植えたいです",
         "a": [
           "畝を押して「野菜を植えた」から、次の野菜を記録します。前の野菜は履歴に残るので、同じ年に植え替えても振り返れます。",
-          "しばらく畝を休ませるときは、畝の「栽培を終える」を開き、「栽培を終了する」を押してください。野菜の履歴を残して地図を空欄にします。",
+          "しばらく畝を休ませるときは、畝を選び、「今のようす」の「栽培を終了する」を押してください。野菜の履歴を残して地図を空欄にします。",
           "以前の作付けや肥料・緑肥の記録は「これまでの記録」で年を選んで見返せます。畝ごとに表示され、畑全体への記録も各畝で確認できます。"
         ]
       },
@@ -3338,14 +3352,6 @@ const FAQ_DATA = [
         ]
       },
       {
-        "q": "改善されたはずの画面が、前のままです",
-        "a": [
-          "インターネットにつながる場所でハタケボを開き、しばらくお待ちください。新しい版は自動で読み込みます。作業中の画面が急に切り替わらないよう、今開いている画面はそのままにしています。",
-          "入力中の内容を保存してから、ハタケボを開いているタブをすべて閉じ、いつものアドレスから開き直してみてください。複数のタブで開いていると、前の版が使われ続けることがあります。",
-          "更新のためにブラウザのデータを消す必要はありません。記録まで消えることがあるので、消さずにお試しください。変わらない場合は、電波のある場所からお問い合わせください。"
-        ]
-      },
-      {
         "q": "いつもの畑や記録が見当たりません",
         "a": [
           "記録を保存したときと同じ端末・同じブラウザで開いているか、まず確認してみてください。メールなどのアプリ内で開いた場合は、普段のブラウザで開くと見つかることがあります。畑のタブや表示中の年も確認してください。",
@@ -3358,7 +3364,7 @@ const FAQ_DATA = [
         "a": [
           "まず画面を閉じずに、「メニュー」→「バックアップ」で今の記録をファイルに残してください。保存先にファイルがあることを確認してから、次の操作へ進みましょう。",
           "端末の空き容量が少ない場合や、ブラウザが保存を制限している場合に起こることがあります。空き容量やブラウザの設定を確認してください。プライベートモードで使っていた場合は、通常の画面で開いて控えを読み込めます。",
-          "原因が分からないときは、お問い合わせください。記録の控えが取れるまでは、ブラウザのデータを消さないようにしてください。"
+          "記録の控えが取れるまでは、ブラウザのデータを消さないようにしてください。"
         ]
       },
       {
@@ -3688,8 +3694,7 @@ function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, r
           <h3>{year}年の記録</h3><p style={{overflowWrap:"anywhere"}}>{vg?vg.name+"を記録しています。":"野菜の記録はまだありません。休ませている畝も、そのまま残せます。"}</p>
           {vg&&vg.custom&&<p className="journal-help">名前だけで残せます。自由入力の野菜は連作判定の対象外です。</p>}
           <div className="journal-actions"><button className="journal-primary" onClick={()=>onRecord("plant")}>野菜を植えた</button><button onClick={()=>onRecord("fertilizer")}>作業を記録</button></div>
-          {vg&&<details style={{marginTop:16}}><summary>栽培を終える</summary><p>前の野菜を履歴に残し、地図を空欄にします。</p><button onClick={onClear}>栽培を終了する</button></details>}
-          <h3 style={{marginTop:24}}>最近の記録</h3><WorkTimeline entries={entries||[]} limit={3}/>
+          {vg&&<section className="finish-growing" style={{marginTop:20}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>栽培を終える</h3><p>前の野菜を履歴に残し、地図を空欄にします。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,cursor:"pointer"}} onClick={onClear}>栽培を終了する</button></section>}
         </div>}
         {tab==="history"&&<div><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
         <div className="ridge-delete" style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.inkLine}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>この畝を削除</h3><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,border:"1px solid "+C.red,background:C.paper,color:C.red,cursor:"pointer"}} onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></div>
