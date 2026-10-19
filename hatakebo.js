@@ -445,9 +445,6 @@ function GridPreview({ rows, cols, grid, size, gap }) {
 /* ══════════════════════════════════════
    ルート
 ══════════════════════════════════════ */
-function readRecovery() {
-  try {var d=JSON.parse(localStorage.getItem("hatakebo_data")||"{}");return Array.isArray(d.recovery)?d.recovery.filter(function(s){return s&&Array.isArray(s.farms)&&s.plantings&&s.ridges&&s.snapshots&&s.soil;}).slice(-5):[];}catch(e){return [];}
-}
 function saveWithRecovery(current,history) {
   var kept=history.slice(-5);
   for(;;){
@@ -746,64 +743,44 @@ function WorkForm({farm,beds,initial,onSave,onClose,onSaveLayout,canSaveLayout,l
   </div>}
   </EditDialog>;
 }
-function HatakeApp() {
+const SECURITY_LABELS = {heading:"記録を安全に開けませんでした",body:"元の記録は消さずに残しています。まず控えを保存し、使えるバックアップか以前の記録から復旧してください。ブラウザーのデータは消さないでください。",download:"元の記録をファイルに保存",choose:"バックアップを選んで復旧",previous:"以前の記録",restore:"この記録から復旧",count:"畑の数",confirm:"現在の記録を退避して、選んだ記録に置き換えますか？",invalid:"このファイルは安全に読み込めませんでした。元の記録は変更していません。ハタケボで保存した別のバックアップをお試しください。",limit:"ファイルが大きすぎるか、記録の件数が上限を超えています。10MB以下のバックアップを選んでください。元の記録は変更していません。",saveFailed:"復旧用の記録を保存できませんでした。元の記録は置き換えていません。控えを保存し、端末の空き容量とブラウザーの保存設定を確認してください。",busy:"記録を確認しています…",noPrevious:"この端末には、復旧に使える以前の記録が見つかりませんでした。",retry:"もう一度開く"};
+function downloadRecordText(raw,name){
+  const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function recordStorage(){try{return window.localStorage;}catch(e){return {getItem(){throw Error("storage");},setItem(){throw Error("storage");}};}}
+function RecordRecovery(){
+  const t=SECURITY_LABELS,s=window.HatakeboRecordSafety;
+  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[selected,setSelected]=useState(0);
+  const [choices]=useState(()=>s.candidates(recordStorage()));
+  function download(){try{const raw=localStorage.getItem("hatakebo_data");if(raw===null)throw Error();downloadRecordText(raw,"hatakebo_original_"+Date.now()+".json");}catch(e){setError(t.saveFailed);}}
+  function restore(data){if(!confirm(t.confirm))return;try{s.replace(localStorage,data,{quarantine:true});window.location.reload();}catch(e){setError(t.saveFailed);}}
+  async function choose(e){const file=e.target.files[0];e.target.value="";if(!file)return;setBusy(true);setError("");try{const data=await s.readFile(file);restore(data);}catch(err){setError(err.message==="limit"?t.limit:t.invalid);}finally{setBusy(false);}}
+  return <main style={{maxWidth:680,margin:"24px auto",padding:24,background:C.paper,color:C.ink,fontFamily:UI_FONT,lineHeight:1.8}}><h1 style={{fontSize:24}}>{t.heading}</h1><p style={{margin:"16px 0"}}>{t.body}</p><div style={{display:"grid",gap:16}}><button onClick={download} style={{minHeight:48,font:"inherit"}}>{t.download}</button><label style={{display:"grid",gap:8}}>{t.choose}<input type="file" accept=".json,application/json" disabled={busy} onChange={choose} style={{maxWidth:"100%",fontSize:16}}/></label>{choices.length?<><label>{t.previous}<select value={selected} onChange={e=>setSelected(Number(e.target.value))} style={{display:"block",width:"100%",minHeight:48,font:"inherit"}}>{choices.map((d,i)=><option key={i} value={i}>{i+1} · {d.farms[0].name.slice(0,60)} · {t.count}: {d.farms.length}</option>)}</select></label><button disabled={busy} onClick={()=>restore(choices[selected])} style={{minHeight:48,font:"inherit"}}>{t.restore}</button></>:<p>{t.noPrevious}</p>}<button disabled={busy} onClick={()=>window.location.reload()} style={{minHeight:48,font:"inherit"}}>{t.retry}</button>{busy&&<p role="status">{t.busy}</p>}{error&&<p role="alert" style={{color:"#9b3027"}}>{error}</p>}</div></main>;
+}
+class RecordBoundary extends React.Component {
+  constructor(props){super(props);this.state={failed:false};}
+  static getDerivedStateFromError(){return {failed:true};}
+  render(){return this.state.failed?<RecordRecovery/>:this.props.children;}
+}
+function SecureRecordApp(){
+  const [boot]=useState(()=>window.HatakeboRecordSafety.load(recordStorage()));
+  return boot.error?<RecordRecovery/>:<HatakeApp initialData={boot.data} initialRecovery={boot.recovery}/>;
+}
+function HatakeApp({initialData,initialRecovery}) {
   const [activeFarmId,setActiveFarmId] = useState(null);
   /* ── localStorage からデータを読み込む（初回のみ） ── */
-  const [screen, setScreen] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) {
-        const d = JSON.parse(saved);
-        if (d.farms && d.farms.length > 0) return "map";
-      }
-    } catch(e) {}
-    return "setup";
-  });
-  const [farms, setFarms] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) { const d = JSON.parse(saved); return d.farms || []; }
-    } catch(e) {}
-    return [];
-  });
-  const [plantings, setPlantings] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) { const d = JSON.parse(saved); return d.plantings || {}; }
-    } catch(e) {}
-    return {};
-  });
-  const [ridges, setRidges] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) {
-        const d = JSON.parse(saved);
-        return normalizeRidges(d.ridges);
-      }
-    } catch(e) {}
-    return {};
-  });
-
-  const [snapshots, setSnapshots] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) { const d = JSON.parse(saved); return d.snapshots || {}; }
-    } catch(e) {}
-    return {};
-  });
-  const [soil, setSoil] = useState(function(){
-    try {
-      const saved = localStorage.getItem("hatakebo_data");
-      if (saved) { const d = JSON.parse(saved); return d.soil || {}; }
-    } catch(e) {}
-    return {};
-  });
+  const [screen,setScreen]=useState(initialData.farms.length?"map":"setup");
+  const [farms,setFarms]=useState(initialData.farms);
+  const [plantings,setPlantings]=useState(initialData.plantings);
+  const [ridges,setRidges]=useState(()=>normalizeRidges(initialData.ridges));
+  const [snapshots,setSnapshots]=useState(initialData.snapshots);
+  const [soil,setSoil]=useState(initialData.soil);
 
   /* ── データが変わるたびに自動保存 ── */
-  const [initialRecovery]=useState(readRecovery);
   const historyRef=useRef(initialRecovery), previousRef=useRef(null), undoingRef=useRef(false);
   const [undoCount,setUndoCount]=useState(initialRecovery.length);
   const [recoveryLimited,setRecoveryLimited]=useState(false);
+  const importBusyRef=useRef(false);
   function undoChange(){
     var d=historyRef.current.pop();if(!d)return;
     undoingRef.current=true;setUndoCount(historyRef.current.length);
@@ -835,30 +812,23 @@ function HatakeApp() {
   }
 
   /* ── 復元：JSONファイルを読み込む ── */
-  function importData(e) {
+  async function importData(e) {
     const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        const d = JSON.parse(ev.target.result);
-        if (!Array.isArray(d.farms)||!d.farms.every(function(f){return f&&typeof f.id==="string"&&Number.isInteger(f.rows)&&f.rows>0&&f.rows<=150&&Number.isInteger(f.cols)&&f.cols>0&&f.cols<=150&&Array.isArray(f.grid)&&f.grid.length===f.rows&&f.grid.every(row=>Array.isArray(row)&&row.length===f.cols);})||[d.plantings,d.ridges,d.snapshots,d.soil].some(function(v){return v!==undefined&&(!v||typeof v!=="object"||Array.isArray(v));})) { alert("このファイルはハタケボのバックアップではありません"); return; }
-        if(d.farms.some(f=>f.journal!==undefined&&(!Array.isArray(f.journal)||f.journal.some(e=>!e||typeof e.id!=="string"||typeof e.kind!=="string")))){alert("作業の記録を読み取れませんでした。別のバックアップをお試しください。");return;}
+    e.target.value = "";
+    if (!file||importBusyRef.current) return;
+    importBusyRef.current=true;
+    try {
+        const d=await window.HatakeboRecordSafety.readFile(file);
+        const normalized={...d,ridges:normalizeRidges(d.ridges)};
         if(!confirm("現在の畑と記録を、ファイル内の畑"+d.farms.length+"件に置き換えます。続けますか？（置き換え前の状態はこの端末に退避します）"))return;
-        localStorage.setItem("hatakebo_before_import",JSON.stringify({farms,plantings,ridges,snapshots,soil}));
-        setFarms(d.farms || []);
-        setPlantings(d.plantings || {});
-        setRidges(normalizeRidges(d.ridges));
-        setSnapshots(d.snapshots || {});
-        setSoil(d.soil || {});
-        if (d.farms && d.farms.length > 0) setScreen("map");
+        try{window.HatakeboRecordSafety.replace(localStorage,normalized);}catch(err){alert(SECURITY_LABELS.saveFailed);return;}
+        historyRef.current=[];previousRef.current=null;undoingRef.current=true;
+        setFarms(normalized.farms);setPlantings(normalized.plantings);setRidges(normalized.ridges);setSnapshots(normalized.snapshots);setSoil(normalized.soil);
+        setActiveFarmId(normalized.farms[0]?.id||null);setScreen(normalized.farms.length?"map":"setup");
         alert("データを読み込みました！");
       } catch(err) {
-        alert("ファイルの読み込みに失敗しました");
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
+        alert(err.message==="limit"?SECURITY_LABELS.limit:SECURITY_LABELS.invalid);
+      } finally { importBusyRef.current=false; }
   }
 
   function onComplete(farm) {
@@ -915,7 +885,7 @@ function HatakeApp() {
         }}
         onExport={exportData} onImport={importData} onUndo={undoChange} canUndo={undoCount>0} saveError={saveError}
         onUpdateFarm={onComplete}
-        onRestoreImport={function(){try{var raw=localStorage.getItem("hatakebo_before_import");if(!raw){alert("退避した記録はありません");return;}if(!confirm("読み込み前の記録に戻しますか？"))return;var d=JSON.parse(raw);setFarms(d.farms);setPlantings(d.plantings);setRidges(normalizeRidges(d.ridges));setSnapshots(d.snapshots);setSoil(d.soil);}catch(e){alert("復元できませんでした");}}}
+        onRestoreImport={function(){try{var raw=localStorage.getItem("hatakebo_before_import");if(!raw){alert("退避した記録はありません");return;}var d=window.HatakeboRecordSafety.parse(raw).data;d.ridges=normalizeRidges(d.ridges);if(!confirm("読み込み前の記録に戻しますか？"))return;window.HatakeboRecordSafety.replace(localStorage,d,{quarantine:true});window.location.reload();}catch(e){alert(SECURITY_LABELS.saveFailed);}}}
         uiScale={uiScale} onChangeUiScale={changeUiScale}
         onShowFaq={function(){setShowFaq(true);}}/>
       {showFaq && <FAQScreen onClose={function(){setShowFaq(false);}}/>}
@@ -3878,6 +3848,7 @@ const DIARY_LABELS = {
 };
 
 /* Local-only Diary renderer. No storage writes or external services. */
+const PRINT_SECURITY_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; style-src \'unsafe-inline\'; img-src data: blob:; base-uri \'none\'; form-action \'none\'">';
 async function buildHatakeboDiary(model, helpers, title="", memo="") {
   const t=DIARY_LABELS, lang=document.documentElement.lang||"ja", safeTitle=title.trim()||model.farm.name;
   const monthName=m=>new Intl.DateTimeFormat(lang,{month:"short"}).format(new Date(2024,m-1,1));
@@ -3942,7 +3913,7 @@ async function buildHatakeboDiary(model, helpers, title="", memo="") {
     @media screen and (max-width:830px){.toolbar{flex-wrap:wrap}.spread{display:block;padding:0;overflow-x:auto}.paper{margin-bottom:18px}}
   `;
   const artDefs=()=>'<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+Array.from(images,([src,a])=>'<image id="'+a.id+'" href="'+src+'" width="'+a.w+'" height="'+a.h+'"/>').join('')+'</defs></svg>';
-  const htmlStart=()=>'<html lang="'+e(lang)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' | '+e(t.diary)+'</title><style>'+style+'</style></head><body>'+artDefs();
+  const htmlStart=()=>'<html lang="'+e(lang)+'"><head><meta charset="utf-8">'+PRINT_SECURITY_META+'<meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' | '+e(t.diary)+'</title><style>'+style+'</style></head><body>'+artDefs();
   const paper=(heading,kind,content)=>'<section class="paper '+kind+'">'+grid+'<header class="pagehead"><div class="overline"><span>'+year+'</span><span>'+e(kind==='map-page'?t.mapPage:farm.name)+'</span></div>'+(heading?'<h1>'+e(heading)+'</h1>':'')+'</header><main class="pagebody">'+content+'</main><footer class="pagefoot"><span>Hatakebo</span><span class="folio"></span></footer></section>';
   const pages=[];
   const overview=(model.snapshot?'<p class="empty-note">'+e(t.snapshotScope)+(model.snapshot.farm?'':' '+e(PRINT_LABELS.legacyNote))+'</p>':'')+'<section class="garden-overview'+(beds.length>10?' dense-map':'')+'"><figure class="garden-map">'+mapHTML+'</figure><div class="overview-info"><h2>'+e(t.map)+'</h2><p class="overview-size">'+info.width+' m × '+info.height+' m</p><p>'+info.area+' m² · '+beds.length+' '+e(t.beds)+'</p><div class="landmarks">'+landmarks+'</div>'+(beds.length?'<p class="map-caption">'+e(t.mapHint)+'</p>':'')+'</div></section>';
@@ -3950,7 +3921,7 @@ async function buildHatakeboDiary(model, helpers, title="", memo="") {
   const writing='<div class="crop-writing"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><pattern id="crop-lines" width="100%" height="6mm" patternUnits="userSpaceOnUse"><path d="M0 22.677H1000" stroke="#d5ddcd" stroke-width=".7"/></pattern></defs><rect width="100%" height="100%" fill="url(#crop-lines)"/><path d="M45.35 0V1000" stroke="#c8d2c0" stroke-width=".7"/></svg><div class="crop-writing-head"><span>'+e(t.date)+'</span><span>'+e(t.record)+'</span></div></div>';
   function cropCard(entry,note='',part=0){const tall=entry&&(Array.from(entry.name||'').length>28||Array.from(entry.place||'').length>28);return '<article class="crop-card'+(entry?'':' blank')+(tall?' tall':'')+'"'+(entry?' data-planting="'+e(entry.source+':'+entry.id)+'" data-card-part="'+part+'"':'')+'><div class="crop-card-head">'+(entry?entry.art:'')+'<h3>'+e(entry?entry.name:t.crop)+'</h3></div><p class="crop-location">'+(entry?(entry.bedNumber?String(entry.bedNumber).padStart(2,'0')+' · ':'')+e(entry.place||t.missingPlace):(t.bed+':'))+'</p><p class="crop-planted">'+(entry?(t.plant+' · ')+e(date(entry)):(t.plant+':　　 /　　 '))+(part?' <span class="crop-continued">'+e(t.continued)+'</span>':'')+'</p>'+(note?'<p class="crop-note">'+e(note)+'</p>':'')+writing+'</article>';}
   // Measure real typography on A4; paginate records instead of shrinking or losing them.
-  const frame=document.createElement('iframe');frame.setAttribute('aria-hidden','true');frame.setAttribute('tabindex','-1');frame.style.cssText='position:fixed;left:-10000px;top:0;width:1200px;height:1400px;border:0';document.body.append(frame);
+  const frame=document.createElement('iframe');frame.setAttribute('sandbox','allow-same-origin');frame.setAttribute('aria-hidden','true');frame.setAttribute('tabindex','-1');frame.style.cssText='position:fixed;left:-10000px;top:0;width:1200px;height:1400px;border:0';document.body.append(frame);
   const fd=frame.contentDocument;fd.open();fd.write(htmlStart()+'<div id="measure"></div></body></html>');fd.close();await fd.fonts.ready;
   const host=fd.getElementById('measure');
   function fits(content,title='',kind='log-page') {host.innerHTML=paper(title,kind,content);const body=host.querySelector('.pagebody');return body.scrollHeight<=body.clientHeight+1;}
@@ -4070,7 +4041,7 @@ function printDocument(model, title, memo) {
   const stats='<aside class="field-info"><h2>'+e(t.details)+'</h2><dl><div><dt>'+e(t.dimensions)+'</dt><dd>'+info.width+' m × '+info.height+' m</dd></div><div><dt>'+e(t.area)+'</dt><dd>'+info.area+' m²</dd></div><div><dt>'+e(t.beds)+'</dt><dd>'+beds.length+'</dd></div></dl></aside>';
   const safeTitle=(title.trim()||farm.name),recordDate=model.snapshot?new Date(model.snapshot.ts):new Date();
   const stamp=(model.snapshot?t.saved:t.created)+' · '+recordDate.toLocaleDateString('ja-JP');
-  return '<!doctype html><html lang="'+e(lang)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' — Hatakebo</title><style>'+`
+  return '<!doctype html><html lang="'+e(lang)+'"><head><meta charset="utf-8">'+PRINT_SECURITY_META+'<meta name="viewport" content="width=device-width, initial-scale=1"><title>'+e(safeTitle)+' — Hatakebo</title><style>'+`
     *{box-sizing:border-box}html,body{margin:0;padding:0}body{font:11pt/1.4 Arial,"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;color:#26382e;background:#e9ece8}h1,h2,p,dl,dd,figure{margin:0}button{font:inherit;cursor:pointer}h1{font-size:25pt;line-height:1.3;font-weight:600;overflow-wrap:anywhere;white-space:pre-wrap}h2{font-size:12pt;font-weight:700}small{display:block;font-size:10pt;color:#4c564e}.sheet{width:${wide?'297':'210'}mm;min-height:${wide?'210':'297'}mm;padding:${wide?'12mm':'18mm 16mm 18mm 28mm'};margin:0 auto;background:white}.toolbar{padding:12px;position:sticky;top:0;background:white;border-bottom:1px solid #748477;z-index:1;max-width:100%;overflow-wrap:anywhere}.toolbar button{padding:10px 24px;background:#263f31;color:white;border:0;border-radius:4px}.toolbar p{font-size:14px;margin-top:8px}.eyebrow{display:flex;justify-content:space-between;gap:12px;font-size:10pt;letter-spacing:.03em;margin-bottom:8px}.document-header{border-bottom:2px solid #506551;padding-bottom:14px;margin-bottom:12px}.subtitle{margin-top:8px;overflow-wrap:anywhere;white-space:pre-wrap}.field-area{display:${wide?'grid':'block'};${wide?'grid-template-columns:minmax(0,3.4fr) minmax(0,1fr);gap:7mm;':''}break-inside:avoid;margin-bottom:16px}.map svg{display:block;width:100%;height:auto}.north{font-size:10pt;margin-bottom:4px}.field-info h2{margin-bottom:6px}.field-info dl{display:${wide?'block':'flex'};gap:20px;flex-wrap:wrap}.field-info dl>div{margin-bottom:8px}dt{font-size:10pt;color:#4c564e}dd{font-size:13pt;font-weight:600}.field-info{${wide?'padding-top:24px;':'border-bottom:1px solid #89958a;padding:10px 0 4px;margin-bottom:12px;'}}.legend{padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px 18px;margin:6px 0 10px;font-size:10pt}.legend li{overflow-wrap:anywhere;max-width:100%}.legend b{border:1px solid #687669;padding:0 4px}.notes{font-size:10pt;color:#4c564e;margin-bottom:18px}.notes p+p{margin-top:3px}.section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid #506551;padding:0 0 7px;margin-bottom:4px;break-after:avoid}.section-heading p{font-size:10pt}.crop{display:flex;align-items:center;gap:7px}.crop>svg{flex:0 0 28px}.crop span{min-width:0}.crop-note{white-space:pre-wrap}.crop small{margin-top:2px}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:11pt}thead{display:table-header-group}th{font-size:10pt;text-align:left;border-bottom:1.5px solid #516452;padding:8px 6px}td{padding:7px 6px;border-bottom:1px solid #b4bcb4;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}tr{break-inside:avoid}th.number,td.number{width:10%;font-weight:bold;text-align:center}th:nth-child(2){width:21%}th:nth-child(3){width:31%}th:nth-child(4){width:18%}th:nth-child(5){width:20%}.memo{margin-top:14px;border-top:1.5px solid #516452;padding:12px 0;break-inside:avoid}.memo p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}.writing-row td{padding:1px 6px 10px;font-size:10pt;color:#4c564e}.writing-line{height:6mm;border-bottom:1px solid #919b91}footer{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #919b91;margin-top:20px;padding-top:8px;font-size:9pt;color:#4c564e;overflow-wrap:anywhere;break-inside:avoid}.empty{padding:16px 0}.screen-hidden{display:none}.compact .overview{float:left;width:46%;padding-right:4mm}.compact .field-area{display:block}.compact .field-info{padding-top:6px}.compact .field-info dl{display:flex;gap:16px}.compact footer{clear:both}.compact .section-heading{display:flex;align-items:baseline;gap:12px}.section-heading h2{flex-shrink:0}.compact .section-heading p{margin:0;text-align:right}.compact .notes{font-size:10pt}
 
     .sheet{position:relative;isolation:isolate}.paper-grid{position:absolute;top:${wide?'12mm':'18mm'};left:${wide?'12mm':'28mm'};width:calc(100% - ${wide?'24mm':'44mm'});height:calc(100% - ${wide?'24mm':'36mm'});z-index:-1;pointer-events:none}
@@ -4138,5 +4109,5 @@ function PrintModal({farm,year,farms,plantings,ridges,soil,snapOverride,onClose}
 
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<HatakeApp />);
+    root.render(<RecordBoundary><SecureRecordApp /></RecordBoundary>);
   
