@@ -88,10 +88,8 @@ function LedgerStyle(){return <style>{`
   .ledger-yearnav{display:grid;grid-template-columns:44px minmax(80px,1fr) 44px;gap:8px;align-items:start}
   .ledger-yearnav>div{text-align:center;min-width:0}
   .ledger-yearnav .year-arrow,.ledger-menu-button{height:44px!important;min-height:44px;box-sizing:border-box;padding:0!important;border:1px solid ${C.inkBorder};background:transparent;color:${C.ink};display:flex;align-items:center;justify-content:center;cursor:pointer}
-  .ledger-yearnav .year-arrow{width:44px;font-size:24px!important;line-height:1}.ledger-yearnav .year-number{height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .ledger-yearnav .year-arrow{width:44px;font-size:24px!important;line-height:1}.ledger-yearnav .year-number{height:44px;min-height:44px;width:100%;padding:0;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
   .ledger-yearnav .year-arrow,.ledger-menu-button{background:${C.paper}!important}.ledger-menu-button[aria-expanded=true]{background:${C.ink}!important}
-  .ledger-yearnav .year-caption{display:block;margin-top:4px;font:14px/1.5 ${SANS};color:${C.inkFaint};white-space:nowrap}
-  .ledger-yearnav button.year-caption{width:100%;padding:0;border:0;background:transparent;color:${C.indigo};text-decoration:underline;cursor:pointer}
   .ledger-menu-wrap{position:relative;grid-column:3;align-self:start}.ledger-menu-button{width:96px;font-size:16px!important}
   .ledger-title{padding:0;border-bottom:1px solid ${C.inkBorder}}.ledger-title h1{font:600 28px/1.2 ${SANS};overflow-wrap:anywhere;margin:4px 0 0}.ledger-title small{display:block;font:14px/1.5 ${SANS};color:${C.inkFaint}}
   .ledger-content{padding:0 0 12px!important;overflow:visible!important}
@@ -618,11 +616,12 @@ function historyGroups(allBeds, entries, year) {
 function historyEventTitle(e){return (WORK_TYPES[e.kind]||DIARY_LABELS.note)+(e.name?' · '+e.name:'');}
 function historyEventColor(e){return e.kind==='plant'?'#438063':e.kind==='harvest'?'#b66649':/^(fertilizer|green)/.test(e.kind)?'#aa812c':e.kind==='end'?'#73766c':'#547c9b';}
 function HistoryStyle(){return <style>{`
-  .history-view{font-family:${SANS};font-size:18px;line-height:1.7;color:#263e32;min-width:0;overflow-wrap:anywhere;user-select:text}
+  .history-view{font-family:${SANS};font-size:18px;line-height:1.7;color:#263e32;min-width:0;padding-top:16px;overflow-wrap:anywhere;user-select:text}
   .history-view *{box-sizing:border-box}.history-view button{font:inherit;line-height:1.5;min-height:48px;padding:10px 16px;border:1px solid #81978a;border-radius:5px;background:#fff;color:#263e32;cursor:pointer;white-space:normal;overflow-wrap:anywhere;max-width:100%}
   .history-view button:focus-visible,.history-view summary:focus-visible{outline:3px solid #257350;outline-offset:3px}.history-view button:disabled{color:#52685b;background:#edf1ec;cursor:default}.history-view .history-danger{border-color:#a04435;color:#91382c}
   .history-nav{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #c7d1c6;border-radius:8px}.history-nav button{flex:1 1 180px}.history-nav button[aria-pressed=true]{background:#294b3b;color:white;border-color:#294b3b;font-weight:700}
   .history-intro,.history-empty{padding:16px 20px;background:#fff;border:1px solid #d0d8ce;border-radius:7px;margin:0 0 20px}.history-intro p,.history-empty p{margin:0}.history-help{font-size:16px;color:#4e6254;line-height:1.7}
+  .history-intro .history-help{font-size:14px;line-height:1.7}
   .history-bed{background:white;border:1px solid #bdcbbb;border-radius:8px;padding:24px;margin-bottom:24px;min-width:0}.history-bed h2{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:22px;margin:0 0 18px;line-height:1.5}.history-bed-number{font:italic 28px Georgia,serif;color:#4e6e54}.history-bed h2 small{font:16px ${SANS};font-weight:400;color:#526653}
   .history-calendar{margin-bottom:20px}.history-months{display:grid;grid-template-columns:repeat(var(--months),minmax(0,1fr));border-bottom:1px solid #91aa8e;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:#f5f7f1}.history-months span{text-align:center;padding:6px 0;border-left:1px solid #dce5d7}.history-chart-row{padding:9px 0 13px;position:relative;background:repeating-linear-gradient(to right,#e1e8dd 0,#e1e8dd 1px,transparent 1px,transparent calc(100% / var(--months)));border-bottom:1px solid #e7eddf}
   .history-chart-row .event-label{position:relative;display:block;width:max-content;max-width:calc(100% - 16px);margin-left:var(--label-left,8px);font-size:16px;line-height:1.65;white-space:normal;overflow-wrap:anywhere;background:white;padding:0 3px;border-bottom:5px solid var(--underline);color:#294334}.history-chart-row .event-label strong{font-weight:600}.history-chart-row .event-date{font-variant-numeric:tabular-nums;white-space:nowrap}.history-chart-row .event-mark{position:absolute;left:clamp(4px,var(--point),calc(100% - 4px));bottom:11.5px;transform:translateX(-50%);height:8px;width:8px;border-radius:50%;background:#294334;border:1px solid white;box-sizing:border-box;pointer-events:none}
@@ -2831,9 +2830,9 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
 
           {/* 年ナビ */}
           {<div className="ledger-yearnav" aria-label="表示する年">
-            <div><button className="year-arrow" aria-label="前の年" onClick={function(e){e.stopPropagation();setYear(y=>y-1);}}>‹</button><span className="year-caption" aria-hidden="true">前の年</span></div>
-            <div><div className="year-number">{year}年</div>{year===cy?<span className="year-caption">今年</span>:<button className="year-caption" onClick={function(e){e.stopPropagation();setYear(cy);}}>今年に戻る</button>}</div>
-            <div><button className="year-arrow" aria-label="次の年" onClick={function(e){e.stopPropagation();setYear(y=>y+1);}}>›</button><span className="year-caption" aria-hidden="true">次の年</span></div>
+            <div><button className="year-arrow" aria-label="前の年" onClick={function(e){e.stopPropagation();setYear(y=>y-1);}}>‹</button></div>
+            <div><button className="year-number" aria-label={year===cy?String(year):"今年に戻る"} title="今年に戻る" onClick={function(e){e.stopPropagation();setYear(cy);}}>{year}年</button></div>
+            <div><button className="year-arrow" aria-label="次の年" onClick={function(e){e.stopPropagation();setYear(y=>y+1);}}>›</button></div>
           </div>}
 
           {/* … メニュー */}
