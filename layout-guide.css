@@ -4,3 +4,6 @@
 html:not([lang=ja]) h1,html:not([lang=ja]) .brand,html:not([lang=ja]) .eyebrow,html:not([lang=ja]) .step{letter-spacing:normal}
 .instruction>div,.overview>div{min-width:0}figure a:focus-visible{outline-offset:4px}
 @media print{body{background:white;color:#111;font-size:11pt}.site-header,.breadcrumb,.toc,.article-actions,footer,.skip,.button{display:none}main{max-width:none;padding:0}.article-head{padding:0}.overview,.instruction{display:block;border:0;padding:20px 0}.overview figure,.instruction figure{position:static;max-width:200px;margin:20px auto}section{padding:20px 0}h1{font-size:25pt}h2{font-size:18pt}figure,.note{break-inside:avoid}a{color:inherit}}
+/* Standalone closing actions (localized guides) need breathing room below. */
+article > .article-actions { padding-bottom: 48px; }
+@media (max-width: 600px) { article > .article-actions { padding-bottom: 36px; } }
