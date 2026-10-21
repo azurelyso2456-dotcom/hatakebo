@@ -10,8 +10,6 @@ body .brand{display:inline-flex;align-items:center;min-height:44px;letter-spacin
 .setup-brand-copy .brand-mark{width:144px;height:48px}
 .setup-brand-row .language-nav{margin-left:auto}
 .setup-brand-row>button{min-width:44px;min-height:44px}
-.setup-cover-mark{display:flex;justify-content:center;margin-bottom:16px}
-.setup-cover-mark .brand-mark{width:220px;height:72px;max-width:100%}
 .ledger-tight .ledger-brand{flex-wrap:wrap;gap:4px 12px}
 .ledger-tight .ledger-brand-copy{flex-basis:100%}
 @media(max-width:600px){.brand-mark{width:144px;height:48px}.setup-brand-copy{flex-basis:100%;order:0}.setup-brand-copy .setup-tagline{font-size:13px}.setup-brand-row{gap:4px 12px}.setup-brand-row>div:empty{display:none}.setup-brand-row>button{order:1}.setup-brand-row>span{order:2}.setup-brand-row>.language-nav{order:3}}
@@ -20,3 +18,29 @@ body .brand{display:inline-flex;align-items:center;min-height:44px;letter-spacin
 :root{--paper:var(--brand-paper);--ink:var(--brand-ink);--muted:#4b6256;--green:var(--brand-ink);--line:var(--brand-rule)}
 html[data-entry-mode=app] body{background-color:var(--brand-paper);background-image:none}
 html[data-entry-mode=app] body>footer{background:var(--brand-paper)!important;border-color:var(--brand-rule)!important;color:#4b6256!important}
+/* Welcome: paper, ink and an unambiguous first action. No simulated binding. */
+.setup-paper.setup-cover-page{padding:0;border:0;background:transparent;max-width:600px;width:calc(100% - 48px);margin:40px auto 32px}
+.setup-cover{border-top:2px solid var(--brand-ink);border-bottom:1px solid var(--brand-rule);padding:44px 32px 0;color:var(--brand-ink)}
+.setup-cover-intro{text-align:center}
+.setup-cover-label{width:100%;padding:0;margin:0 0 26px}
+.setup-cover-title{margin:0;padding-left:.18em;color:var(--brand-ink);font-size:44px;font-weight:600;line-height:1.4;letter-spacing:.18em;overflow-wrap:break-word}
+.setup-cover-subtitle{margin:10px 0 0;color:#4b6256;font-size:16px;line-height:1.7;letter-spacing:.08em;text-wrap:balance}
+.setup-cover-label>div{margin-top:30px!important;gap:24px!important;min-height:62px}
+.setup-cover-label img{width:54px!important;height:60px!important;object-fit:contain}
+.setup-cover-description{font-size:16px;line-height:1.9;color:var(--brand-ink);letter-spacing:.02em;margin:0;text-wrap:pretty}
+.setup-cover-description>span{display:block;text-wrap:balance}
+.setup-cover-phrase{display:inline-block;max-width:100%}
+.setup-cover-contents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin:36px 0 0;padding:20px 0;border-top:1px solid var(--brand-rule)}
+.setup-cover-feature{padding:0 12px;text-align:center;font-size:14px;line-height:1.65;color:#4b6256;overflow-wrap:break-word;text-wrap:balance;align-content:center}
+.setup-cover-feature+.setup-cover-feature{border-left:1px solid var(--brand-rule)}
+.setup-cover-action{max-width:360px;margin:32px auto 0}
+.setup-cover-guidance{margin:0 0 12px;text-align:center;font-size:14px;line-height:1.8;color:#4b6256;text-wrap:balance}
+.setup-cover-action button{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px!important;font-size:17px!important;letter-spacing:.03em!important;line-height:1.5;white-space:normal;min-height:58px;border-radius:2px!important;box-shadow:none!important}
+.setup-cover-action button>span:first-child{flex:1;text-align:center}
+.setup-cover-action button>span:last-child{font-size:20px;flex-shrink:0}
+.setup-cover-action button:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
+.setup-cover-action button:hover{filter:brightness(1.08)}
+html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
+html[lang=ja] .setup-cover-contents{grid-template-columns:.55fr 1fr 1.45fr}
+@media(max-width:600px){.setup-paper.setup-cover-page{width:calc(100% - 40px);margin-top:24px}.setup-cover{padding:32px 4px 0}.setup-cover-title{font-size:36px;letter-spacing:.16em}.setup-cover-label{margin-bottom:22px}.setup-cover-label>div{margin-top:24px!important}.setup-cover-description{font-size:16px}.setup-cover-action{margin-top:28px}.setup-cover-contents{margin-top:28px;padding:18px 0}.setup-cover-feature{padding:0 7px;font-size:13px}}
+@media(max-width:350px){.setup-paper.setup-cover-page{width:calc(100% - 32px)}.setup-cover-title{font-size:32px;letter-spacing:.12em}.setup-cover-subtitle{letter-spacing:.03em}.setup-cover-action button{padding:14px 12px!important}.setup-cover-feature{padding:0 5px}}
