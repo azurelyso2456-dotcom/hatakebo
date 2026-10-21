@@ -23,72 +23,43 @@ body>header,body>footer,#entry-intro>header,#entry-intro>footer{background-color
 body>main,#entry-intro>main{background-color:var(--brand-paper);width:calc(100% - 24px);margin-top:16px;margin-bottom:16px;border:1px solid var(--brand-rule)}
 @media print{body,html[data-entry-mode=app] body{background-image:none!important}body>main,#entry-intro>main{width:auto;border:0}}
 html[data-entry-mode=app] body>footer{background:var(--brand-paper)!important;border-color:var(--brand-rule)!important;color:#4b6256!important}
-/* Welcome: paper, ink and an unambiguous first action. No simulated binding. */
-.setup-paper.setup-cover-page{padding:0;border:0;background:transparent;max-width:600px;width:calc(100% - 48px);margin:40px auto 32px}
-.setup-cover{border-top:2px solid var(--brand-ink);border-bottom:1px solid var(--brand-rule);padding:44px 32px 0;color:var(--brand-ink)}
+/* Start screen: a single, calm action panel inspired by sign-in layouts.
+   No account fields, enclosing ornament or extra assets. */
+.setup-paper.setup-cover-page{max-width:540px;width:calc(100% - 32px);padding:0;border:0;background:transparent;margin:32px auto 28px}
+.setup-cover{display:flex;flex-direction:column;padding:36px 40px 24px;background:var(--notebook-stock);color:var(--brand-ink);border:1px solid #adb4a4;border-top:3px solid #4b6256;box-shadow:0 3px 0 rgba(75,98,86,.07)}
+.setup-cover::before{content:none}
+.setup-cover::after{content:"";display:block;align-self:center;width:210px;height:70px;max-width:100%;margin:24px 0 0;background:url("welcome-vegetables.webp") center / contain no-repeat;pointer-events:none}
 .setup-cover-intro{text-align:center}
-.setup-cover-label{width:100%;padding:0;margin:0 0 26px}
-.setup-cover-title{margin:0;padding-left:.18em;color:var(--brand-ink);font-size:44px;font-weight:600;line-height:1.4;letter-spacing:.18em;overflow-wrap:break-word}
-.setup-cover-subtitle{margin:10px 0 0;color:#4b6256;font-size:16px;line-height:1.7;letter-spacing:.08em;text-wrap:balance}
-.setup-cover-label>div{margin-top:30px!important;gap:24px!important;min-height:62px}
-.setup-cover-label img{width:54px!important;height:60px!important;object-fit:contain}
-.setup-cover-description{font-size:16px;line-height:1.9;color:var(--brand-ink);letter-spacing:.02em;margin:0;text-wrap:pretty}
+.setup-cover-label{width:100%;padding:0;margin:0 0 24px}
+.setup-cover-title{margin:0;padding-left:.08em;font-size:40px;font-weight:700;line-height:1.4;letter-spacing:.08em;font-kerning:normal;font-feature-settings:"palt" 1;overflow-wrap:anywhere;color:#203f33}
+html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
+.setup-cover-subtitle{font-size:16px;font-weight:500;line-height:1.7;letter-spacing:.04em;margin:8px 0 0;color:var(--brand-ink)}
+.setup-cover-label>div{display:none!important}
+.setup-cover-description{font-size:16px;line-height:1.85;letter-spacing:.01em;font-weight:500;font-kerning:normal;margin:0}
 .setup-cover-description>span{display:block;text-wrap:balance}
 .setup-cover-phrase{display:inline-block;max-width:100%}
-.setup-cover-contents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin:36px 0 0;padding:20px 0;border-top:1px solid var(--brand-rule)}
-.setup-cover-feature{padding:0 12px;text-align:center;font-size:14px;line-height:1.65;color:#4b6256;overflow-wrap:break-word;text-wrap:balance;align-content:center}
-.setup-cover-feature+.setup-cover-feature{border-left:1px solid var(--brand-rule)}
-.setup-cover-action{max-width:360px;margin:32px auto 0}
-.setup-cover-guidance{margin:0 0 12px;text-align:center;font-size:14px;line-height:1.8;color:#4b6256;text-wrap:balance}
-.setup-cover-action button{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px!important;font-size:17px!important;letter-spacing:.03em!important;line-height:1.5;white-space:normal;min-height:58px;border-radius:2px!important;box-shadow:none!important}
-.setup-cover-action button>span:first-child{flex:1;text-align:center}
-.setup-cover-action button>span:last-child{font-size:20px;flex-shrink:0}
-.setup-cover-action button:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
-.setup-cover-action button:hover{filter:brightness(1.08)}
-html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
-@media(max-width:600px){.setup-paper.setup-cover-page{width:calc(100% - 40px);margin-top:24px}.setup-cover{padding:32px 4px 0}.setup-cover-title{font-size:36px;letter-spacing:.16em}.setup-cover-label{margin-bottom:22px}.setup-cover-label>div{margin-top:24px!important}.setup-cover-description{font-size:16px}.setup-cover-action{margin-top:28px}.setup-cover-contents{margin-top:28px;padding:18px 0}.setup-cover-feature{padding:0 7px;font-size:13px}}
-@media(max-width:350px){.setup-paper.setup-cover-page{width:calc(100% - 32px)}.setup-cover-title{font-size:32px;letter-spacing:.12em}.setup-cover-subtitle{letter-spacing:.03em}.setup-cover-action button{padding:14px 12px!important}.setup-cover-feature{padding:0 5px}}
-
-/* Original botanical engraving, nine-sliced so corners keep their proportions.
-   All copy and controls remain real HTML, independent of the decoration. */
-.setup-paper.setup-cover-page{max-width:660px;width:calc(100% - 32px);margin:20px auto 28px}
-.setup-cover{position:relative;isolation:isolate;border:1px solid #c0bdab;background:var(--notebook-stock);padding:94px 88px 114px;color:#203f33}
-.setup-cover::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:144px solid transparent;border-image:url("welcome-vegetable-frame.webp") 38% / 144px / 0 round}
-.setup-cover-label{margin-bottom:34px}
-.setup-cover-title{font-size:54px;font-weight:700;letter-spacing:.09em;padding-left:.09em;line-height:1.35;font-kerning:normal;font-feature-settings:"palt" 1;color:#203f33}
-.setup-cover-subtitle{font-size:17px;font-weight:500;letter-spacing:.14em;margin:18px 0 0;color:var(--brand-ink)}
-.setup-cover-label>div{display:none!important}
-.setup-cover-description{font-size:16px;line-height:1.9;font-weight:500;font-kerning:normal;letter-spacing:.025em}
-.setup-cover-description::before{content:"";display:block;width:56px;height:3px;margin:0 auto 28px;border-top:1px solid var(--brand-control);border-bottom:1px solid var(--brand-control)}
-.setup-cover-action{margin-top:34px;max-width:340px}
-.setup-cover-guidance{font-size:14px;margin-bottom:12px}
-.setup-cover-action button{border-radius:2px!important;min-height:58px;box-shadow:2px 2px 0 #4b6256!important;font-weight:600;letter-spacing:.04em!important}
-.setup-cover-action button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #4b6256!important}
-.setup-cover-contents,html[lang=ja] .setup-cover-contents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:420px;margin:34px auto 0;padding:14px 0;border-top:1px solid #8b9987;border-bottom:1px solid #8b9987;gap:0}
-.setup-cover-feature{display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;min-width:0;min-height:32px;font-size:14px;padding:0 8px;color:var(--brand-ink);font-weight:500;line-height:1.6}
+.setup-cover-contents,html[lang=ja] .setup-cover-contents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;list-style:none;gap:0;margin:24px 0 0;padding:14px 0;border-top:1px solid #bdc4b6;border-bottom:1px solid #bdc4b6}
+.setup-cover-feature{display:flex;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;text-align:center;min-width:0;min-height:40px;font-size:14px;font-weight:600;line-height:1.6;padding:0 6px;overflow-wrap:anywhere;text-wrap:balance}
 .setup-cover-feature+.setup-cover-feature{border-left:1px solid #a2ad99}
 .setup-cover-feature-part{display:inline-block;max-width:100%}
+.setup-cover-action{width:100%;margin:24px 0 0}
+.setup-cover-guidance{font-size:14px;line-height:1.8;text-align:center;margin:0 0 10px;color:#4b6256;text-wrap:balance}
+.setup-cover-action button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:16px 20px!important;font-size:17px!important;line-height:1.5;letter-spacing:.04em!important;font-weight:600;white-space:normal;border-radius:2px!important;box-shadow:2px 2px 0 #4b6256!important}
+.setup-cover-action button>span:first-child{flex:1;text-align:center}
+.setup-cover-action button>span:last-child{flex-shrink:0;font-size:20px}
+.setup-cover-action button:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
+.setup-cover-action button:hover{filter:brightness(1.08)}
+.setup-cover-action button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #4b6256!important}
 @media(max-width:600px){
- .setup-paper.setup-cover-page{width:calc(100% - 16px);margin:12px auto 24px}
- .setup-cover{padding:64px 44px 94px}
- .setup-cover::before{border-width:86px;border-image-width:86px}
- .setup-cover-title{font-size:39px;letter-spacing:.08em;padding-left:.08em}
- .setup-cover-subtitle{font-size:16px;letter-spacing:.06em;margin-top:14px}
- .setup-cover-label{margin-bottom:28px}
- .setup-cover-description{font-size:16px;line-height:1.9}
- .setup-cover-description::before{margin-bottom:20px;width:36px}
- .setup-cover-action{margin-top:24px}
- .setup-cover-action button{font-size:16px!important;padding:14px 12px!important;gap:6px}
- .setup-cover-contents,html[lang=ja] .setup-cover-contents{width:calc(100% + 24px);max-width:none;margin:28px -12px 0;padding:12px 0}
- .setup-cover-feature{padding:0 4px;font-size:14px;min-height:45px}
+ .setup-paper.setup-cover-page{width:calc(100% - 24px);margin:20px auto 24px}
+ .setup-cover{padding:28px 24px 22px}
+ .setup-cover-title{font-size:34px}
+ .setup-cover-label{margin-bottom:22px}
+ .setup-cover-feature{font-size:13px;padding:0 3px}
  .setup-cover-feature-part{flex-basis:100%}
+ .setup-cover-action button{font-size:16px!important;padding:14px 12px!important;gap:6px}
 }
-@media(max-width:350px){
- .setup-cover{padding:60px 30px 84px}
- .setup-cover::before{border-width:72px;border-image-width:72px}
- .setup-cover-title{font-size:35px}
- .setup-cover-feature{font-size:13px}
-}
+@media(max-width:350px){.setup-cover{padding:24px 20px 20px}.setup-cover-title{font-size:32px}}
 
 /* Setup and completion share the cover's paper, heading weight and writing rhythm.
    Scope excludes the app, print layouts and welcome cover. */
@@ -98,6 +69,7 @@ html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
 .setup-step-heading h2{font-size:26px;font-weight:600;letter-spacing:.06em;font-feature-settings:"palt" 1;font-kerning:normal;line-height:1.45;margin:0 0 10px;overflow-wrap:break-word}
 .setup-step-heading p{font-size:15px;font-weight:500;letter-spacing:.015em;line-height:1.75;margin:0;color:#4b6256;text-wrap:pretty}
 .setup-entry-page .setup-complete-heading{padding-top:20px}
+.setup-paper[data-setup-step=done]{padding-bottom:52px}
 .setup-complete-heading h2{overflow-wrap:anywhere;text-wrap:balance}
 .setup-complete-heading p{font-variant-numeric:lining-nums tabular-nums}
 .setup-complete-heading p+p{margin-top:4px}
@@ -123,10 +95,12 @@ html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
 .setup-name-field>p{font-size:14px;line-height:1.75;margin:10px 0 12px!important;text-wrap:pretty}
 @media(max-width:600px){
  .setup-paper.setup-entry-page{padding:24px 20px;margin:16px auto 20px}
+ .setup-paper[data-setup-step=done]{padding-bottom:44px}
  .setup-step-heading h2{font-size:24px;letter-spacing:.045em}
  .setup-entry-page .setup-step-heading{margin-bottom:22px;padding-bottom:18px}
 }
 @media(max-width:350px){
  .setup-paper.setup-entry-page{padding:22px 16px}
+ .setup-paper[data-setup-step=done]{padding-bottom:42px}
  .setup-entry-page .setup-size-presets button{padding:12px 9px!important}
 }

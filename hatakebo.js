@@ -1509,10 +1509,6 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 <span>{"畑で育てたもの、土に入れたものを残す帳簿です".split("、").map((phrase,i,phrases)=><span className="setup-cover-phrase" key={i}>{phrase}{i<phrases.length-1?"、":""}</span>)}</span>
               </p>
             </div>
-            <div className="setup-cover-action">
-              <p className="setup-cover-guidance">まずは、畑の大きさと形を決めましょう。</p>
-              <InkBtn onClick={function(){ setStep(1); }} primary={true}><span>新しい畑を登録する</span><span aria-hidden="true">→</span></InkBtn>
-            </div>
             <ul className="setup-cover-contents">
             {["無料","会員登録不要","インストール不要"].map(function(item){
               return (
@@ -1520,6 +1516,10 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               );
             })}
             </ul>
+            <div className="setup-cover-action">
+              <p className="setup-cover-guidance">まずは、畑の大きさと形を決めましょう。</p>
+              <InkBtn onClick={function(){ setStep(1); }} primary={true}><span>新しい畑を登録する</span><span aria-hidden="true">→</span></InkBtn>
+            </div>
           </div>
         )}
 
