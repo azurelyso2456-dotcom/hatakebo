@@ -1492,7 +1492,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         )}
       </div>
 
-      <div className={"setup-paper"+(sn==="welcome"?" setup-cover-page":["size","shape","landmarks","name"].includes(sn)?" setup-entry-page":"")} data-setup-step={sn}>
+      <div className={"setup-paper"+(sn==="welcome"?" setup-cover-page":["size","shape","landmarks","name","done"].includes(sn)?" setup-entry-page":"")} data-setup-step={sn}>
 
         {/* ━━ 表紙 ━━ */}
         {sn === "welcome" && (
@@ -1724,17 +1724,16 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {/* ━━ 完了 ━━ */}
         {sn === "done" && (
           <div style={{ textAlign:"center" }}>
-            <div style={{ padding:"36px 0 28px" }}>
+            <div className="setup-step-heading setup-complete-heading">
               <div style={{ display:"inline-block", marginBottom:24 }}>
                 <Hanko text="登録" sub="済" color={C.indigo}/>
               </div>
-              <h2 style={{ fontSize:20, fontWeight:"normal", letterSpacing:4, marginBottom:10 }}>
+              <h2>
                 {name||"畑"} を登録しました
               </h2>
-              <p style={{ fontSize:14, color:C.inkFaint, letterSpacing:1 }}>{cols}列×{rows}行　{ac}区画</p>
-              {Object.keys(landmarks).length > 0 && <p style={{ fontSize:14, color:C.inkFaint, marginTop:4, letterSpacing:1 }}>目印 {Object.keys(landmarks).length}件</p>}
+              <p>{cols}列×{rows}行　{ac}区画</p>
+              {Object.keys(landmarks).length > 0 && <p>目印 {Object.keys(landmarks).length}件</p>}
             </div>
-            <RuledLine mb={24}/>
             <OutlineBtn onClick={function(){ setStep(1); setWidthM(2); setHeightM(1.5); setGrid(makeGrid(6,8)); setName(""); setLandmarks({}); }}>
               ＋ もう一つ登録する
             </OutlineBtn>

@@ -1,5 +1,5 @@
 /* B1 ledger label: a local image, no remote font or cross-language preloading. */
-:root{--brand-paper:#faf9f2;--brand-ink:#25483b;--brand-rule:#a6b3a8;--brand-control:#647e70;--notebook-stock:#f0ecdc}
+:root{--brand-paper:#faf9f2;--brand-ink:#25483b;--brand-rule:#a6b3a8;--brand-control:#647e70;--notebook-stock:#f5f3e9}
 .brand-mark{display:block;width:168px;height:54px;object-fit:contain;flex-shrink:0}
 .brand-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;flex-shrink:0;text-decoration:none;border:0;background:transparent;padding:0;color:var(--brand-ink)}
 .brand-link:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
@@ -90,13 +90,17 @@ html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
  .setup-cover-feature{font-size:13px}
 }
 
-/* Four setup leaves share the cover's paper, heading weight and writing rhythm.
-   Scope excludes the app, print layouts, welcome cover and completion screen. */
+/* Setup and completion share the cover's paper, heading weight and writing rhythm.
+   Scope excludes the app, print layouts and welcome cover. */
 .setup-paper.setup-entry-page{background:var(--notebook-stock);border-color:#b8b9a5;max-width:560px;padding:32px;line-height:1.75;font-weight:500;font-kerning:normal;color:var(--brand-ink)}
 .setup-entry-page .setup-step-heading{margin:0 0 26px;padding:0 0 20px;border-bottom:1px solid #a0ad98}
 .setup-step-heading .setup-step-index{font-size:14px;font-weight:500;letter-spacing:.09em;color:#4b6256;margin:0 0 8px;line-height:1.5}
 .setup-step-heading h2{font-size:26px;font-weight:600;letter-spacing:.06em;font-feature-settings:"palt" 1;font-kerning:normal;line-height:1.45;margin:0 0 10px;overflow-wrap:break-word}
 .setup-step-heading p{font-size:15px;font-weight:500;letter-spacing:.015em;line-height:1.75;margin:0;color:#4b6256;text-wrap:pretty}
+.setup-entry-page .setup-complete-heading{padding-top:20px}
+.setup-complete-heading h2{overflow-wrap:anywhere;text-wrap:balance}
+.setup-complete-heading p{font-variant-numeric:lining-nums tabular-nums}
+.setup-complete-heading p+p{margin-top:4px}
 .setup-entry-page .section-title{margin-bottom:14px!important;gap:8px!important}
 .setup-entry-page .section-title>span:last-of-type{font-size:15px!important;font-weight:600;letter-spacing:.04em!important}
 .setup-entry-page button{font-weight:600;line-height:1.6;font-kerning:normal;letter-spacing:.025em!important;min-height:44px}
