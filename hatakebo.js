@@ -30,8 +30,8 @@ const UI_FONT = document.documentElement.lang === "ja"
 const SERIF = UI_FONT;
 const SANS = UI_FONT;
 const HAND = UI_FONT;
-// Plain ivory paper matches the label; rules remain where they organize information.
-const PAPER_LINES = "none";
+// One continuous background; opaque reading panels keep the ink unobstructed.
+const PAPER_LINES = "var(--notebook-lines, repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(100,126,112,.18) 31px,rgba(100,126,112,.18) 32px))";
 
 function BrandMark(){
   const japanese=document.documentElement.lang==="ja";
@@ -170,7 +170,7 @@ function LedgerStyle(){return <style>{`
   .ledger-tight .ledger-navrow{grid-template-columns:minmax(0,1fr) 44px;gap:12px 8px!important}.ledger-tight .ledger-yearnav{grid-template-columns:44px minmax(0,1fr) 44px;gap:0}.ledger-tight .year-number{font-size:16px}.ledger-tight .ledger-navtabs{gap:12px}.ledger-tight .ledger-navtabs button{font-size:15px!important}
   .ledger-narrow .ledger-navrow{grid-template-columns:minmax(0,1fr)}.ledger-narrow .ledger-menu-wrap{grid-column:1}.ledger-narrow .ledger-menu-button{width:100%}.ledger-narrow .ledger-yearnav{grid-column:1}.ledger-narrow .ledger-navtabs{flex-wrap:wrap}
   @media(max-width:800px){.ledger-app{padding:0 16px!important}.ledger-spread{grid-template-columns:minmax(0,1fr)}.ledger-aside{display:none}.ledger-map{padding-right:0}.ledger-title h1{font-size:24px}.ledger-fieldbox{max-height:440px!important}}
-  .faq-screen{background:${C.paper}!important;position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
+  .faq-screen{background-color:${C.paper}!important;background-image:${PAPER_LINES}!important;background-position:0 0;position:fixed;inset:0;height:calc(100dvh / var(--ui-scale,1));z-index:200;overflow-y:auto;overscroll-behavior:contain;user-select:text}
   .faq-header{position:sticky;top:0;z-index:10;background:${C.paper};border-bottom:1px solid ${C.inkLine}}
   .faq-header-inner{max-width:760px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:12px}.faq-header h1{font:600 22px/1.4 ${SANS}}
   .faq-back{min-width:44px;height:44px;border:1px solid ${C.inkBorder};background:${C.paper};color:${C.ink};font-size:24px;cursor:pointer}
@@ -402,7 +402,7 @@ function RuledLine({ mb }) {
 }
 function SectionTitle({ children }) {
   return (
-    <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:14 }}>
+    <div className="section-title" style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:14 }}>
       <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, fontFamily:HAND }}>◇</span>
       <span style={{ fontSize:14, color:C.ink, letterSpacing:2, fontFamily:HAND }}>{children}</span>
       <div style={{ flex:1, height:1, background:C.inkLine, opacity:.5 }}/>
@@ -1428,6 +1428,8 @@ function FarmSetup({ farms, onComplete, onSkip }) {
   const [editLM,    setEditLM]    = useState(null); /* { key, label } */
   const [lmMode,    setLmMode]    = useState("auto"); /* "auto"|"quick"|"detail" */
   const sn = SETUP_STEPS[step];
+  // Each setup leaf starts at its heading, including after a long mobile form.
+  useEffect(function(){ window.scrollTo(0,0); },[step]);
   const ac = grid.flat().filter(Boolean).length;
   const cs = Math.min(40, Math.floor(240/cols));
 
@@ -1490,7 +1492,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         )}
       </div>
 
-      <div className={"setup-paper"+(sn==="welcome"?" setup-cover-page":"")}>
+      <div className={"setup-paper"+(sn==="welcome"?" setup-cover-page":["size","shape","landmarks","name"].includes(sn)?" setup-entry-page":"")} data-setup-step={sn}>
 
         {/* ━━ 表紙 ━━ */}
         {sn === "welcome" && (
@@ -1514,7 +1516,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
             <ul className="setup-cover-contents">
             {["無料","会員登録不要","インストール不要"].map(function(item){
               return (
-                <li key={item} className="setup-cover-feature">{item}</li>
+                <li key={item} className="setup-cover-feature">{document.documentElement.lang==="ja"&&item.length>2?<><span className="setup-cover-feature-part">{item.slice(0,-2)}</span><span className="setup-cover-feature-part">{item.slice(-2)}</span></>:item}</li>
               );
             })}
             </ul>
@@ -1524,14 +1526,14 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {/* ━━ おおきさ ━━ */}
         {sn === "size" && (
           <div>
-            <div style={{ marginBottom:28 }}>
-              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第一記 —</div>
-              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>畑の大きさ</h2>
-              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.8 }}>実際の広さをメートルで入力してください</p>
+            <div className="setup-step-heading">
+              <div className="setup-step-index">第一記 —</div>
+              <h2>畑の大きさ</h2>
+              <p>実際の広さをメートルで入力してください</p>
             </div>
 
             <SectionTitle>よく使われるサイズ</SectionTitle>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
+            <div className="setup-size-presets" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
               {PRESETS.map(function(p){
                 return (
                   <button key={p.label} onClick={function(){ applyPreset(p); }}
@@ -1553,7 +1555,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
                 var idx = steps.findIndex(function(s){ return Math.abs(s-value)<0.01; });
                 if (idx < 0) idx = 0;
                 return (
-                  <div style={{ marginBottom:18 }}>
+                  <div className="setup-measure" style={{ marginBottom:18 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                       <span style={{ fontSize:14, color:C.inkFaint, letterSpacing:2, fontFamily:HAND }}>{label}</span>
                       <span style={{ fontSize:16, color:C.ink, fontFamily:SERIF, fontWeight:"bold" }}>{value.toFixed(2)} m</span>
@@ -1580,7 +1582,7 @@ function FarmSetup({ farms, onComplete, onSkip }) {
               );
             })()}
 
-            <div style={{ padding:"14px 16px", background:C.indigoPale, border:"1px solid "+C.indigo, marginBottom:20, fontSize:14, color:C.indigo, fontFamily:HAND, lineHeight:2, letterSpacing:1 }}>
+            <div className="setup-measure-summary" style={{ padding:"14px 16px", background:C.indigoPale, border:"1px solid "+C.indigo, marginBottom:20, fontSize:14, color:C.indigo, fontFamily:HAND, lineHeight:2, letterSpacing:1 }}>
               {widthM.toFixed(2)}m × {heightM.toFixed(2)}m　＝　{(widthM*heightM).toFixed(1)} ㎡<br/>
               <span style={{ fontSize:14, color:C.inkFaint }}>グリッド: {cols}列 × {rows}行（1マス = {CELL_CM}cm）</span>
             </div>
@@ -1592,10 +1594,10 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {/* ━━ かたち ━━ */}
         {sn === "shape" && (
           <div>
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第二記 —</div>
-              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>区画の形</h2>
-              <p style={{ fontSize:14, color:C.inkFaint, lineHeight:1.8 }}>{rows*cols<=100?"使わない区画をタップして除外できます":"広い畑なので形の編集はスキップできます"}</p>
+            <div className="setup-step-heading">
+              <div className="setup-step-index">第二記 —</div>
+              <h2>区画の形</h2>
+              <p>{rows*cols<=100?"使わない区画をタップして除外できます":"広い畑なので形の編集はスキップできます"}</p>
             </div>
             {rows*cols <= 100 ? (
               <div>
@@ -1641,8 +1643,8 @@ function FarmSetup({ farms, onComplete, onSkip }) {
         {/* ━━ 目印 ━━ */}
         {sn === "landmarks" && (
           <div>
-            <div className="landmark-heading">
-              <div className="landmark-step">第二記（補） —</div>
+            <div className="setup-step-heading">
+              <div className="setup-step-index">第二記（補） —</div>
               <h2>周囲の目印</h2>
               <p>方角と周りの目印を記録します（省略可）</p>
             </div>
@@ -1686,15 +1688,15 @@ function FarmSetup({ farms, onComplete, onSkip }) {
 
         {sn === "name" && (
           <div>
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:4, fontFamily:HAND }}>第三記 —</div>
-              <h2 style={{ fontSize:22, fontWeight:"normal", letterSpacing:4, marginBottom:8 }}>畑の名称</h2>
+            <div className="setup-step-heading">
+              <div className="setup-step-index">第三記 —</div>
+              <h2>畑の名称</h2>
             </div>
 
             {/* 畑の名称 */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:14, color:C.inkFaint, letterSpacing:3, marginBottom:6, fontFamily:HAND }}>畑の名称</div>
-              <input value={name} onChange={function(e){ setName(e.target.value.slice(0,15)); }} placeholder="例：南の畑"
+            <div className="setup-name-field" style={{ marginBottom:24 }}>
+              <label htmlFor="setup-farm-name">畑の名称</label>
+              <input id="setup-farm-name" value={name} onChange={function(e){ setName(e.target.value.slice(0,15)); }} placeholder="例：南の畑"
                 style={{ width:"100%", padding:"14px 0 10px", fontSize:18, borderRadius:0, outline:"none",
                   fontFamily:SERIF, boxSizing:"border-box", letterSpacing:2, color:C.ink,
                   background:"transparent", border:"none", borderBottom:"2px solid " + C.ink }}/>

@@ -1,5 +1,5 @@
 /* B1 ledger label: a local image, no remote font or cross-language preloading. */
-:root{--brand-paper:#faf9f2;--brand-ink:#25483b;--brand-rule:#a6b3a8;--brand-control:#647e70}
+:root{--brand-paper:#faf9f2;--brand-ink:#25483b;--brand-rule:#a6b3a8;--brand-control:#647e70;--notebook-stock:#f0ecdc}
 .brand-mark{display:block;width:168px;height:54px;object-fit:contain;flex-shrink:0}
 .brand-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;flex-shrink:0;text-decoration:none;border:0;background:transparent;padding:0;color:var(--brand-ink)}
 .brand-link:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
@@ -16,7 +16,12 @@ body .brand{display:inline-flex;align-items:center;min-height:44px;letter-spacin
 @media(max-width:350px){.brand-mark{width:128px;height:44px}}
 /* The introduction uses the same paper/ink; its layout and illustrations stay intact. */
 :root{--paper:var(--brand-paper);--ink:var(--brand-ink);--muted:#4b6256;--green:var(--brand-ink);--line:var(--brand-rule)}
-html[data-entry-mode=app] body{background-color:var(--brand-paper);background-image:none}
+/* One ruling layer on the page; panels never restart the horizontal lines. */
+:root{--notebook-lines:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(100,126,112,.18) 31px,rgba(100,126,112,.18) 32px)}
+body,html[data-entry-mode=app] body{background-color:var(--brand-paper);background-image:var(--notebook-lines);background-position:0 0;background-repeat:repeat}
+body>header,body>footer,#entry-intro>header,#entry-intro>footer{background-color:var(--brand-paper)}
+body>main,#entry-intro>main{background-color:var(--brand-paper);width:calc(100% - 24px);margin-top:16px;margin-bottom:16px;border:1px solid var(--brand-rule)}
+@media print{body,html[data-entry-mode=app] body{background-image:none!important}body>main,#entry-intro>main{width:auto;border:0}}
 html[data-entry-mode=app] body>footer{background:var(--brand-paper)!important;border-color:var(--brand-rule)!important;color:#4b6256!important}
 /* Welcome: paper, ink and an unambiguous first action. No simulated binding. */
 .setup-paper.setup-cover-page{padding:0;border:0;background:transparent;max-width:600px;width:calc(100% - 48px);margin:40px auto 32px}
@@ -41,6 +46,83 @@ html[data-entry-mode=app] body>footer{background:var(--brand-paper)!important;bo
 .setup-cover-action button:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
 .setup-cover-action button:hover{filter:brightness(1.08)}
 html:not([lang=ja]) .setup-cover-title{padding-left:0;letter-spacing:0}
-html[lang=ja] .setup-cover-contents{grid-template-columns:.55fr 1fr 1.45fr}
 @media(max-width:600px){.setup-paper.setup-cover-page{width:calc(100% - 40px);margin-top:24px}.setup-cover{padding:32px 4px 0}.setup-cover-title{font-size:36px;letter-spacing:.16em}.setup-cover-label{margin-bottom:22px}.setup-cover-label>div{margin-top:24px!important}.setup-cover-description{font-size:16px}.setup-cover-action{margin-top:28px}.setup-cover-contents{margin-top:28px;padding:18px 0}.setup-cover-feature{padding:0 7px;font-size:13px}}
 @media(max-width:350px){.setup-paper.setup-cover-page{width:calc(100% - 32px)}.setup-cover-title{font-size:32px;letter-spacing:.12em}.setup-cover-subtitle{letter-spacing:.03em}.setup-cover-action button{padding:14px 12px!important}.setup-cover-feature{padding:0 5px}}
+
+/* Original botanical engraving, nine-sliced so corners keep their proportions.
+   All copy and controls remain real HTML, independent of the decoration. */
+.setup-paper.setup-cover-page{max-width:660px;width:calc(100% - 32px);margin:20px auto 28px}
+.setup-cover{position:relative;isolation:isolate;border:1px solid #c0bdab;background:var(--notebook-stock);padding:94px 88px 114px;color:#203f33}
+.setup-cover::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:144px solid transparent;border-image:url("welcome-vegetable-frame.webp") 38% / 144px / 0 round}
+.setup-cover-label{margin-bottom:34px}
+.setup-cover-title{font-size:54px;font-weight:700;letter-spacing:.09em;padding-left:.09em;line-height:1.35;font-kerning:normal;font-feature-settings:"palt" 1;color:#203f33}
+.setup-cover-subtitle{font-size:17px;font-weight:500;letter-spacing:.14em;margin:18px 0 0;color:var(--brand-ink)}
+.setup-cover-label>div{display:none!important}
+.setup-cover-description{font-size:16px;line-height:1.9;font-weight:500;font-kerning:normal;letter-spacing:.025em}
+.setup-cover-description::before{content:"";display:block;width:56px;height:3px;margin:0 auto 28px;border-top:1px solid var(--brand-control);border-bottom:1px solid var(--brand-control)}
+.setup-cover-action{margin-top:34px;max-width:340px}
+.setup-cover-guidance{font-size:14px;margin-bottom:12px}
+.setup-cover-action button{border-radius:2px!important;min-height:58px;box-shadow:2px 2px 0 #4b6256!important;font-weight:600;letter-spacing:.04em!important}
+.setup-cover-action button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #4b6256!important}
+.setup-cover-contents,html[lang=ja] .setup-cover-contents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:420px;margin:34px auto 0;padding:14px 0;border-top:1px solid #8b9987;border-bottom:1px solid #8b9987;gap:0}
+.setup-cover-feature{display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;min-width:0;min-height:32px;font-size:14px;padding:0 8px;color:var(--brand-ink);font-weight:500;line-height:1.6}
+.setup-cover-feature+.setup-cover-feature{border-left:1px solid #a2ad99}
+.setup-cover-feature-part{display:inline-block;max-width:100%}
+@media(max-width:600px){
+ .setup-paper.setup-cover-page{width:calc(100% - 16px);margin:12px auto 24px}
+ .setup-cover{padding:64px 44px 94px}
+ .setup-cover::before{border-width:86px;border-image-width:86px}
+ .setup-cover-title{font-size:39px;letter-spacing:.08em;padding-left:.08em}
+ .setup-cover-subtitle{font-size:16px;letter-spacing:.06em;margin-top:14px}
+ .setup-cover-label{margin-bottom:28px}
+ .setup-cover-description{font-size:16px;line-height:1.9}
+ .setup-cover-description::before{margin-bottom:20px;width:36px}
+ .setup-cover-action{margin-top:24px}
+ .setup-cover-action button{font-size:16px!important;padding:14px 12px!important;gap:6px}
+ .setup-cover-contents,html[lang=ja] .setup-cover-contents{width:calc(100% + 24px);max-width:none;margin:28px -12px 0;padding:12px 0}
+ .setup-cover-feature{padding:0 4px;font-size:14px;min-height:45px}
+ .setup-cover-feature-part{flex-basis:100%}
+}
+@media(max-width:350px){
+ .setup-cover{padding:60px 30px 84px}
+ .setup-cover::before{border-width:72px;border-image-width:72px}
+ .setup-cover-title{font-size:35px}
+ .setup-cover-feature{font-size:13px}
+}
+
+/* Four setup leaves share the cover's paper, heading weight and writing rhythm.
+   Scope excludes the app, print layouts, welcome cover and completion screen. */
+.setup-paper.setup-entry-page{background:var(--notebook-stock);border-color:#b8b9a5;max-width:560px;padding:32px;line-height:1.75;font-weight:500;font-kerning:normal;color:var(--brand-ink)}
+.setup-entry-page .setup-step-heading{margin:0 0 26px;padding:0 0 20px;border-bottom:1px solid #a0ad98}
+.setup-step-heading .setup-step-index{font-size:14px;font-weight:500;letter-spacing:.09em;color:#4b6256;margin:0 0 8px;line-height:1.5}
+.setup-step-heading h2{font-size:26px;font-weight:600;letter-spacing:.06em;font-feature-settings:"palt" 1;font-kerning:normal;line-height:1.45;margin:0 0 10px;overflow-wrap:break-word}
+.setup-step-heading p{font-size:15px;font-weight:500;letter-spacing:.015em;line-height:1.75;margin:0;color:#4b6256;text-wrap:pretty}
+.setup-entry-page .section-title{margin-bottom:14px!important;gap:8px!important}
+.setup-entry-page .section-title>span:last-of-type{font-size:15px!important;font-weight:600;letter-spacing:.04em!important}
+.setup-entry-page button{font-weight:600;line-height:1.6;font-kerning:normal;letter-spacing:.025em!important;min-height:44px}
+.setup-entry-page .setup-size-presets{gap:10px!important}
+.setup-entry-page .setup-size-presets button{padding:14px 12px!important;min-width:0}
+.setup-entry-page .setup-size-presets button>div:first-child{font-size:15px!important;font-weight:600;letter-spacing:.02em!important;line-height:1.5;margin-bottom:6px!important}
+.setup-entry-page .setup-size-presets button>div:last-child{font-weight:400;font-variant-numeric:lining-nums tabular-nums}
+.setup-entry-page .setup-measure>div:first-child{gap:12px;align-items:baseline;margin-bottom:8px!important}
+.setup-entry-page .setup-measure>div:first-child>span:first-child{font-size:15px!important;font-weight:600;letter-spacing:.04em!important}
+.setup-entry-page .setup-measure>div:first-child>span:last-child{font-size:18px!important;font-weight:600;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.setup-entry-page :is(input,select){font-family:inherit;font-weight:500;line-height:1.6;letter-spacing:.015em!important;font-kerning:normal;min-width:0;background-color:#faf8ef!important;min-height:48px;border-color:var(--brand-control)!important;border-radius:2px}
+.setup-entry-page select{padding:8px 10px}
+.setup-entry-page :is(input,select,button):focus-visible{outline:3px solid #8a5010!important;outline-offset:3px}
+.setup-entry-page input::placeholder{color:#596b5c;opacity:1;font-weight:400}
+.setup-entry-page .setup-measure-summary{background:#e5e8d8!important;border-color:#7e947e!important;letter-spacing:.015em!important;font-variant-numeric:lining-nums tabular-nums;line-height:1.8!important}
+.setup-entry-page .landmark-help{font-weight:500;font-size:15px;line-height:1.75;background:transparent;border-color:#a0ad98}
+.setup-entry-page .landmark-fields label,.setup-name-field>label{font-size:15px;font-weight:600;line-height:1.6;letter-spacing:.025em}
+.setup-name-field>label{display:block;margin-bottom:8px}
+.setup-entry-page #setup-farm-name{font-size:20px!important;padding:12px 10px!important;letter-spacing:.04em!important;min-height:54px;border-bottom-width:2px!important}
+.setup-name-field>p{font-size:14px;line-height:1.75;margin:10px 0 12px!important;text-wrap:pretty}
+@media(max-width:600px){
+ .setup-paper.setup-entry-page{padding:24px 20px;margin:16px auto 20px}
+ .setup-step-heading h2{font-size:24px;letter-spacing:.045em}
+ .setup-entry-page .setup-step-heading{margin-bottom:22px;padding-bottom:18px}
+}
+@media(max-width:350px){
+ .setup-paper.setup-entry-page{padding:22px 16px}
+ .setup-entry-page .setup-size-presets button{padding:12px 9px!important}
+}
