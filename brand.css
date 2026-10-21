@@ -1,0 +1,22 @@
+/* B1 ledger label: a local image, no remote font or cross-language preloading. */
+:root{--brand-paper:#faf9f2;--brand-ink:#25483b;--brand-rule:#a6b3a8;--brand-control:#647e70}
+.brand-mark{display:block;width:168px;height:54px;object-fit:contain;flex-shrink:0}
+.brand-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;flex-shrink:0;text-decoration:none;border:0;background:transparent;padding:0;color:var(--brand-ink)}
+.brand-link:focus-visible{outline:3px solid #8a5010;outline-offset:4px}
+.brand-link .brand-mark{margin:0}
+body .brand{display:inline-flex;align-items:center;min-height:44px;letter-spacing:normal;padding:0;text-decoration:none}
+.setup-brand-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:76px;padding:8px 0}
+.setup-brand-copy{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;min-width:0}
+.setup-brand-copy .brand-mark{width:144px;height:48px}
+.setup-brand-row .language-nav{margin-left:auto}
+.setup-brand-row>button{min-width:44px;min-height:44px}
+.setup-cover-mark{display:flex;justify-content:center;margin-bottom:16px}
+.setup-cover-mark .brand-mark{width:220px;height:72px;max-width:100%}
+.ledger-tight .ledger-brand{flex-wrap:wrap;gap:4px 12px}
+.ledger-tight .ledger-brand-copy{flex-basis:100%}
+@media(max-width:600px){.brand-mark{width:144px;height:48px}.setup-brand-copy{flex-basis:100%;order:0}.setup-brand-copy .setup-tagline{font-size:13px}.setup-brand-row{gap:4px 12px}.setup-brand-row>div:empty{display:none}.setup-brand-row>button{order:1}.setup-brand-row>span{order:2}.setup-brand-row>.language-nav{order:3}}
+@media(max-width:350px){.brand-mark{width:128px;height:44px}}
+/* The introduction uses the same paper/ink; its layout and illustrations stay intact. */
+:root{--paper:var(--brand-paper);--ink:var(--brand-ink);--muted:#4b6256;--green:var(--brand-ink);--line:var(--brand-rule)}
+html[data-entry-mode=app] body{background-color:var(--brand-paper);background-image:none}
+html[data-entry-mode=app] body>footer{background:var(--brand-paper)!important;border-color:var(--brand-rule)!important;color:#4b6256!important}
