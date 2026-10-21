@@ -1472,9 +1472,6 @@ function FarmSetup({ farms, onComplete, onSkip }) {
             {onSkip ? <button className="brand-link" type="button" onClick={onSkip} aria-label="畑のようす" title="畑のようす"><BrandMark/></button> : <BrandMark/>}
           </div>
           <div style={{ flex:1 }}/>
-          {onSkip && step === 0 && (
-            <button onClick={onSkip} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:C.inkFaint, fontFamily:SERIF }}>とじる</button>
-          )}
           {step > 0 && step < SETUP_STEPS.length-1 && (
             <span style={{ fontSize:14, color:C.inkFaint, fontFamily:SANS,whiteSpace:"nowrap",flexShrink:0,fontVariantNumeric:"lining-nums tabular-nums" }}>
               {step} / {SETUP_STEPS.length-2}
@@ -1772,6 +1769,17 @@ function farmCS(farm, mapZoom) {
   var base = Math.min(72,maxW/farm.cols,maxH/farm.rows);
   return base * (mapZoom || 1);
 }
+// Center each edge's landmarks as a group, without changing stored positions.
+function centeredLandmarkEdges(farm,width,height,hGap,vGap) {
+  var offsets={},lm=farm.landmarks||{};
+  ["top","bot","lft","rgt"].forEach(function(side){
+    var horizontal=side==="top"||side==="bot",count=horizontal?farm.cols:farm.rows,length=horizontal?width:height;
+    var keys=Array.from({length:count},(_,i)=>side+"-"+i).filter(k=>lm[k]);
+    var step=Math.min(horizontal?hGap:vGap,length/(keys.length+1));
+    keys.forEach(function(key,i){offsets[key]=length/2+(i-(keys.length-1)/2)*step;});
+  });
+  return offsets;
+}
 function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPressStart, onTap, onMove, onRidgeTap, selRid, onZoomChange, zoom, soil, fid, year, onPressChange, mapZoom }) {
   var wrapRef=useRef(null);
   var [availableWidth,setAvailableWidth]=useState(null);
@@ -1800,6 +1808,8 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
   if(availableWidth){CS=Math.min(CS,Math.max(20,availableWidth-padL-padR-2)/farm.cols*(mapZoom||1));W=farm.cols*CS;H=farm.rows*CS;}
   var SVG_W = padL + W + padR;
   var SVG_H = padT + H + padB;
+
+  var edgeOffsets=centeredLandmarkEdges(farm,W,H,60,40);
 
   function getSvgPt(cx, cy) {
     var el = svgRef.current; if (!el) return null;
@@ -1985,10 +1995,10 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
       {padT > 0 && Array.from({length:farm.cols}, function(_,c){
         var item = lm["top-"+c];
         if (!item) return null;
-        var cx2 = padL + c*CS + CS/2;
+        var cx2 = padL + edgeOffsets["top-"+c];
         var cy2 = padT/2;
         return (
-          <g key={"lmT"+c}>
+          <g key={"lmT"+c} data-landmark-edge="top" data-edge-center={cx2}>
             <LandmarkImage item={item} x={cx2} y={cy2-2} size={LM_FS}/>
             <text x={cx2} y={cy2+LM_FS*0.6} textAnchor="middle" fontSize={LM_LABEL_FS} fill={C.inkFaint} fontFamily={SERIF} style={{pointerEvents:"none"}}>{item.memo||item.label}</text>
           </g>
@@ -1999,10 +2009,10 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
       {padB > 0 && Array.from({length:farm.cols}, function(_,c){
         var item = lm["bot-"+c];
         if (!item) return null;
-        var cx2 = padL + c*CS + CS/2;
+        var cx2 = padL + edgeOffsets["bot-"+c];
         var cy2 = padT + H + padB/2;
         return (
-          <g key={"lmB"+c}>
+          <g key={"lmB"+c} data-landmark-edge="bot" data-edge-center={cx2}>
             <LandmarkImage item={item} x={cx2} y={cy2-2} size={LM_FS}/>
             <text x={cx2} y={cy2+LM_FS*0.6} textAnchor="middle" fontSize={LM_LABEL_FS} fill={C.inkFaint} fontFamily={SERIF} style={{pointerEvents:"none"}}>{item.memo||item.label}</text>
           </g>
@@ -2014,9 +2024,9 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
         var item = lm["lft-"+r];
         if (!item) return null;
         var cx2 = padL/2;
-        var cy2 = padT + r*CS + CS/2;
+        var cy2 = padT + edgeOffsets["lft-"+r];
         return (
-          <g key={"lmL"+r}>
+          <g key={"lmL"+r} data-landmark-edge="lft" data-edge-center={cy2}>
             <LandmarkImage item={item} x={cx2} y={cy2-2} size={LM_FS}/>
             <text x={cx2} y={cy2+LM_FS*0.6} textAnchor="middle" fontSize={LM_LABEL_FS} fill={C.inkFaint} fontFamily={SERIF} style={{pointerEvents:"none"}}>{item.memo||item.label}</text>
           </g>
@@ -2028,9 +2038,9 @@ function FarmField({ editable, farm, farmRidges, farmPlant, s1, hov, onLongPress
         var item = lm["rgt-"+r];
         if (!item) return null;
         var cx2 = padL + W + padR/2;
-        var cy2 = padT + r*CS + CS/2;
+        var cy2 = padT + edgeOffsets["rgt-"+r];
         return (
-          <g key={"lmR"+r}>
+          <g key={"lmR"+r} data-landmark-edge="rgt" data-edge-center={cy2}>
             <LandmarkImage item={item} x={cx2} y={cy2-2} size={LM_FS}/>
             <text x={cx2} y={cy2+LM_FS*0.6} textAnchor="middle" fontSize={LM_LABEL_FS} fill={C.inkFaint} fontFamily={SERIF} style={{pointerEvents:"none"}}>{item.memo||item.label}</text>
           </g>
