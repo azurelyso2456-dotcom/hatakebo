@@ -38,6 +38,38 @@ function BrandMark(){
   return <img className="brand-mark" src={japanese?"brand-b1-ja.webp":"brand-b1-latin.webp"} alt={japanese?"ハタケボ":"Hatakebo"} width="168" height="54" decoding="async"/>;
 }
 
+// A quiet ornament, derived only from this garden's existing history.
+// Repeated entries on one date do not accelerate growth; elapsed time never reduces it.
+function gardenProgressStage(entries){
+  const dates=new Set();
+  (entries||[]).forEach(e=>{if(Number.isFinite(Number(e.year))&&Number(e.year)>0)dates.add([e.year,e.month||0,e.day||0].join('-'));});
+  return dates.size>=20?3:dates.size>=8?2:dates.size>=3?1:0;
+}
+function GardenProgress({entries,layoutKey,scale}){
+  const ref=useRef(null),[fits,setFits]=useState(false);
+  const stage=gardenProgressStage(entries);
+  useEffect(()=>{
+    const el=ref.current,bar=el&&el.parentElement;if(!bar)return;
+    let disposed=false;
+    const buttons=Array.from(bar.children).filter(n=>n.tagName==='BUTTON');
+    const measure=()=>{
+      if(disposed)return;
+      const box=bar.getBoundingClientRect(),zoom=box.width/(bar.offsetWidth||1);
+      const rects=buttons.map(b=>b.getBoundingClientRect()).filter(r=>r.width&&r.height);
+      const oneLine=rects.length>0&&rects.every(r=>Math.abs(r.top-rects[0].top)<1&&Math.abs(r.bottom-rects[0].bottom)<1);
+      const right=Math.max(box.left,...rects.map(r=>r.right));
+      const enough=oneLine&&box.right-right>=(260+24)*zoom&&Math.abs(box.bottom-rects[0].bottom)<1;
+      setFits(enough);
+    };
+    measure();
+    const observer=new ResizeObserver(measure);observer.observe(bar);buttons.forEach(b=>observer.observe(b));
+    window.addEventListener('resize',measure);
+    if(document.fonts)document.fonts.ready.then(measure);
+    return()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',measure);};
+  },[layoutKey,scale]);
+  return <span ref={ref} className="garden-progress" aria-hidden="true" data-stage={stage} data-visible={fits?"true":"false"} style={{visibility:fits?"visible":"hidden",backgroundImage:fits?'url("garden-progress.webp")':"none",backgroundPosition:"0 "+(-stage*40)+"px"}}/>;
+}
+
 function LanguageSwitch(){
   const lang=document.documentElement.lang;
   return <nav className="language-nav" aria-label="表示言語"><details className="language-picker"><summary>その他の言語</summary><div>{[{lang:"ja",href:"index.html",name:"日本語"},{lang:"en",href:"en.html",name:"English"},{lang:"id",href:"id.html",name:"Bahasa Indonesia"},{lang:"pl",href:"pl.html",name:"Polski"},{lang:"sw",href:"sw.html",name:"Kiswahili"}].filter(item=>item.lang!==lang).map(item=><a key={item.lang} href={item.href} lang={item.lang} hrefLang={item.lang} data-language-switch>{item.name}</a>)}</div></details></nav>;
@@ -124,7 +156,9 @@ function LedgerStyle(){return <style>{`
   .ledger-status{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-top:1px solid ${C.inkLine};padding:8px 0!important;font:14px/1.6 ${SANS}}
   .ledger-status .faq-link{margin:0;padding:8px 0;border:0;background:transparent;color:${C.ink};font-size:14px;text-decoration:underline;text-underline-offset:4px}
   .setup-offline{box-sizing:border-box;max-width:520px;width:calc(100% - 24px);margin:0 auto 24px;padding:0 20px;text-align:center;background:${C.paper};font-family:${SERIF};line-height:1.7}
-  .ledger-bottom .journal-toolbar{margin:0;gap:12px}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .ledger-bottom .journal-toolbar{margin:0;gap:12px;position:relative}.ledger-bottom .journal-toolbar button{min-height:48px;padding:10px 16px;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}.ledger-app input::placeholder,.ledger-app textarea::placeholder{color:${C.inkFaint};opacity:1}
+  .garden-progress{position:absolute;right:0;bottom:-2.5px;width:260px;height:40px;background-size:260px 160px;background-repeat:no-repeat;pointer-events:none;user-select:none}
+  @media print{.garden-progress{display:none!important}}
   .action-notice{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:8px;padding:8px 12px;background:${C.indigoPale};border-left:3px solid ${C.indigo};font-size:14px;line-height:1.5}
   .action-notice>span{flex:1 1 180px;overflow-wrap:anywhere}.action-notice button{padding:4px 8px;background:${C.paper};color:${C.ink};border:1px solid ${C.inkBorder}}
   .ledger-app input:focus-visible,.ledger-app select:focus-visible,.ledger-app textarea:focus-visible{outline:3px solid ${C.orange};outline-offset:2px}
@@ -3094,6 +3128,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
           <button className={mainTab==="map"&&ridgeCount===0?"":"journal-primary"} onClick={()=>openWork(null)}>＋ 作業を記録</button>
           {mainTab==="map"&&<button onClick={()=>{closeSheet();setEditMode(true);}}>畑を編集</button>}
           </>}
+          <GardenProgress entries={timeline} layoutKey={mainTab+"-"+editMode+"-"+ridgeCount} scale={uiScale}/>
         </div>
       </div>
 

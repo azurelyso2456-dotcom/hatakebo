@@ -17,6 +17,9 @@ html:not([lang=ja]) .ledger-navtabs button{white-space:normal;height:auto;min-he
 html:not([lang=ja]) .ledger-yearnav .year-caption{white-space:normal}
 html:not([lang=ja]) .ledger-app .ledger-bottom{flex-wrap:wrap;gap:8px}
 html:not([lang=ja]) .ledger-app .ledger-bottom button{flex:1 1 140px}
+/* Wide layouts keep controls at their readable natural size; compact layouts
+   retain full-width touch targets. The garden ornament uses only spare space. */
+html:not([lang=ja]) .ledger-app:not(.ledger-compact) .ledger-bottom .journal-toolbar>button{flex:0 1 auto}
 html:not([lang=ja]) .ledger-logo{letter-spacing:0}
 html:not([lang=ja]) .ledger-app *{letter-spacing:normal!important}
 html:not([lang=ja]) footer a{color:#304f43;text-underline-offset:4px}
