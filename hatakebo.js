@@ -369,44 +369,30 @@ function getSoilVid(fid,ridgeId,year,pls,soil,fRidges){
   var rec=(soil[fid]||[]).find(function(s){return s.year===year&&ridgesOverlap(ridge,s);});
   return rec?rec.vid:null;
 }
-function checkRot(){return null;}
-function checkPrev(){return null;}
-/* JAPANESE_ROTATION_REPORT_BEGIN */
-const ROTATION_TAB_LABEL='栽培レポート';
-// Report code is evaluated only when its tab is first opened.
-let rotationReportPromise=null;
-function loadRotationReport(){
-  if(window.HatakeboIPM&&typeof window.HatakeboIPM.Report==='function')return Promise.resolve(window.HatakeboIPM.Report);
-  if(rotationReportPromise)return rotationReportPromise;
-  rotationReportPromise=new Promise((resolve,reject)=>{
-    const script=document.createElement('script');let finished=false;
-    const timer=setTimeout(()=>finish(new Error('Report load timed out')),20000);
-    function finish(error){
-      if(finished)return;finished=true;clearTimeout(timer);script.onload=null;script.onerror=null;
-      if(error){script.remove();reject(error);}else resolve(window.HatakeboIPM.Report);
-    }
-    script.src='rotation-report.js';script.async=true;
-    script.onload=()=>finish(window.HatakeboIPM&&typeof window.HatakeboIPM.Report==='function'?null:new Error('Report unavailable'));
-    script.onerror=()=>finish(new Error('Report load failed'));
-    document.head.appendChild(script);
-  }).catch(error=>{rotationReportPromise=null;throw error;});
-  return rotationReportPromise;
+function recordedFamily(fid,rid,yr,family,pls,soil,beds){
+  var bed=beds&&beds[rid];if(!bed)return false;
+  var recorded=Object.entries(pls[fid]&&pls[fid][yr]||{}).some(function([id,raw]){
+    var rec=typeof raw==="string"?{vid:raw}:raw;if(!rec)return false;
+    return [rec].concat(rec.past||[]).some(function(p){var where=p.geometry||(beds[id]&&geometryAt(beds[id],yr));return where&&ridgesOverlap(bed,where)&&VM[p.vid]&&VM[p.vid].family===family;});
+  });
+  return recorded||(soil&&soil[fid]||[]).some(r=>r.year===yr&&ridgesOverlap(bed,r)&&VM[r.vid]&&VM[r.vid].family===family);
 }
-function RotationReport(props){
-  const [Report,setReport]=useState(()=>window.HatakeboIPM&&window.HatakeboIPM.Report||null);
-  const [failed,setFailed]=useState(false),[attempt,setAttempt]=useState(0);
-  useEffect(()=>{
-    let active=true;setFailed(false);
-    loadRotationReport().then(component=>{if(active)setReport(()=>component);}).catch(()=>{if(active)setFailed(true);});
-    return()=>{active=false;};
-  },[attempt]);
-  if(Report)return <Report {...props}/>;
-  return <div style={{padding:'12px 0',lineHeight:1.7}}>
-    {failed?<><p role="alert">レポートを読み込めませんでした。通信できる場所でもう一度お試しください。保存済みの記録はそのままです。</p><button type="button" style={{minHeight:44,padding:'8px 16px'}} onClick={()=>setAttempt(n=>n+1)}>もう一度読み込む</button></>:<p role="status">栽培レポートを開いています…</p>}
-  </div>;
+function checkRot(fid,ridgeId,year,pls,soil,fRidges){
+  var id=extractVid(pls[fid]&&pls[fid][year]&&pls[fid][year][ridgeId]);
+  if(!id) return null;
+  var fam=VM[id]&&VM[id].family; if(!fam) return null;
+  var n=1;
+  for(var y=1;y<=2;y++){if(recordedFamily(fid,ridgeId,year-y,fam,pls,soil,fRidges))n++;else break;}
+  return n>=3?"danger":n>=2?"caution":null;
 }
-/* JAPANESE_ROTATION_REPORT_END */
-// Bed deletion must work before the optional report has ever been opened.
+function checkPrev(fid,ridgeId,vid,year,pls,soil,fRidges){
+  if(!vid) return null;
+  var fam=VM[vid]&&VM[vid].family; if(!fam) return null;
+  var n=1;
+  for(var y=1;y<=2;y++){if(recordedFamily(fid,ridgeId,year-y,fam,pls,soil,fRidges))n++;else break;}
+  return n>=3?"danger":n>=2?"caution":null;
+}
+// Keep recorded positions when a bed is removed or drawn again.
 function archiveBedPlantings({plantings={},beds={},rid}){
   const records=[];
   Object.entries(plantings).forEach(([year,group])=>{
@@ -774,7 +760,7 @@ function HistoryView({allBeds,entries,year,view,onView,snapshots,farm,small,onEd
   </div>;
 }
 
-function WorkForm({farm,beds,plantings,soil,initial,onSave,onClose,onSaveLayout,canSaveLayout,layoutSaveLabel,layoutSaveError}) {
+function WorkForm({farm,beds,initial,onSave,onClose,onSaveLayout,canSaveLayout,layoutSaveLabel,layoutSaveError}) {
   const [layoutAttempted,setLayoutAttempted]=useState(false);
   const layoutNoticeRef=useRef(null);
   useEffect(()=>{if(layoutAttempted&&!canSaveLayout&&layoutNoticeRef.current)layoutNoticeRef.current.focus({preventScroll:true});},[layoutAttempted,canSaveLayout]);
@@ -1093,7 +1079,7 @@ function SimpleLandmarks({rows,cols,landmarks,onChange}) {
 function EditDialog({title,children,onClose,compactClose=false}) {
   const ref=useRef(null);
   useEffect(function(){var before=document.activeElement;ref.current.focus();return function(){if(before&&before.isConnected)before.focus();};},[]);
-  function keys(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(ref.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select,textarea,a[href],summary,[tabindex="0"]')).filter(n=>n.getClientRects().length);if(!nodes.length){e.preventDefault();return;}var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===ref.current)){e.preventDefault();first.focus();}}}
+  function keys(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(ref.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select,textarea,summary,[tabindex="0"]')).filter(n=>n.getClientRects().length);if(!nodes.length){e.preventDefault();return;}var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===ref.current)){e.preventDefault();first.focus();}}}
   return <div role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1} onKeyDown={keys} style={{position:"fixed",inset:0,zIndex:180,background:"#0007",display:"flex",alignItems:"center",justifyContent:"center",padding:12}} onClick={e=>e.stopPropagation()}><div style={{background:C.paper,color:C.ink,padding:20,width:"100%",maxWidth:600,maxHeight:"calc(90dvh / var(--ui-scale, 1))",overflowY:"auto",boxSizing:"border-box"}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><h2 style={{fontSize:22,flex:1}}>{title}</h2><button type="button" aria-label="閉じる" style={{...EDIT_STYLE,width:compactClose?48:"auto",flexShrink:0,fontSize:compactClose?24:16}} onClick={onClose}>{compactClose?<span aria-hidden="true">×</span>:"閉じる"}</button></div>{children}</div></div>;
 }
 function FarmEdit({farm,beds,onSave,onClose}) {
@@ -2506,7 +2492,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
   const farmRidges = bedsAt(ridges[fid],year);
   const farmPlant  = (plantings[fid]&&plantings[fid][year]) || {};
   const timeline=landTimeline(rawFarm,ridges[fid]||{},plantings[fid]||{});
-  function openWork(rid,kind,returnTab){closeSheet();setWorkDraft({rid:rid||null,kind:kind||"fertilizer",year,returnTab});}
+  function openWork(rid,kind){closeSheet();setWorkDraft({rid:rid||null,kind:kind||"fertilizer",year});}
   function saveWork(entry){
     if(entry.kind==="plant"){
       sp(entry.rid,entry.vid,entry.year,entry.month,entry.day,[entry.amount?"量："+entry.amount:"",entry.note].filter(Boolean).join("\n"));
@@ -2516,8 +2502,6 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
       showToast((entry.place||"畑全体")+"に「"+(entry.name||WORK_TYPES[entry.kind]||"作業")+"」を"+(workDraft&&workDraft.id?"訂正しました":"記録しました"),function(){});
     }
     setWorkDraft(null);
-    if(entry.kind==="plant"&&entry.year===year){setSelRid(entry.rid);setTab("overview");}
-    else if(workDraft&&workDraft.returnTab==="report"&&entry.rid){setSelRid(entry.rid);setTab("report");}
   }
   function removeWork(entry){onUpdateFarm(Object.assign({},rawFarm,{journal:(rawFarm.journal||[]).filter(e=>e.id!==entry.id)}));showToast("記録を削除しました",function(){});}
   function preserveLayout(note){
@@ -3190,10 +3174,10 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
         />
       )}
 
-      {workDraft&&<WorkForm farm={rawFarm} beds={ridges[fid]||{}} plantings={plantings[fid]||{}} soil={soil[fid]||[]} initial={workDraft} onSave={saveWork} onClose={()=>setWorkDraft(null)} onSaveLayout={saveSnapshot} canSaveLayout={!hasSavedLayout||saveError} layoutSaveError={saveError} layoutSaveLabel={year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}/> }
+      {workDraft&&<WorkForm farm={rawFarm} beds={ridges[fid]||{}} initial={workDraft} onSave={saveWork} onClose={()=>setWorkDraft(null)} onSaveLayout={saveSnapshot} canSaveLayout={!hasSavedLayout||saveError} layoutSaveError={saveError} layoutSaveLabel={year===cy?HISTORY_LABELS.save:HISTORY_LABELS.pastSave.replace("{year}",year)}/> }
       {selRid && selRidgeObj && (
-        <RidgeSheet key={selRid} reportFarm={rawFarm} reportBeds={ridges[fid]||{}}
-          editable={editMode} entries={timeline.filter(e=>entryAtBed(e,selRid,ridges[fid]||{}))} onRecord={(kind,returnTab)=>openWork(selRid,kind,returnTab)} onEditEntry={e=>{closeSheet();setWorkDraft(e);}} onRemoveEntry={removeWork}
+        <RidgeSheet key={selRid}
+          editable={editMode} entries={timeline.filter(e=>entryAtBed(e,selRid,ridges[fid]||{}))} onRecord={kind=>openWork(selRid,kind)} onEditEntry={e=>{closeSheet();setWorkDraft(e);}} onRemoveEntry={removeWork}
           ridge={selRidgeObj} year={year} farmId={fid} cellCm={farm&&farm.cellCm} plantings={plantings}
           soil={soil} farmRidges={farmRidges}
           planting={gp(selRid)} history={gh(selRid)}
@@ -3300,10 +3284,10 @@ const FAQ_DATA = [
         ]
       },
       {
-        "q": "この場所の栽培履歴や、次に確認することはどこで見られますか？",
+        "q": "連作の注意が出ました。この場所には植えないほうがよいですか？",
         "a": [
-          "日本語ページでは、畝を開いて「栽培レポート」タブを選びます。「今のようす」や植付け入力にはレポートを表示しないので、植える・栽培を終える操作はそのまま使えます。",
-          "同じ場所に重なる作付け・作業メモ・緑肥や施肥の記録から、確認点と公的資料を紹介します。日付がそろえば栽培期間やすき込みから植付けまでの間隔も表示します。「次の作物を検討する」では記録を変えずに比較できます。",
+          "「前年と同じ科です」「同じ科が3年続いています」は、登録した作付けを振り返るための表示です。土が悪い、病気が起きている、という診断ではありません。",
+          "「これまでの記録」で、以前に何を植えたか確認してみてください。同じ科かどうかは、登録された過去2年までの作付けをもとにしています。",
           "記録のない作付けや実際の土の状態までは分かりません。表示の有無だけで判断せず、これまでの栽培の様子と合わせて場所を考えてください。"
         ]
       },
@@ -3636,11 +3620,7 @@ function SnapMiniMap({ farm, ridges, plantings }) {
 /* ══════════════════════════════════════
    畝ボトムシート
 ══════════════════════════════════════ */
-function RidgeSheet({ reportFarm, reportBeds, editable, entries, onRecord, onEditEntry, onRemoveEntry, ridge, year, farmId, cellCm, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onEdit, onSplit, onRename, onSelect, onClear, onDelete, onClose }) {
-  const reportEnabled=document.documentElement.lang.split('-')[0]==='ja';
-  const sheetTabs=[{id:"overview",label:"今のようす"},{id:"history",label:"これまでの記録"}].concat(reportEnabled?[{id:"report",label:ROTATION_TAB_LABEL}]:[]);
-  const tabContentRef=useRef(null);
-  useEffect(()=>{if(tabContentRef.current)tabContentRef.current.scrollTop=0;},[tab]);
+function RidgeSheet({ editable, entries, onRecord, onEditEntry, onRemoveEntry, ridge, year, farmId, cellCm, plantings, soil, farmRidges, planting, history, warning, tab, onTabChange, initMonth, initDay, onEdit, onSplit, onRename, onSelect, onClear, onDelete, onClose }) {
   const sheetRef=useRef(null);
   useEffect(function(){var old=document.activeElement;sheetRef.current.focus();return function(){if(old&&old.isConnected)old.focus();};},[]);
   var cm = cellCm || 100;
@@ -3668,7 +3648,7 @@ function RidgeSheet({ reportFarm, reportBeds, editable, entries, onRecord, onEdi
   });
 
   return (
-    <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={ridge.name+"の記録"} onKeyDown={function(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(sheetRef.current.querySelectorAll('button:not([disabled]),input,select,textarea,a[href],summary')).filter(n=>n.getClientRects().length),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===sheetRef.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===sheetRef.current)){e.preventDefault();first.focus();}}}} onClick={function(e){e.stopPropagation();}}
+    <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={ridge.name+"の記録"} onKeyDown={function(e){if(e.key==="Escape"){e.stopPropagation();onClose();}if(e.key==="Tab"){var nodes=Array.from(sheetRef.current.querySelectorAll('button:not([disabled]),input,summary')).filter(n=>n.getClientRects().length),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===sheetRef.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===sheetRef.current)){e.preventDefault();first.focus();}}}} onClick={function(e){e.stopPropagation();}}
       style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:720,zIndex:40,background:C.paper,border:"2px solid "+C.ink,borderRadius:"14px 14px 0 0",boxShadow:"0 -8px 40px rgba(28,20,8,0.18)",maxHeight:"calc(85dvh / var(--ui-scale, 1))",overflowY:"auto",display:"flex",flexDirection:"column",fontFamily:SANS}}>
 
       <div style={{padding:"12px 24px 0"}}>
@@ -3715,30 +3695,43 @@ function RidgeSheet({ reportFarm, reportBeds, editable, entries, onRecord, onEdi
         </div>
 
         {editable&&<details open style={{marginBottom:12}}><summary style={{minHeight:44,padding:"10px 0",fontSize:14,cursor:"pointer",color:C.inkFaint}}>この畝を編集</summary><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={onEdit} style={{minHeight:44,fontSize:16}}>畝の大きさ・位置を編集</button><button onClick={onSplit} style={{minHeight:44,fontSize:16}}>2区画に分ける</button></div></details>}
+        {/* 連作警告 */}
+        {warning && (
+          <div style={{display:"flex",gap:10,alignItems:"center",padding:"9px 14px",marginBottom:10,borderLeft:"4px solid "+(warning==="danger"?C.red:C.orange),background:warning==="danger"?C.redPale:C.orangePale}}>
+            <Hanko text="歴" color={warning==="danger"?C.red:C.orange}/>
+            <div>
+              <div style={{fontSize:14,fontWeight:"bold",color:warning==="danger"?C.red:C.orange,fontFamily:HAND,letterSpacing:1}}>
+                {warning==="danger"?"同じ科が3年続いています":"前年と同じ科です"}
+              </div>
+              <div style={{fontSize:14,color:C.inkFaint,marginTop:2,fontFamily:HAND}}>
+                {"登録された作付け履歴による表示です。土や病気の状態を示すものではありません。"}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* タブ */}
-      <div role="tablist" style={{display:"flex",borderBottom:"2px solid "+C.ink,padding:"0 16px"}} onKeyDown={e=>{const keys=['ArrowLeft','ArrowRight','Home','End'];if(!keys.includes(e.key))return;const buttons=Array.from(e.currentTarget.querySelectorAll('[role=tab]')),index=buttons.indexOf(document.activeElement);if(index<0)return;e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;buttons[n].click();buttons[n].focus();}}>
-        {sheetTabs.map(function(t){
+      <div style={{display:"flex",borderBottom:"2px solid "+C.ink,padding:"0 24px"}}>
+        {[{id:"overview",label:"今のようす"},{id:"history",label:"これまでの記録"}].map(function(t){
           return (
-            <button key={t.id} role="tab" id={'ridge-tab-'+t.id} aria-selected={tab===t.id||(t.id==='overview'&&tab==='plant')} aria-controls={'ridge-panel-'+t.id} onClick={function(){onTabChange(t.id);}}
-              style={{flex:1,minWidth:0,minHeight:48,padding:"8px 4px",border:"none",background:"none",cursor:"pointer",fontFamily:SERIF,fontSize:14,color:tab===t.id?C.ink:C.inkFaint,borderBottom:tab===t.id?"3px solid "+C.ink:"3px solid transparent"}}>
+            <button key={t.id} onClick={function(){onTabChange(t.id);}}
+              style={{padding:"8px 0",marginRight:24,border:"none",background:"none",cursor:"pointer",fontFamily:SERIF,fontSize:14,letterSpacing:2,color:tab===t.id?C.ink:C.inkFaint,borderBottom:tab===t.id?"3px solid "+C.ink:"3px solid transparent"}}>
               {t.label}
             </button>
           );
         })}
       </div>
 
-      <div ref={tabContentRef} style={{overflowY:"auto",flex:1,padding:"14px 24px 24px"}}>
+      <div style={{overflowY:"auto",flex:1,padding:"14px 24px 24px"}}>
 
-        {tab!=="history"&&tab!=="report"&&<div className="work-overview" role="tabpanel" id="ridge-panel-overview" aria-labelledby="ridge-tab-overview">
+        {tab!=="history"&&<div className="work-overview">
           <h3>{year}年の記録</h3><p style={{overflowWrap:"anywhere"}}>{vg?vg.name+"を記録しています。":"野菜の記録はまだありません。休ませている畝も、そのまま残せます。"}</p>
           {vg&&vg.custom&&<p className="journal-help">名前だけで残せます。自由入力の野菜は連作判定の対象外です。</p>}
           <div className="journal-actions"><button className="journal-primary" onClick={()=>onRecord("plant")}>野菜を植えた</button><button onClick={()=>onRecord("fertilizer")}>作業を記録</button></div>
           {vg&&<section className="finish-growing" style={{marginTop:20}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>栽培を終える</h3><p>前の野菜を履歴に残し、地図を空欄にします。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,cursor:"pointer"}} onClick={onClear}>栽培を終了する</button></section>}
         </div>}
-        {tab==="history"&&<div role="tabpanel" id="ridge-panel-history" aria-labelledby="ridge-tab-history"><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
-        {tab==="report"&&reportEnabled&&<div role="tabpanel" id="ridge-panel-report" aria-labelledby="ridge-tab-report"><RotationReport farm={reportFarm} beds={reportBeds} plantings={plantings[farmId]||{}} soil={soil[farmId]||[]} rid={ridge.id} year={year} lookup={id=>VM[id]} crops={VEGGIES} locale="ja" onRecord={kind=>onRecord(kind,'report')}/></div>}
+        {tab==="history"&&<div><p>年をまたいだ作付けと作業の記録です。畑全体の作業も含みます。</p><WorkTimeline entries={entries||[]} onEdit={onEditEntry} onRemove={onRemoveEntry}/></div>}
         <div className="ridge-delete" style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.inkLine}}><h3 style={{fontSize:16,margin:"0 0 8px"}}>この畝を削除</h3><p>この年以降の図から畝を外します。過去の記録と変更前の図は残ります。</p><button style={{minHeight:44,padding:"10px 16px",fontSize:16,border:"1px solid "+C.red,background:C.paper,color:C.red,cursor:"pointer"}} onClick={()=>{if(confirm("この年以降の図から畝を削除しますか？"))onDelete();}}>畝を削除する</button></div>
 
       </div>
@@ -3768,6 +3761,24 @@ function HistRow({ year, month, day, veggieId, isCurrent }) {
       ) : (
         <span style={{fontSize:14,color:C.inkFaint,fontFamily:HAND}}>— 記録なし</span>
       )}
+    </div>
+  );
+}
+
+function RotSummary({ year, veggieId, history }) {
+  const entries=(veggieId?[{year:year,veggieId:veggieId}]:[]).concat(history).sort(function(a,b){return b.year-a.year;});
+  const fams=entries.map(function(e){return VM[e.veggieId]&&VM[e.veggieId].family;}).filter(Boolean);
+  let maxC=1,cur=1;
+  for(let i=1;i<fams.length;i++){
+    if(fams[i]===fams[i-1]){cur++;if(cur>maxC)maxC=cur;}else cur=1;
+  }
+  if(entries.length<2) return null;
+  return (
+    <div style={{marginTop:16,padding:"14px 16px",borderLeft:"4px solid "+(maxC>=3?C.red:maxC>=2?C.orange:C.green),background:maxC>=3?C.redPale:maxC>=2?C.orangePale:C.greenPale}}>
+      <div style={{fontSize:14,color:C.inkFaint,letterSpacing:3,marginBottom:6,fontFamily:HAND}}>連作チェック</div>
+      {maxC>=3&&<div style={{fontSize:14,color:C.red,fontFamily:HAND,letterSpacing:.5}}>同じ科が{maxC}年連続。土の休養が必要です。</div>}
+      {maxC===2&&<div style={{fontSize:14,color:C.orange,fontFamily:HAND,letterSpacing:.5}}>2年連続。来年は別の科をお勧めします。</div>}
+      {maxC<2&&<div style={{fontSize:14,color:C.green,fontFamily:HAND,letterSpacing:.5}}>登録された履歴では、同じ科の連続は見つかりません。</div>}
     </div>
   );
 }
@@ -4086,7 +4097,7 @@ function printDocument(model, title, memo) {
   const rows=beds.map((b,i)=>{
     const pl=model.plantings[b.id],vid=extractVid(pl),vg=vid?VM[vid]:null;
     const warn=model.snapshot?null:checkRot(farm.id,b.id,model.year,model.history,model.soil,model.ridges);
-    const warning="—";
+    const warning=model.snapshot?"—":vg&&vg.custom?t.unknown:warn==="danger"?t.danger:warn==="caution"?t.caution:"—";
     const crop=vg?icon(vg.id)+'<span>'+e(vg.name)+'<small>'+e(vg.family||'')+'</small>'+(pl&&pl.note?'<small class="crop-note">'+e(pl.note)+'</small>':'')+'</span>':vid?e(vid):'—';
     return '<tr class="bed-row" data-bed="'+e(b.id)+'"><td class="number">'+(i+1)+'</td><td>'+e(b.name)+'</td><td><div class="crop">'+crop+'</div></td><td>'+e(pl&&pl.month?cropDate(null,pl.month,pl.day):'—')+'</td><td>'+e(warning)+'</td></tr>';
   }).join('');
