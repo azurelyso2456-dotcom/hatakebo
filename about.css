@@ -21,3 +21,8 @@
 .use-case-list dt{font-size:18px;font-weight:700}.use-case-list dd{margin:0;color:var(--muted);font-size:16px}.fit-note{margin:24px 0 0;padding-top:20px;border-top:1px solid var(--line);font-size:16px;color:var(--muted);max-width:60em}
 @media(max-width:600px){.use-case-list>div{grid-template-columns:1fr;gap:8px}.use-case-list dt{font-size:17px}}
 body.privacy-page,body.privacy-page h1,body.privacy-page h2,body.privacy-page h3,body.privacy-page .language-nav{font-family:var(--ledger-font)}
+
+/* Localized planner entry */
+html:not([lang="ja"]) .hero .planner-heading{font-size:clamp(32px,4vw,52px);line-height:1.22;letter-spacing:0;text-wrap:balance}
+.planner-guide-link{margin:8px 0 0;font-size:15px;line-height:1.65}.planner-guide-link .text-link{padding:8px 0}
+/* End localized planner entry */

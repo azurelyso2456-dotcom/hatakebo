@@ -392,19 +392,6 @@ function checkPrev(fid,ridgeId,vid,year,pls,soil,fRidges){
   for(var y=1;y<=2;y++){if(recordedFamily(fid,ridgeId,year-y,fam,pls,soil,fRidges))n++;else break;}
   return n>=3?"danger":n>=2?"caution":null;
 }
-// Keep recorded positions when a bed is removed or drawn again.
-function archiveBedPlantings({plantings={},beds={},rid}){
-  const records=[];
-  Object.entries(plantings).forEach(([year,group])=>{
-    const raw=(group||{})[rid],rec=typeof raw==='string'?{vid:raw}:raw;if(!rec)return;
-    (rec.past||[]).concat(rec.vid?[rec]:[]).forEach(p=>{
-      if(!p||!p.vid)return;
-      const g=p.geometry||(beds[rid]?geometryAt(beds[rid],Number(year)):null)||{};
-      records.push({gx:g.gx,gy:g.gy,gl:g.gl,ridgeW:g.ridgeW,orientation:g.orientation,year:Number(year),vid:p.vid,month:p.month||null,day:p.day||null,note:p.note||'',place:p.place||'',rid});
-    });
-  });
-  return records;
-}
 function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
 /* ══════════════════════════════════════
@@ -2522,12 +2509,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     setPlantings(p=>{var fd={...p[fid]};Object.keys(fd).forEach(y=>{if(Number(y)>=year&&fd[y][rid])fd[y]={...fd[y],[id]:JSON.parse(JSON.stringify(fd[y][rid]))};});return {...p,[fid]:fd};});
     closeSheet();showToast("2区画に分けました",function(){setRidges(oldR);setPlantings(oldP);});
   }
-  function sp(rid, vid, plantYear, month, day, note, savedBed){
+  function sp(rid, vid, plantYear, month, day, note){
     const yr = plantYear || year;
-    var before=plantings;var recordedBed=savedBed||bedsAt(ridges[fid],yr)[rid];showToast((recordedBed?recordedBed.name:"畝")+"に"+(VM[vid]?VM[vid].name:"野菜")+"を記録しました",function(){setPlantings(before);});
+    var before=plantings;var recordedBed=bedsAt(ridges[fid],yr)[rid];showToast((recordedBed?recordedBed.name:"畝")+"に"+(VM[vid]?VM[vid].name:"野菜")+"を記録しました",function(){setPlantings(before);});
     setPlantings(function(prev){
       const fd=prev[fid]||{}, fy=fd[yr]||{};
-      var bed=savedBed||bedsAt(ridges[fid],yr)[rid];
+      var bed=bedsAt(ridges[fid],yr)[rid];
       var incoming={vid,month:month||null,day:day||null,note:note||"",place:bed&&bed.name,geometry:bed&&Object.fromEntries(BED_GEOMETRY.map(k=>[k,bed[k]]))};
       return {...prev,[fid]:{...fd,[yr]:{...fy,[rid]:appendPlanting(fy[rid],incoming)}}};
     });
@@ -2718,7 +2705,7 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     });
     if (pickerVid) {
       /* 野菜を先行選択していた場合はそのまま植付記録まで設定 */
-      sp(id, pickerVid, year, null, null, null, {...nr,name:n+'番畝'});
+      sp(id, pickerVid, year, null, null);
       setShowRidgePicker(false);
       setPickerVid(null);
       showToast("✓ "+(VM[pickerVid]?VM[pickerVid].name+"の":"")+"畝を引きました", function(){
@@ -2757,7 +2744,12 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     const ridge = farmRidges[rid];
     if (ridge) {
       /* plantings履歴をsoilに転記 */
-      const recs = archiveBedPlantings({plantings:plantings[fid]||{},beds:ridges[fid]||{},rid});
+      const allPls = plantings[fid] || {};
+      const recs = [];
+      Object.keys(allPls).forEach(function(yr){
+        var rec=allPls[yr]&&allPls[yr][rid];var list=typeof rec==="string"?[{vid:rec}]:rec?[rec].concat(rec.past||[]):[];
+        list.filter(r=>r.vid).forEach(function(r){var at=r.geometry||geometryAt(ridges[fid][rid],Number(yr));recs.push({gx:at.gx,gy:at.gy,gl:at.gl,ridgeW:at.ridgeW,orientation:at.orientation,year:parseInt(yr),vid:r.vid});});
+      });
       if (recs.length > 0) setSoil(function(prev){
         return Object.assign({},prev,{[fid]:(prev[fid]||[]).concat(recs)});
       });
