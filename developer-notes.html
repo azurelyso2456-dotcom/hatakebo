@@ -13,9 +13,9 @@
   <meta property="og:title" content="開発者ノート｜ハタケボ">
   <meta property="og:description" content="ハタケボを作りながら、考えたこと。家庭菜園の記録帳を作る人が綴る開発者ノートです。">
   <meta property="og:url" content="https://azurelyso2456-dotcom.github.io/hatakebo/developer-notes.html">
-  <meta property="og:image" content="https://azurelyso2456-dotcom.github.io/hatakebo/journal-cover-02.webp">
-  <meta property="og:image:alt" content="畑の見取り図を描いた手帳を両手で持つイラスト">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:image" content="https://azurelyso2456-dotcom.github.io/hatakebo/brand-b1-ja.webp">
+  <meta property="og:image:alt" content="ハタケボのロゴ">
+  <meta name="twitter:card" content="summary">
   <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="stylesheet" href="brand.css">
   <link rel="stylesheet" href="developer-notes.css">
@@ -26,31 +26,37 @@
   </header>
   <main class="journal-sheet journal-list">
     <header class="journal-heading">
-      <h1>開発者ノート</h1>
+      <h1><img class="journal-icon" src="favicon.png" alt="" width="48" height="48">開発者ノート</h1>
       <p>ハタケボを作りながら、考えたこと。</p>
     </header>
-    <article>
-      <a class="journal-entry" href="developer-note-02.html">
-        <div class="journal-entry-copy">
-          <p class="journal-kicker">#02</p>
-          <h2>畑の記録は、あなたの手元に。</h2>
-          <p class="journal-summary">畑の記録をブラウザーに保存する理由と、端末を替えるときのバックアップ。記録を預からない仕組みについて綴ります。</p>
-          <span class="journal-read" aria-hidden="true">記事を読む <span>→</span></span>
-        </div>
-        <span class="journal-cover"><img src="journal-cover-02.webp" alt="" width="768" height="512" decoding="async"></span>
-      </a>
-    </article>
-    <article>
-      <a class="journal-entry" href="developer-note-01.html">
-        <div class="journal-entry-copy">
-          <p class="journal-kicker">#01</p>
-          <h2>なぜハタケボは無料なのか。</h2>
-          <p class="journal-summary">自分が使いたくて作った、小さな家庭菜園の記録帳。ハタケボを広告なしで無料公開している理由を、作り手が綴ります。</p>
-          <span class="journal-read" aria-hidden="true">記事を読む <span>→</span></span>
-        </div>
-        <span class="journal-cover"><img src="journal-cover-01.webp" alt="" width="768" height="512" loading="lazy" decoding="async"></span>
-      </a>
-    </article>
+    <ol class="journal-items" role="list">
+      <li>
+        <a class="journal-entry" href="developer-note-02.html" aria-labelledby="note-number-02 note-headline-02" aria-describedby="note-summary-02">
+          <span class="journal-vegetable journal-vegetable-turnip" aria-hidden="true"></span>
+          <div>
+            <div class="journal-entry-heading">
+              <p class="journal-kicker" id="note-number-02">#02</p>
+              <h2 id="note-headline-02">畑の記録は、あなたの手元に。</h2>
+            </div>
+            <p class="journal-summary" id="note-summary-02">畑の記録はブラウザーに。預からない理由と、端末を替える前のバックアップについて。</p>
+          </div>
+          <span class="journal-arrow" aria-hidden="true">→</span>
+        </a>
+      </li>
+      <li>
+        <a class="journal-entry" href="developer-note-01.html" aria-labelledby="note-number-01 note-headline-01" aria-describedby="note-summary-01">
+          <span class="journal-vegetable journal-vegetable-tomato" aria-hidden="true"></span>
+          <div>
+            <div class="journal-entry-heading">
+              <p class="journal-kicker" id="note-number-01">#01</p>
+              <h2 id="note-headline-01">なぜハタケボは無料なのか。</h2>
+            </div>
+            <p class="journal-summary" id="note-summary-01">自分が使いたくて作った菜園の記録帳を、広告なしで無料公開する理由。</p>
+          </div>
+          <span class="journal-arrow" aria-hidden="true">→</span>
+        </a>
+      </li>
+    </ol>
   </main>
 </body>
 </html>
