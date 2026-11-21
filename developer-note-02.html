@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>畑の記録は、あなたの手元に。｜ハタケボ 開発者ノート</title>
+  <meta name="description" content="畑の記録をブラウザーに保存する理由と、端末を替えるときのバックアップ。記録を預からない仕組みについて綴ります。">
+  <link rel="canonical" href="https://azurelyso2456-dotcom.github.io/hatakebo/developer-note-02.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="ハタケボ">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="畑の記録は、あなたの手元に。｜ハタケボ 開発者ノート">
+  <meta property="og:description" content="畑の記録をブラウザーに保存する理由と、端末を替えるときのバックアップ。記録を預からない仕組みについて綴ります。">
+  <meta property="og:url" content="https://azurelyso2456-dotcom.github.io/hatakebo/developer-note-02.html">
+  <meta property="og:image" content="https://azurelyso2456-dotcom.github.io/hatakebo/garden-notebook-simple.webp">
+  <meta property="og:image:alt" content="畑の図が描かれた記録帳と鉛筆の水彩イラスト">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="stylesheet" href="brand.css">
+  <link rel="stylesheet" href="developer-notes.css">
+</head>
+<body class="journal">
+  <a class="skip" href="#article-body">本文へ進む</a>
+  <header class="journal-header">
+    <a class="brand brand-link" href="./"><img class="brand-mark" src="brand-b1-ja.webp" alt="ハタケボ" width="168" height="54" decoding="async"></a>
+    <a class="journal-link" href="developer-notes.html">開発者ノート一覧</a>
+  </header>
+  <main class="journal-sheet article-sheet">
+    <article class="reading-column" aria-labelledby="note-title">
+      <header class="journal-heading">
+        <p class="journal-kicker">開発者ノート #02</p>
+        <h1 id="note-title">畑の記録は、あなたの手元に。</h1>
+        <p class="journal-byline">ハタケボ開発者</p>
+      </header>
+      <div class="article-body" id="article-body" tabindex="-1">
+<p>最近は、ちょっとしたサービスを使うにも、会員登録を求められることが珍しくありません。</p>
+<p>名前、メールアドレス、電話番号、パスワード。</p>
+<p>便利なサービスを使うために、私たちはずいぶん多くの情報を入力するようになりました。</p>
+<p>もちろん、会員登録には意味があります。本人確認や決済、複数端末でのデータ共有など、サービスによっては欠かせない仕組みです。</p>
+<p>しかし、だからといって、すべてのサービスに会員登録が必要なのでしょうか。</p>
+<p>そもそも、畑の記録をつけるために、名前や電話番号まで登録していただく必要があるのでしょうか。</p>
+<p>私は、ハタケボを使ってくださる方のお名前を知る必要がありません。電話番号も必要ありませんし、利用者ごとの情報を集めてマーケティングを行うつもりもありません。</p>
+<p>だったら、最初から聞かなければよいのではないか。</p>
+<p>そんなふうに考えました。</p>
+<div class="chapter-break chapter-break-1" aria-hidden="true"><span></span></div><h2>預からないという選択</h2>
+<p>ハタケボには、会員登録というものがありません。</p>
+<p>名前も、メールアドレスも、電話番号も、パスワードも登録せずに使い始められます。</p>
+<p>そして、これは畑の記録そのものについても同じです。</p>
+<p>ハタケボでは、皆さんが入力した畑の記録を、私の管理するサーバーに保存していません。</p>
+<p>畝の位置も、植えた野菜も、日付やメモも、お使いのスマートフォンやパソコンのブラウザーに保存されます。</p>
+<p>確かに、サーバーに保存すれば、スマートフォンとパソコンで同じ記録を開いたり、端末を買い替えたときに自動で引き継いだりできます。</p>
+<p>それは便利なことです。</p>
+<p>しかし、畑の記録をつけるために、必ずしもそこまでの仕組みが必要なのでしょうか。</p>
+<p>皆さんが大切に育てている野菜の記録は、皆さんの手元にあれば、それで十分ではないでしょうか。</p>
+<p>最近は、企業やサービスから個人情報が流出したというニュースも珍しくありません。</p>
+<p>もちろん、情報を安全に管理することは大切です。</p>
+<p>しかし、情報を守るための仕組みを考える以前に、そもそもその情報を預かる必要があるのか、という問いがあってもよいと思うのです。</p>
+<p>預からなければ、少なくとも私が管理する畑の記録のデータベースから、その情報が流出することはありません。そもそも、そのデータベース自体を持っていないのですから。</p>
+<p>もちろん、これですべての安全が保証されるわけではありません。お使いの端末を安全に保つことや、アプリ自体を安全に提供することも大切です。</p>
+<p>それでも、守るために集めるのではなく、集めないことで守る。</p>
+<p>私は、こういう考え方が好きです。</p>
+<div class="chapter-break chapter-break-2" aria-hidden="true"><span></span></div><h2>開発者にとっても都合がいい</h2>
+<p>そして、ここからが特に気に入っているところなのですが、この仕組みは私自身にとっても都合がよいのです。</p>
+<p>会員情報を管理する必要もなければ、皆さんの畑の記録を保存するデータベースも必要ありません。</p>
+<p>記録が増えても、その保存費用を私が負担する必要はなく、多くの処理をお使いの端末で行うため、サーバー側の負担も小さくできます。</p>
+<p>皆さんは、面倒な登録をせず、自分の記録を誰かに預けずに使える。</p>
+<p>私は、必要のない個人情報を集めずに済み、その管理に時間や費用をかける必要もない。</p>
+<p><strong>利用者の負担を減らしたら、開発者の負担まで減ってしまったのです。</strong></p>
+<p>こういう仕組みを考えられたとき、ものづくりの面白さを感じます。</p>
+<p>無料でサービスを提供するからといって、作り手が一方的に我慢し続ける必要はありません。</p>
+<p>利用者にとって良いことと、開発者にとって良いことは、必ずしも対立しないのです。</p>
+<div class="chapter-break chapter-break-3" aria-hidden="true"><span></span></div><h2>便利なところも、不便なところも</h2>
+<p>もっとも、この仕組みにも弱点はあります。</p>
+<p>畑の記録はブラウザーに保存されるため、端末を買い替えても自動では引き継がれません。また、ブラウザーのデータを削除すると、記録が失われてしまうこともあります。</p>
+<p>そのため、大切な記録は、ぜひバックアップを取っておいてください。</p>
+<p>特に、端末を買い替えるときやブラウザーのデータを削除するときには、事前に確認していただけると安心です。</p>
+<p>私の側には記録が保存されていないため、失われた記録をこちらで復元することもできません。</p>
+<p>これは、この設計の明確な弱点です。</p>
+<p>また、日本語版のハタケボでは、使いやすさを改善するためにアクセス解析を行っています。ただし、皆さんが入力した畑の記録は、アクセス解析には含まれません。</p>
+<p>お問い合わせでお送りいただく情報なども含め、詳しくは「<a href="disclaimer.html">免責事項・ご利用について</a>」でご案内しています。</p>
+<p>何かを選べば、別の何かができなくなることもあります。</p>
+<p>限られた畑に何を植えるか。日当たりを優先するのか、収穫量を優先するのか。すべてを同時に満たすことは、なかなか難しいものです。</p>
+<p>アプリの設計も、案外それに似ています。</p>
+<p>だからこそ、何を大切にして、何を諦めたのか。</p>
+<p>作り手である私自身が、それをきちんと説明できるようにしたいと思っています。</p>
+<p>ハタケボは、私自身が使うために作り、趣味として開発を続けている道具です。</p>
+<p>利用者の情報を集めて利益を得るために作ったものではありません。だからこそ、必要のない情報は最初から集めない。</p>
+<p>皆さんの畑の記録は、皆さんの手元に。</p>
+<p>便利なところも、不便なところも含めて、安心して、納得して使っていただけたら嬉しいです。</p>
+<hr>
+<p class="signature">ハタケボ開発者</p>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

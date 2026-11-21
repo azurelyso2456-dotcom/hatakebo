@@ -31,8 +31,7 @@ body.journal {
 }
 .journal .skip:focus { transform: none; }
 .journal .journal-header,
-.journal .journal-sheet,
-.journal .journal-footer { max-width: 880px; margin-inline: auto; }
+.journal .journal-sheet { max-width: 880px; margin-inline: auto; }
 .journal .journal-header {
   display: flex;
   align-items: center;
@@ -83,12 +82,13 @@ body.journal {
 .journal-entry h2 { margin: 0; font-size: clamp(20px, 4.6vw, 29px); }
 .journal-entry:hover h2, .journal-entry:focus-visible h2 { text-decoration: underline; }
 .journal-entry .journal-summary { margin: 9px 0 0; font-size: .9375rem; color: var(--journal-copy); }
-.journal-entry img {
+.journal-thumb { overflow: hidden; border-radius: 2px; }
+.journal-thumb img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 2px;
 }
+.journal-thumb-detail img { transform: scale(1.85); transform-origin: 29% 50%; }
 .journal .article-sheet {
   margin-block-start: 12px;
   padding-block: clamp(20px, 4vw, 42px);
@@ -146,14 +146,6 @@ body.journal {
 .chapter-break-3 span { background-position-x: 100%; }
 .article-body hr { border: 0; border-top: 1px solid var(--journal-rule); margin: 25px 0 14px; }
 .article-body .signature { text-align: right; }
-.journal .journal-footer {
-  display: flex;
-  gap: 4px 16px;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  padding: 8px clamp(12px, 3vw, 26px);
-  margin-bottom: 20px;
-}
 @media (max-width: 480px) {
   body.journal { padding-inline: 8px; }
   .journal .journal-sheet { padding-inline: clamp(14px, 4vw, 18px); }
