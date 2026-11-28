@@ -532,15 +532,22 @@ function normalizeRidges(raw){
 }
 function bedsAt(beds,year){return Object.fromEntries(Object.entries(beds||{}).filter(([id,r])=>(!r.addedFrom||r.addedFrom<=year)&&(!r.deletedFrom||r.deletedFrom>year)).map(([id,r])=>[id,geometryAt(r,year)]));}
 function localDate(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-const WORK_TYPES={plant:"野菜を植えた",fertilizer:"肥料・堆肥を入れた",green:"緑肥の記録",greenSow:"緑肥をまいた",greenCut:"緑肥を刈った",greenMix:"緑肥を土に混ぜた",harvest:"収穫した",end:"栽培を終えた",note:"メモを残す"};
+const WORK_TYPES={plant:"野菜を植えた",fertilizer:"肥料・堆肥を入れた",green:"緑肥の記録",greenSow:"緑肥をまいた",greenCut:"緑肥を刈った",greenMix:"緑肥を土に混ぜた",harvest:"収穫した",end:"栽培を終えた",weed:"草抜き",note:"メモを残す"};
 function landTimeline(farm,beds,plantings) {
-  var entries=(farm.journal||[]).map(e=>Object.assign({},e,{source:"journal"}));
+  var entries=(farm.journal||[]).map(entry=>{
+    const work={...entry,source:"journal"};
+    // Keep weeding readable by older versions that only accept known journal kinds.
+    return entry.kind==="note"&&entry.activity==="weed"?{...work,kind:"weed",name:""}:work;
+  });
   Object.entries(plantings||{}).forEach(([yr,ps])=>Object.entries(ps||{}).forEach(([rid,raw])=>{
     var rec=typeof raw==="string"?{vid:raw}:raw;
     if(!rec)return;
-    (rec.past||[]).concat(rec.vid?[rec]:[]).forEach((p,i)=>{
+    const past=rec.past||[];
+    const bed=beds[rid];
+    const hasMapBed=bed&&(!bed.addedFrom||bed.addedFrom<=Number(yr))&&(!bed.deletedFrom||bed.deletedFrom>Number(yr));
+    past.concat(rec.vid?[rec]:[]).forEach((p,i)=>{
       if(!p.vid)return;
-      entries.push({id:"crop-"+yr+"-"+rid+"-"+i,source:"crop",kind:"plant",rid,year:Number(yr),month:p.month||null,day:p.day||null,name:(VM[p.vid]||{}).name||p.vid,note:p.note||"",place:p.place||(beds[rid]?geometryAt(beds[rid],Number(yr)).name:"以前の畝"),geometry:p.geometry||null});
+      entries.push({id:"crop-"+yr+"-"+rid+"-"+i,source:"crop",kind:"plant",rid,year:Number(yr),plantingSource:raw,plantingIndex:i,shownOnMap:!!hasMapBed&&i===past.length,month:p.month||null,day:p.day||null,name:(VM[p.vid]||{}).name||p.vid,note:p.note||"",place:p.place||(beds[rid]?geometryAt(beds[rid],Number(yr)).name:"以前の畝"),geometry:p.geometry||null});
     });
   }));
   return entries.sort((a,b)=>(b.year||0)-(a.year||0)||(b.month||0)-(a.month||0)||(b.day||0)-(a.day||0)||(b.createdAt||0)-(a.createdAt||0));
@@ -590,6 +597,31 @@ function appendPlanting(old,incoming){
   if(rec&&rec.vid){var prior={...rec};delete prior.past;past.push(prior);}
   return {...incoming,past};
 }
+function removePlantingEntry(plantings, farmId, entry) {
+  const farmRecords=plantings[farmId];
+  const yearRecords=farmRecords?.[entry.year];
+  const raw=yearRecords?.[entry.rid];
+  if(!raw||raw!==entry.plantingSource)return plantings;
+
+  const record=typeof raw==="string"?{vid:raw}:raw;
+  const past=record.past||[];
+  const index=entry.plantingIndex;
+  if(!Number.isInteger(index)||index<0||index>past.length)return plantings;
+
+  const nextYear={...yearRecords};
+  if(index<past.length){
+    if(!past[index]?.vid)return plantings;
+    const nextPast=past.filter((_,i)=>i!==index);
+    if(record.vid||nextPast.length)nextYear[entry.rid]={...record,past:nextPast};
+    else delete nextYear[entry.rid];
+  }else{
+    if(!record.vid)return plantings;
+    // Removing the current planting clears the map without reviving an older crop.
+    if(past.length)nextYear[entry.rid]={vid:null,past};
+    else delete nextYear[entry.rid];
+  }
+  return {...plantings,[farmId]:{...farmRecords,[entry.year]:nextYear}};
+}
 function WorkTimeline({entries,onEdit,onRemove,limit}) {
   const [count,setCount]=useState(20);
   const [removing,setRemoving]=useState(null);
@@ -598,7 +630,12 @@ function WorkTimeline({entries,onEdit,onRemove,limit}) {
     <div className="work-date">{entryDate(e)} · {e.place||"畑全体"}</div>
     <strong>{WORK_TYPES[e.kind]||"作業"}{e.name?"："+e.name:""}</strong>
     {e.amount&&<div>量：{e.amount}</div>}{e.note&&<p style={{whiteSpace:"pre-wrap"}}>{e.note}</p>}
-    {e.source==="journal"&&onEdit&&<div className="journal-actions">{removing===e.id?<><span>この作業の記録を削除しますか？</span><button onClick={()=>setRemoving(null)}>やめる</button><button onClick={()=>{onRemove(e);setRemoving(null);}}>削除する</button></>:<><button onClick={()=>onEdit(e)}>訂正</button><button onClick={()=>setRemoving(e.id)}>削除</button></>}</div>}
+    {onRemove&&<div className="journal-actions">{removing===e.id?
+      <><span>{HISTORY_LABELS.deleteRecord}{e.shownOnMap?" "+HISTORY_LABELS.deleteCurrentPlanting:""}</span>
+        <button onClick={()=>setRemoving(null)}>{HISTORY_LABELS.cancel}</button>
+        <button onClick={()=>{setRemoving(null);onRemove(e);}}>{HISTORY_LABELS.remove}</button></>:
+      <>{e.source==="journal"&&onEdit&&<button onClick={()=>onEdit(e)}>訂正</button>}
+        <button onClick={()=>setRemoving(e.id)}>削除</button></>}</div>}
   </article>)}{!limit&&entries.length>count&&<button onClick={()=>setCount(count+20)}>さらに前の記録を見る</button>}</div>;
 }
 const HISTORY_LABELS = {
@@ -615,7 +652,7 @@ const HISTORY_LABELS = {
   "deleteRecord": "この記録を削除しますか？",
   "deleteShared": "畑全体への記録です。削除すると、すべての畝の表示からなくなります。",
   "sharedEdit": "畑全体への記録です。内容を直すと、各畝の表示にも反映されます。",
-  "cropHint": "植え付けの記録です。野菜の変更は「畑のようす」で行えます。",
+  "deleteCurrentPlanting": "畑の図からもこの野菜が消えます。以前の作付けは履歴に残ります。",
   "details": "記録の内容",
   "more": "残りの記録も表示",
   "less": "表示を少なくする",
@@ -709,11 +746,13 @@ function HistoryEntry({entry:e,onEdit,onRemove}){
     <summary><time>{entryDate(e)}</time><div><strong>{historyEventTitle(e)}</strong>{!e.name&&e.note&&<span className="record-snippet">{e.note.length>100?e.note.slice(0,100)+'…':e.note}</span>}{e.shared&&<span className="history-shared">{t.shared}</span>}{e.inherited&&<span className="history-shared">{d.bed}: {e.place}</span>}</div></summary>
     <div className="history-record-body">
       {e.amount&&<p>{e.shared?d.total:d.amount}: {e.amount}</p>}{e.note&&<p>{e.note}</p>}
-      {e.source==='journal'?<>
-        {e.shared&&<p className="history-help">{t.sharedEdit}</p>}
-        <div className="history-actions"><button onClick={()=>onEdit(e)}>{t.edit}</button><button className="history-danger" onClick={()=>setConfirming(true)}>{t.remove}</button></div>
-        {confirming&&<div className="history-confirm" role="alert"><p>{t.deleteRecord}{e.shared?' '+t.deleteShared:''}</p><div className="history-actions"><button autoFocus onClick={()=>setConfirming(false)}>{t.cancel}</button><button className="history-danger" onClick={()=>onRemove(e)}>{t.remove}</button></div></div>}
-      </>:<p className="history-help">{t.cropHint}</p>}
+      {e.shared&&<p className="history-help">{t.sharedEdit}</p>}
+      {confirming?
+        <div className="history-confirm" role="alert"><p>{t.deleteRecord}{e.shared?' '+t.deleteShared:''}{e.shownOnMap?' '+t.deleteCurrentPlanting:''}</p>
+          <div className="history-actions"><button autoFocus onClick={()=>setConfirming(false)}>{t.cancel}</button>
+            <button className="history-danger" onClick={event=>{setConfirming(false);event.currentTarget.closest('details').open=false;onRemove(e);}}>{t.remove}</button></div>
+        </div>:
+        <div className="history-actions">{e.source==='journal'&&<button onClick={()=>onEdit(e)}>{t.edit}</button>}<button className="history-danger" onClick={()=>setConfirming(true)}>{t.remove}</button></div>}
     </div>
   </details>;
 }
@@ -752,6 +791,7 @@ function WorkForm({farm,beds,initial,onSave,onClose,onSaveLayout,canSaveLayout,l
   const layoutNoticeRef=useRef(null);
   useEffect(()=>{if(layoutAttempted&&!canSaveLayout&&layoutNoticeRef.current)layoutNoticeRef.current.focus({preventScroll:true});},[layoutAttempted,canSaveLayout]);
   const [kind,setKind]=useState(initial.kind||"fertilizer");
+  const isWeeding=kind==="weed";
   const legacyPlace=!!initial.id&&!initial.rid&&!historyWholePlace(initial.place);
   const [rid,setRid]=useState(initial.rid||(legacyPlace?"__legacy_place__":""));
   const [monthOnly,setMonthOnly]=useState(!!initial.id&&!!initial.month&&!initial.day);
@@ -771,19 +811,19 @@ function WorkForm({farm,beds,initial,onSave,onClose,onSaveLayout,canSaveLayout,l
     if(rid&&rid!=="__legacy_place__"&&!available[rid]&&!(initial.id&&initial.rid===rid)){setError("この年に記録する畝を選んでください。畑全体も選べます。");return;}
     if(kind==="plant"&&(!rid||!VM[vid]||!VM[vid].name.trim())){setError("野菜を植えた畝と、野菜を選んでください。");return;}
     var d=unknown?[yr,null,null]:date.split("-").map(Number);if(monthOnly&&!unknown)d[2]=null;
-    onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind,rid:rid==="__legacy_place__"?null:rid||null,year:d[0],month:d[1],day:d[2],name:name.trim(),vid,amount:amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:rid==="__legacy_place__"?initial.place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):initial.id&&(initial.rid===rid||rid==="__legacy_place__")?initial.geometry||null:null});
+    onSave({id:initial.id||"work_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),kind:isWeeding?"note":kind,...(isWeeding?{activity:"weed"}:{}),rid:rid==="__legacy_place__"?null:rid||null,year:d[0],month:d[1],day:d[2],name:isWeeding?WORK_TYPES.weed:name.trim(),vid:isWeeding?"":vid,amount:isWeeding?"":amount.trim(),note:note.trim(),createdAt:initial.createdAt||Date.now(),place:rid==="__legacy_place__"?initial.place:available[rid]?available[rid].name:initial.id&&initial.rid===rid?initial.place:"畑全体",geometry:available[rid]?Object.fromEntries(BED_GEOMETRY.map(k=>[k,available[rid][k]])):initial.id&&(initial.rid===rid||rid==="__legacy_place__")?initial.geometry||null:null});
   }
   return <EditDialog title={initial.id?"作業の記録を訂正":"作業を記録"} onClose={onClose} compactClose><form className="journal-form" onSubmit={submit}>
     <label>どこで<select value={rid} onChange={e=>setRid(e.target.value)}><option value="">畑全体</option>{legacyPlace&&<option value="__legacy_place__">{initial.place}</option>}{Object.values(available).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}{initial.id&&rid&&rid!=="__legacy_place__"&&!available[rid]&&<option value={rid}>{initial.place}（以前の畝）</option>}</select></label>
     <label>何をした<select value={kind.startsWith("green")?"green":kind} onChange={e=>setKind(e.target.value)}>{Object.entries(WORK_TYPES).filter(([k])=>!["greenSow","greenCut","greenMix"].includes(k)&&(k!=="end"||initial.kind==="end")&&(k!=="plant"||!initial.id)).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
     {kind.startsWith("green")&&kind!=="green"&&<span className="journal-help" style={{marginTop:-12}}>{WORK_TYPES[kind]}</span>}
-    {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
+    {kind==="plant"?<fieldset style={{border:0,padding:0,minWidth:0}}><legend>野菜を選ぶ</legend><input aria-label="野菜を探す" placeholder="野菜の名前で探す" value={vegQuery} onChange={e=>setVegQuery(e.target.value)}/><span className="journal-help">今の月の候補から並びます。季節外の野菜も選べます。</span><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:8,maxHeight:230,overflowY:"auto",margin:"10px 0"}}>{seasonalVegetables(VEGGIES,new Date().getMonth()+1).filter(v=>cropMatches(v,vegQuery)).map(v=><button type="button" key={v.id} aria-label={v.name} aria-pressed={vid===v.id} onClick={()=>setVid(v.id)} style={{padding:8,border:"2px solid "+(vid===v.id?C.indigo:C.inkLine),background:vid===v.id?C.indigoPale:C.paper,color:C.ink,display:"flex",flexDirection:"column",alignItems:"center"}}><VeggieStamp id={v.id} size={36}/>{v.name}</button>)}</div><p role="status">{vid?"選択中："+VM[vid].name:"野菜を1つ選んでください"}</p><span className="journal-help">前の野菜がある場合は、履歴に残して植え替えます。</span></fieldset>:kind!=="note"&&!isWeeding&&<label>{kind==="fertilizer"?"肥料・堆肥の名前（任意）":kind.startsWith("green")?"緑肥の名前（任意）":"野菜の名前（任意）"}<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder={kind==="fertilizer"?"例：牛ふん堆肥":kind.startsWith("green")?"例：エンバク":"分かる範囲で"}/></label>}
     {kind==="plant"&&<CustomCropInput value={vid} onChange={setVid}/>}
     {kind==="plant"&&!Object.keys(available).length&&<p className="journal-help">この年には畝がありません。「畑のようす」で畝を作るか、畝がある年を選んでください。</p>}
     <label>いつ{unknown?<input aria-label="作業した年" aria-describedby="work-date-help" type="number" min="1900" max="2200" value={dateYear} onChange={e=>setDateYear(e.target.value)}/>:<input aria-label="いつ" aria-describedby="work-date-help" type={monthOnly?"month":"date"} value={monthOnly?date.slice(0,7):date} onChange={e=>setDate(e.target.value+(monthOnly?"-01":""))}/>}</label><span id="work-date-help" className="journal-help" style={{marginTop:-12}}>{unknown?"覚えている年だけで残せます。":"以前の作業を残すときは、日付を変えてください。"}</span>
     <label className="journal-check"><input type="checkbox" checked={unknown} onChange={e=>setUnknown(e.target.checked)}/>月日が分からない（年だけ残す）</label>
     {!!initial.id&&!!initial.month&&!initial.day&&!unknown&&<label className="journal-check"><input type="checkbox" checked={monthOnly} onChange={e=>setMonthOnly(e.target.checked)}/>{DIARY_LABELS.unknownDay}</label>}
-    <details open={!!initial.amount||!!initial.note}><summary>量・メモを追加（任意）</summary><label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label><label>メモ<textarea aria-label="メモ" maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
+    <details open={!!initial.amount||!!initial.note}><summary>{isWeeding?"メモを追加（任意）":"量・メモを追加（任意）"}</summary>{!isWeeding&&<label>量<input maxLength={80} value={amount} onChange={e=>setAmount(e.target.value)} placeholder="例：ひと袋、ひと握り、500g"/></label>}<label>メモ<textarea aria-label="メモ" maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)} placeholder="覚えておきたいこと"/></label></details>
     {error&&<p role="alert">{error}</p>}<div className="journal-actions"><button className="journal-primary" type="submit">{initial.id?"訂正を保存":"記録を残す"}</button></div>
   </form>
   {!initial.id&&onSaveLayout&&(canSaveLayout||layoutAttempted)&&<div className="work-layout-save" style={{borderTop:"1px solid "+C.inkLine,marginTop:24,paddingTop:16}}>
@@ -2490,7 +2530,15 @@ function FarmMap({ farms, plantings, setPlantings, ridges, setRidges, snapshots,
     }
     setWorkDraft(null);
   }
-  function removeWork(entry){onUpdateFarm(Object.assign({},rawFarm,{journal:(rawFarm.journal||[]).filter(e=>e.id!==entry.id)}));showToast("記録を削除しました",function(){});}
+  function removeWork(entry){
+    if(entry.source==="crop"){
+      if(removePlantingEntry(plantings,fid,entry)===plantings)return;
+      setPlantings(current=>removePlantingEntry(current,fid,entry));
+    }else{
+      onUpdateFarm(Object.assign({},rawFarm,{journal:(rawFarm.journal||[]).filter(e=>e.id!==entry.id)}));
+    }
+    showToast("記録を削除しました",function(){});
+  }
   function preserveLayout(note){
     var snap={id:"snap_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),ts:Date.now(),year,note,automatic:true,farm:Object.fromEntries(["id","name"].concat(FARM_GEOMETRY).map(k=>[k,farm[k]])),ridges:JSON.parse(JSON.stringify(farmRidges)),plantings:JSON.parse(JSON.stringify(farmPlant))};
     setSnapshots(p=>({...p,[fid]:[snap].concat(p[fid]||[])}));
@@ -3295,7 +3343,7 @@ const FAQ_DATA = [
         "q": "作業の記録を間違えたときは、どう直せばよいですか？",
         "a": [
           "「これまでの記録」で年を選び、該当する記録を押して「内容を直す」を選びます。名前・量・日付・場所・メモを直せるので、重ねて新しい記録を作る必要はありません。不要な記録は確認してから「削除する」を押します。畑全体への記録を削除すると、各畝の表示からもなくなります。",
-          "野菜の植え付けを直後に間違えた場合は、「メニュー」→「直前の操作を戻す」で戻してから選び直してください。過去の作付けは、この「内容を直す」では変更できません。"
+          "間違って登録した野菜は、「これまでの記録」で該当する植え付けを開き、「削除する」を選ぶと1件ずつ消せます。畑の図に表示中の野菜を削除すると、図からも消えます。作付けを直すには、間違った記録を削除したあと、正しい内容で記録し直してください。"
         ]
       }
     ]
@@ -3900,6 +3948,7 @@ const DIARY_LABELS = {
     "green": "緑肥",
     "harvest": "収穫",
     "end": "終了",
+    "weed": "草抜き",
     "note": "メモ"
   }
 };
